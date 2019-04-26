@@ -34,7 +34,9 @@ class RoboChartParsingTest {
 	@Test
 	def void loadModel() {
 		val result = parseHelper.parse('''
-			Hello Xtext!
+			interface I {
+				var x: nat
+			}
 		''')
 		Assertions.assertNotNull(result)
 		val errors = result.eResource.errors
