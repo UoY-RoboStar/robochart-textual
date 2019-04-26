@@ -35,7 +35,7 @@ SPDX-License-Identifier: EPL-2.0
 		<module>circus.robocalc.robochart.textual.feature</module>
 		<module>circus.robocalc.robochart.textual.repository</module>
 		<module>circus.robocalc.robochart.textual.tests</module>
-		<module>circus.robocalc.robochart.textual.ui.tests</module>
+		<!--<module>circus.robocalc.robochart.textual.ui.tests</module>-->
 	</modules>
 	<dependencyManagement>
 		<dependencies>
