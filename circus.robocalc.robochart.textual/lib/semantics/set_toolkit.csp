@@ -1,0 +1,24 @@
+-- *************************************************************************
+-- Copyright (c) 2019 University of York and others
+--
+-- This program and the accompanying materials are made available under the
+-- terms of the Eclipse Public License 2.0 which is available at
+-- http://www.eclipse.org/legal/epl-2.0.
+--
+-- SPDX-License-Identifier: EPL-2.0
+--
+-- Contributors:
+--   Alvaro Miyazawa - initial definition
+-- *************************************************************************
+
+notin(x,s) = not(member(x,s))
+
+subseteq(ss,s) = let
+	aux(<>,s) = true
+	aux(<x>^xs,s) = member(x,s) and aux(xs,s)
+within 
+	aux(seq(ss), s)
+
+subset(ss,s) = subseteq(ss,s) and (not (ss == s))
+
+symetric_diff(s1,s2) = union(diff(s1,s2),diff(s2,s1))

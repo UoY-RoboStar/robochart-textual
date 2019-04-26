@@ -1,0 +1,86 @@
+/********************************************************************************
+ * Copyright (c) 2019 University of York and others
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *   Alvaro Miyazawa - initial definition
+ ********************************************************************************/
+
+package relation_toolkit
+
+import set_toolkit::*
+
+function first(p:?X*?Y): ?X {
+	postcondition result == p[1] 
+}
+
+function second(p:?X*?Y): ?Y {
+	postcondition result == p[2]
+}
+
+function maplet(x:?X, y:?Y): ?X*?Y {
+	postcondition result == (|x,y|)
+}
+
+function dom(r:?X <-> ?Y): Set(?X) {
+	postcondition result == {p: ?X*?Y | p in r @ p[1]}
+}
+
+function ran(r:?X <-> ?Y): Set(?Y) {
+	postcondition result == {p: ?X*?Y | p in r @ p[2]}
+}
+
+// Not sure about this, maybe I need to pass a set as parameter to unify ?X from context
+function id(): ?X <-> ?X {
+	postcondition result == {x: ?X | maplet(x,x)}
+}
+
+function relcomp(r: ?X <-> ?Y, s: ?Y <-> ?Z): ?X <-> ?Z {
+	postcondition result == {p:?X*?Y,q:?Y*?Z| p in r /\ q in s /\ p[2] == q[1] @ maplet(p[1],q[2])}
+}
+
+function funcomp(s: ?Y -> ?Z, r: ?X -> ?Y): ?X <-> ?Z {
+	postcondition result == relcomp(r,s)
+}
+
+function dres(a: Set(?X),r: ?X <-> ?Y): ?X <-> ?Y {
+	postcondition result == {p: ?X*?Y | p in r /\  p[1] in a}
+}
+
+function rres(r: ?X <-> ?Y, b: Set(?Y)): ?X <-> ?Y {
+	postcondition result == {p: ?X*?Y | p in r /\  p[2] in b}
+}
+
+function dsub(a: Set(?X),r: ?X <-> ?Y): ?X <-> ?Y {
+	postcondition result == {p: ?X*?Y | p in r /\  not p[1] in a}
+}
+
+function rsub(r: ?X <-> ?Y, b: Set(?Y)): ?X <-> ?Y {
+	postcondition result == {p: ?X*?Y | p in r /\  not p[2] in b}
+}
+
+function rinv(r: ?X <-> ?Y): ?Y <-> ?X {
+	postcondition result == {p: ?X*?Y | p in r @ maplet(p[2],p[1])}
+}
+
+function rimage(r: ?X <-> ?Y, a: Set(?X)): Set(?Y) {
+	postcondition result == {p: ?X*?Y | p in r /\ p[1] in a @ p[2]}
+}
+
+function override(r: ?X <-> ?Y, s: ?X <-> ?Y): ?X <-> ?Y {
+	postcondition result == union(dsub(dom(s),r),s)
+}
+
+function tr_closure(r: ?X <-> ?X): ?X <-> ?X {
+	postcondition result == Inter({s: ?X <-> ?X | subseteq(r,s) /\ subseteq(relcomp(r,s),s)})
+}
+
+function refl_tr_closure(r: ?X <-> ?X): ?X <-> ?X {
+	postcondition result == union(tr_closure(r),id())
+}
+

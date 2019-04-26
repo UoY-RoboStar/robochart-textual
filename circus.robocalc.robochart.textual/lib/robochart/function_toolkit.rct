@@ -1,0 +1,62 @@
+/********************************************************************************
+ * Copyright (c) 2019 University of York and others
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *   Alvaro Miyazawa - initial definition
+ ********************************************************************************/
+
+package function_toolkit
+
+import relation_toolkit::*
+import set_toolkit::*
+
+function isTotal(f: ?X -> ?Y): boolean {
+	postcondition result iff (forall x:?X @ exists y:?Y @ (|x,y|) in f)
+}
+
+function isInjection(f: ?X -> ?Y): boolean {
+	postcondition result iff (forall p:?X*?Y, q:?X*?Y | p in f /\ q in f @ p[1] == q[1] iff p[2] == q[2])
+}
+
+function isTotalInjection(f: ?X -> ?Y): boolean {
+	postcondition result iff isTotal(f) /\ isInjection(f)
+}
+
+function isSurjection(f: ?X -> ?Y): boolean {
+	postcondition result iff (ran(f) == {y:?Y}) 
+}
+
+function isTotalSurjection(f: ?X -> ?Y): boolean {
+	postcondition result iff isTotal(f) /\ isSurjection(f)
+}
+
+function isBijection(f: ?X -> ?Y): boolean {
+	postcondition result iff isTotalInjection(f) /\ isTotalSurjection(f)
+}
+
+// check this
+function isFinite(s: Set(?X)): boolean {
+	postcondition result iff (exists n: nat, g: nat -> ?X @ isBijection(g) /\ dom(g) == {x:nat| x >= 1 /\ x <= n} /\ ran(g) == s)  
+}
+
+function isFiniteFunction(f: ?X -> ?Y): boolean {
+	postcondition result iff isFinite(f)
+}
+
+function isFiniteInjection(f: ?X -> ?Y): boolean {
+	postcondition result iff isFinite(f) /\ isInjection(f)
+}
+
+function disjoint(f: ?L <-> Set(?X)): boolean {
+	postcondition result iff (forall p:?L*Set(?X), q:?L*Set(?X) | p in f /\ q in f /\ p != q @ inter(p[2],q[2]) == {})
+}
+
+function partitions(f:?L <-> Set(?X), a: Set(?X)): boolean {
+	postcondition result iff (disjoint(f) /\ Union(ran(f)) == a)
+}

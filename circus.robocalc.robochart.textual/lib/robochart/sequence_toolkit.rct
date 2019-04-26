@@ -1,0 +1,124 @@
+/********************************************************************************
+ * Copyright (c) 2019 University of York and others
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *   Alvaro Miyazawa - initial definition
+ ********************************************************************************/
+
+package sequence_toolkit
+
+import function_toolkit::*
+import relation_toolkit::*
+import set_toolkit::*
+
+function range(x:int, y:int): Seq(int) {
+	postcondition result == {i: int | x <= i /\ i <= y}
+}
+
+function iter(n: int, r: ?X <-> ?X): ?X <-> ?X {
+	postcondition result == 
+		if n == 0 
+		then id() 
+		else 
+			if n > 0 
+			then relcomp(r,iter(n-1,r)) 
+			else iter(-n,rinv(r)) 
+			end
+		end
+}
+
+function size(a:Set(?X)): nat {
+	precondition isFinite(a)
+	postcondition result == (the n: nat | (exists f: nat -> ?X | isBijection(f) @ dom(f) == range(1,n) /\ ran(f) == a) @ n)
+}
+
+function hasMin(a:Set(int)): boolean {
+	postcondition result iff (exists m: int | m in a @ (forall n: int | n in a @ m <= n)) 
+}
+
+function hasMax(a:Set(int)): boolean {
+	postcondition result iff (exists m: int | m in a @ (forall n: int | n in a @ m >= n)) 
+}
+
+function min(a:Set(int)): int {
+	precondition hasMin(a) 
+	postcondition result in a /\ (forall n: int | n in a @ result <= n)
+}
+
+function max(a:Set(int)): int {
+	precondition hasMax(a)
+	postcondition result in a /\ (forall n: int | n in a @ result >= n)
+}
+
+function isNonEmpty(s: Seq(?X)): boolean {
+	postcondition result iff size(s) > 0
+}
+
+function isInjectiveSequence(s: Seq(?X)): boolean {
+	postcondition result iff isInjection(s)
+}
+
+function concat(s:Seq(?X), t: Seq(?X)): Seq(?X) {
+	postcondition result == union(s,{n: int | n in dom(t) @ maplet(n + size(s), t[n])})
+}
+
+function reverse(s:Seq(?X)):Seq(?X) {
+	postcondition result == (lambda n: int | n in dom(s) @ s[size(s)-n+1])
+}
+
+function head(s:Seq(?X)):?X {
+	precondition isNonEmpty(s)
+	postcondition s[1]
+}
+
+function last(s:Seq(?X)):?X {
+	precondition isNonEmpty(s)
+	postcondition s[size(s)]
+}
+
+function tail(s:Seq(?X)): Seq(?X) {
+	postcondition result == (lambda n: nat | n in range(1,size(s)-1) @ s[n+1])
+}
+
+function front(s:Seq(?X)): Seq(?X) {
+	postcondition result == dsub({size(s)},s)
+}
+
+function squash(f: int -> ?X): Seq(?X) {
+	precondition isFiniteFunction(f)
+	postcondition result == {p: int*?X | p in f @ maplet(size({i: int | i in dom(f) @ i <= p[1]}),p[2])}
+}
+
+function extract(a: Set(int), s: Seq(?X)): Seq(?X) {
+	postcondition result == squash(dres(a,s))
+}
+
+function filter(s: Seq(?X), a: Set(?X)): Seq(?X) {
+	postcondition result == squash(rres(s,a))
+}
+
+function prefix(s: Seq(?X), t: Seq(?X)): boolean {
+	postcondition result iff subseteq(s,t)
+}
+
+function suffix(s: Seq(?X), t: Seq(?X)): boolean {
+	postcondition result iff (exists u: Seq(?X) @ concat(u,s) == t)
+}
+
+function infix(s: Seq(?X), t: Seq(?X)): boolean {
+	postcondition result iff (exists u: Seq(?X), v: Seq(?X) @ concat(u,concat(s,v)) == t)
+}
+
+function dconcat(s:Seq(Seq(?X))): Seq(?X) {
+	postcondition result == 
+		if size(s) == 0 
+		then <> 
+		else the t: Seq(?X) | concat(head(s),dconcat(tail(s))) == t @ t
+		end 
+}

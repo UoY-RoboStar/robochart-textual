@@ -1,0 +1,54 @@
+/********************************************************************************
+ * Copyright (c) 2019 University of York and others
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *   Alvaro Miyazawa - initial definition
+ ********************************************************************************/
+
+package set_toolkit
+
+function notin(m:?X,s:Set(?X)): boolean {
+	postcondition result iff not m in s
+}
+
+function subseteq(ss:Set(?X),s:Set(?X)): boolean {
+	postcondition result iff (forall x: ?X @ x in s) 
+}
+
+function subset(ss:Set(?X), s: Set(?X)): boolean {
+	postcondition result iff subseteq(ss,s) /\ ss != s
+}
+
+function union(s1:Set(?X), s2:Set(?X)): Set(?X) {
+	postcondition result == {x: ?X | x in s1 \/ x in s2}
+}
+
+function inter(s1:Set(?X), s2:Set(?X)): Set(?X) {
+	postcondition result == {x: ?X | x in s1 /\ x in s2}
+}
+
+function diff(s1:Set(?X), s2:Set(?X)): Set(?X) {
+	postcondition result == {x: ?X | x in s1 /\ not x in s2}
+}
+
+function symetric_diff(s1:Set(?X), s2:Set(?X)): Set(?X) {
+	postcondition result == {x: ?X | not (x in s1 iff x in s2)}
+}
+
+function Union(A:Set(Set(?X))): Set(?X) {
+	postcondition result == {x:?X | exists a: Set(?X) | a in A @ x in a}
+}
+
+function Inter(A:Set(Set(?X))): Set(?X) {
+	postcondition result == {x:?X | forall a: Set(?X) | a in A @ x in a}
+}
+
+
+
+
