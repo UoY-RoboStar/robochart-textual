@@ -111,7 +111,7 @@ import org.eclipse.xtext.EcoreUtil2
 import org.eclipse.xtext.naming.IQualifiedNameProvider
 import org.eclipse.xtext.resource.IEObjectDescription
 import org.eclipse.xtext.resource.IResourceDescriptions
-import org.eclipse.xtext.serializer.impl.Serializer
+import org.eclipse.xtext.serializer.ISerializer
 import org.eclipse.xtext.validation.Check
 import org.eclipse.xtext.validation.CheckType
 
@@ -126,7 +126,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	@Inject protected IQualifiedNameProvider qnp
 	@Inject protected IResourceDescriptions rds;
 	
-	@Inject protected Serializer s;
+	@Inject protected ISerializer s;
 
 	@Inject protected extension PrintingServices
 	
