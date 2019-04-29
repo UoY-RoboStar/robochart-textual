@@ -126,7 +126,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	@Inject protected IQualifiedNameProvider qnp
 	@Inject protected IResourceDescriptions rds;
 	
-	@Inject protected ISerializer s;
+	@Inject ISerializer s;
 
 	@Inject protected extension PrintingServices
 	
