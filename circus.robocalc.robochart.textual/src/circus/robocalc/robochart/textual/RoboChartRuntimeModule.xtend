@@ -17,6 +17,7 @@
 package circus.robocalc.robochart.textual
 
 import circus.robocalc.robochart.textual.scoping.RoboChartImportURIGlobalScopeProvider
+import org.eclipse.xtext.generator.IOutputConfigurationProvider
 import org.eclipse.xtext.naming.IQualifiedNameConverter
 import org.eclipse.xtext.scoping.IGlobalScopeProvider
 
@@ -28,15 +29,15 @@ class RoboChartRuntimeModule extends AbstractRoboChartRuntimeModule {
 //		return RoboChartScopeProvider
 //	}
 //	
-//	def public Class<? extends IOutputConfigurationProvider> bindIOutputConfigurationProvider() {
-//		return ModifiableOutputConfigurationProvider
-//	}
+	def Class<? extends IOutputConfigurationProvider> bindIOutputConfigurationProvider() {
+		return RoboChartOutputConfigurationProvider
+	}
 	
-	def public Class<? extends IQualifiedNameConverter> bindIQualifiedNameConverter() {
+	def Class<? extends IQualifiedNameConverter> bindIQualifiedNameConverter() {
 		return RoboChartQualifiedNameConverter
 	}
 	
-	override public Class<? extends IGlobalScopeProvider> bindIGlobalScopeProvider() {
+	override Class<? extends IGlobalScopeProvider> bindIGlobalScopeProvider() {
     	return RoboChartImportURIGlobalScopeProvider
 	}
 }
