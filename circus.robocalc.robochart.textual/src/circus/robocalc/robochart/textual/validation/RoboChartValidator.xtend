@@ -16,6 +16,104 @@
  */
 package circus.robocalc.robochart.textual.validation
 
+import circus.robocalc.robochart.And
+import circus.robocalc.robochart.ArrayExp
+import circus.robocalc.robochart.AsExp
+import circus.robocalc.robochart.Assignment
+import circus.robocalc.robochart.BooleanExp
+import circus.robocalc.robochart.Call
+import circus.robocalc.robochart.CallExp
+import circus.robocalc.robochart.Cat
+import circus.robocalc.robochart.ClockExp
+import circus.robocalc.robochart.Connection
+import circus.robocalc.robochart.Context
+import circus.robocalc.robochart.Controller
+import circus.robocalc.robochart.ControllerDef
+import circus.robocalc.robochart.ControllerRef
+import circus.robocalc.robochart.Different
+import circus.robocalc.robochart.Div
+import circus.robocalc.robochart.DuringAction
+import circus.robocalc.robochart.EntryAction
+import circus.robocalc.robochart.Enumeration
+import circus.robocalc.robochart.Equals
+import circus.robocalc.robochart.Event
+import circus.robocalc.robochart.ExitAction
+import circus.robocalc.robochart.Expression
+import circus.robocalc.robochart.Final
+import circus.robocalc.robochart.FunctionType
+import circus.robocalc.robochart.GreaterOrEqual
+import circus.robocalc.robochart.GreaterThan
+import circus.robocalc.robochart.IfStmt
+import circus.robocalc.robochart.Iff
+import circus.robocalc.robochart.Implies
+import circus.robocalc.robochart.Initial
+import circus.robocalc.robochart.IntegerExp
+import circus.robocalc.robochart.Interface
+import circus.robocalc.robochart.Junction
+import circus.robocalc.robochart.LessOrEqual
+import circus.robocalc.robochart.LessThan
+import circus.robocalc.robochart.Literal
+import circus.robocalc.robochart.Minus
+import circus.robocalc.robochart.Modulus
+import circus.robocalc.robochart.Mult
+import circus.robocalc.robochart.NamedElement
+import circus.robocalc.robochart.Neg
+import circus.robocalc.robochart.NodeContainer
+import circus.robocalc.robochart.Not
+import circus.robocalc.robochart.OperationDef
+import circus.robocalc.robochart.OperationRef
+import circus.robocalc.robochart.OperationSig
+import circus.robocalc.robochart.Or
+import circus.robocalc.robochart.ParExp
+import circus.robocalc.robochart.Parameter
+import circus.robocalc.robochart.Plus
+import circus.robocalc.robochart.PrimitiveType
+import circus.robocalc.robochart.ProductType
+import circus.robocalc.robochart.RCModule
+import circus.robocalc.robochart.RecordType
+import circus.robocalc.robochart.RefExp
+import circus.robocalc.robochart.RoboChartFactory
+import circus.robocalc.robochart.RoboChartPackage
+import circus.robocalc.robochart.RoboticPlatform
+import circus.robocalc.robochart.RoboticPlatformDef
+import circus.robocalc.robochart.RoboticPlatformRef
+import circus.robocalc.robochart.SendEvent
+import circus.robocalc.robochart.SeqExp
+import circus.robocalc.robochart.SeqStatement
+import circus.robocalc.robochart.SetExp
+import circus.robocalc.robochart.StateClockExp
+import circus.robocalc.robochart.StateMachine
+import circus.robocalc.robochart.StateMachineBody
+import circus.robocalc.robochart.StateMachineDef
+import circus.robocalc.robochart.StateMachineRef
+import circus.robocalc.robochart.Statement
+import circus.robocalc.robochart.Transition
+import circus.robocalc.robochart.Trigger
+import circus.robocalc.robochart.TriggerType
+import circus.robocalc.robochart.TupleExp
+import circus.robocalc.robochart.Type
+import circus.robocalc.robochart.TypeRef
+import circus.robocalc.robochart.VarRef
+import circus.robocalc.robochart.Variable
+import circus.robocalc.robochart.VariableModifier
+import circus.robocalc.robochart.Wait
+import circus.robocalc.robochart.textual.RoboCalcTypeProvider
+import com.google.inject.Inject
+import java.util.HashMap
+import java.util.HashSet
+import java.util.LinkedList
+import java.util.List
+import java.util.Map
+import java.util.Set
+import org.eclipse.emf.ecore.EObject
+import org.eclipse.emf.ecore.resource.Resource
+import org.eclipse.xtext.EcoreUtil2
+import org.eclipse.xtext.naming.IQualifiedNameProvider
+import org.eclipse.xtext.resource.IEObjectDescription
+import org.eclipse.xtext.resource.IResourceDescriptions
+import org.eclipse.xtext.serializer.impl.Serializer
+import org.eclipse.xtext.validation.Check
+import org.eclipse.xtext.validation.CheckType
 
 /**
  * This class contains custom validation rules. 
@@ -24,7 +122,19 @@ package circus.robocalc.robochart.textual.validation
  */
 class RoboChartValidator extends AbstractRoboChartValidator {
 	
-//	public static val INVALID_NAME = 'invalidName'
+	@Inject protected extension RoboCalcTypeProvider
+	@Inject protected IQualifiedNameProvider qnp
+	@Inject protected IResourceDescriptions rds;
+	
+	@Inject protected Serializer s;
+
+	@Inject protected extension PrintingServices
+	
+	def print(EObject o) {
+		return s.serialize(o)
+	}
+
+//  public static val INVALID_NAME = 'invalidName'
 //
 //	@Check
 //	def checkGreetingStartsWithCapital(Greeting greeting) {
@@ -34,5 +144,1828 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 //					INVALID_NAME)
 //		}
 //	}
+	public static val NO_INITIAL = 'noInitialJunction'
+	public static val COMPOSITE_STATE_WITHOUT_STATE = 'compositeStateWithoutState'
+	public static val ASSIGNEMENT_TO_PARAMETER = 'assignmentToParameter'
+
+	@Check
+	def stateWFC(circus.robocalc.robochart.State s) {
+		if (s.actions.filter[a|a instanceof EntryAction].size > 1) {
+			error(
+				'State ' + s.name + ' should have at most one entry action',
+				RoboChartPackage.Literals.STATE__ACTIONS,
+				'stateWithMultipleEntryActions'
+			)
+		}
+		if (s.actions.filter[a|a instanceof DuringAction].size > 1) {
+			error(
+				'State ' + s.name + ' should have at most one during action',
+				RoboChartPackage.Literals.STATE__ACTIONS,
+				'stateWithMultipleDuringActions'
+			)
+		}
+		if (s.actions.filter[a|a instanceof ExitAction].size > 1) {
+			error(
+				'State ' + s.name + ' should have at most one entry action',
+				RoboChartPackage.Literals.STATE__ACTIONS,
+				'stateWithMultipleExitActions'
+			)
+		}
+
+	}
+
+	@Check
+	def initialWFC(Initial i) {
+		val parent = i.eContainer as NodeContainer
+		if (parent.transitions.filter[t|t.target === i].size > 0) {
+			error(
+				'A transition cannot target the initial junction in ' + parent.name,
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'noTransitionToInitial'
+			)
+		}
+		if (parent.transitions.filter[t|t.source === i].size === 0) {
+			error(
+				'A initial junction in ' + parent.name + ' should have at least one outgoing transition',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'transitionFromJunction'
+			)
+		}
+	}
+
+	@Check
+	def finalWFC(Final f) {
+		val parent = f.eContainer as NodeContainer
+		if (parent.transitions.filter[t|t.source === f].size > 0) {
+			error(
+				'A transition cannot start in the final state in ' + parent.name,
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'noTransitionFromFinal'
+			)
+		}
+		if (parent.transitions.filter[t|t.target === f].size === 0) {
+			error(
+				'The final state in ' + parent.name + ' should have at least one incoming transition',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'transitionToJunction'
+			)
+		}
+	}
+
+	@Check
+	def trasitionWFC(Transition t) {
+		if (t.trigger !== null && t.trigger.event !== null) {
+			if (!(t.source instanceof circus.robocalc.robochart.State)) {
+				error(
+					'A transition containing a trigger must start on a state',
+					RoboChartPackage.Literals.TRANSITION__TRIGGER,
+					'transitionWithTriggerFromNonState'
+				)
+			}
+		}
+		val srcParent = t.source.eContainer
+		val tgtParent = t.target.eContainer
+		if (srcParent !== tgtParent) {
+			error(
+				'The source and target of a transition should belong to the same container',
+				RoboChartPackage.Literals.TRANSITION__SOURCE,
+				'noInterlevelTransition'
+			)
+		}
+	}
+
+	@Check
+	def junctionWFC1(Junction j) {
+		if(j instanceof Initial) return
+		val parent = j.eContainer as NodeContainer
+		if (parent.transitions.filter[t|t.source === j].size === 0) {
+			error(
+				'A junction in ' + parent.name + ' should have at least one outgoing transition',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'transitionFromJunction'
+			)
+		}
+	}
+
+	@Check
+	def junctionWFC2(Junction j) {
+		if(j instanceof Initial) return
+		val parent = j.eContainer as NodeContainer
+		if (parent.transitions.filter[t|t.target === j].size === 0) {
+			error(
+				'A junction in ' + parent.name + ' should have at least one incoming transition',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'transitionToJunction'
+			)
+		}
+	}
+
+	@Check
+	def checkAssignmentToParameter(VarRef a) {
+		if (a.name instanceof Parameter)
+			error(
+				'It is not possible to assign to a parameter',
+				RoboChartPackage.Literals.VAR_REF__NAME,
+				ASSIGNEMENT_TO_PARAMETER
+			)
+	}
+
+	@Check
+	def checkStateMachineHasInitialState(NodeContainer stm) {
+		if (stm.nodes.size > 0 && stm.nodes.filter(Initial).size !== 1)
+			warning(
+				'A state machine or composite state should have exactly one initial state',
+				RoboChartPackage.Literals.NODE_CONTAINER__NODES,
+				NO_INITIAL
+			)
+	}
+
+	@Check
+	def checkStateInitialState(circus.robocalc.robochart.State s) {
+		if (s.nodes.size > 0 && s.nodes.filter(Initial).size !== 1)
+			warning(
+				'A state machine or composite state should have exactly one initial state',
+				RoboChartPackage.Literals.NODE_CONTAINER__NODES,
+				NO_INITIAL
+			)
+	}
+
+	@Check
+	def checkNodeContainerHasStates(NodeContainer c) {
+		if (c.nodes.size > 0 && c.nodes.filter [ n |
+			n instanceof circus.robocalc.robochart.State || n instanceof Final
+		].size === 0)
+			error(
+				'A composite state should have at least one state or final state',
+				RoboChartPackage.Literals.NODE_CONTAINER__NODES,
+				COMPOSITE_STATE_WITHOUT_STATE
+			)
+	}
+
+	def stmDef(StateMachine s) {
+		if (s instanceof StateMachineRef)
+			return s.ref
+		else
+			s as StateMachineDef
+	}
+
+//	@Check
+//	def checkRequiredVariables(ControllerDef c) {
+//		val rvars = new HashSet<String>() 
+//		for (s: c.machines) {
+//			for (i: s.stmDef.RInterfaces) {
+//				for (vl: i.variableList) {
+//					rvars.addAll(vl.vars.map[v|v.name])
+//				}				
+//			}
+//		}
+//		val prvars = new HashSet<String>()
+//		for (i: c.RInterfaces) {
+//			for (vl: i.variableList) {
+//				prvars.addAll(vl.vars.map[v|v.name])
+//			}				
+//		}
+//		for (i: c.PInterfaces) {
+//			for (vl: i.variableList) {
+//				prvars.addAll(vl.vars.map[v|v.name])
+//			}
+//		}
+//		for (vl: c.variableList) {
+//			prvars.addAll(vl.vars.map[v|v.name])
+//		}
+//		if (!(prvars.containsAll(rvars))) {
+//			var s = ""
+//			var started = false
+//			for (v: rvars) {
+//				if (!prvars.contains(v)) {
+//					if (started) s += ', '
+//					s +=  v
+//					started = true
+//				}
+//			}
+//			error('A controller should either provide or require all variables required by its state machines. Missing variables: '+s,
+//			RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+//			"unsatisfiedRequiredVariables")
+//		}
+//	}
+	def ctrlDef(Controller c) {
+		if (c instanceof ControllerRef)
+			return c.ref
+		else
+			c as ControllerDef
+	}
+
+	def rpDef(RoboticPlatform rp) {
+		if (rp instanceof RoboticPlatformRef)
+			return rp.ref
+		else
+			rp as RoboticPlatformDef
+	}
+
+	// need to update checkRequiredVariables with type comparison when type checker is working
+//
+//	@Check
+//	def checkRequiredVariables(Module m) {
+//		val rvars = new HashSet<String>() 
+//		for (c: m.nodes) {
+//			if (c instanceof Controller) {
+//				for (i: c.ctrlDef.RInterfaces) {
+//					for (vl: i.variableList) {
+//						rvars.addAll(vl.vars.map[v|v.name])
+//					}				
+//				}	
+//			}
+//		}
+//		val pvars = new HashSet<String>()
+//		for (r: m.nodes) {
+//			if (r instanceof RoboticPlatform) {
+//				for (i: r.rpDef.PInterfaces) {
+//					for (vl: i.variableList) {
+//						pvars.addAll(vl.vars.map[v|v.name])
+//					}				
+//				}
+//				for (vl: r.rpDef.variableList) {
+//					pvars.addAll(vl.vars.map[v|v.name])
+//				}
+//			}
+//		}
+//		if (!(pvars.containsAll(rvars))) {
+//			var s = ""
+//			var started = false
+//			for (v: rvars) {
+//				if (!pvars.contains(v)) {
+//					if (started) s += ', '
+//					s +=  v
+//					started = true
+//				}
+//			}
+//			error('Module '+m.name+' does not provide all variables required by its controllers. Missing variables: '+s,
+//			RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+//			"unsatisfiedRequiredVariables")
+//		}
+//	}
+	public static val NO_INITIAL_TRANSITION = 'noInitialTransition'
+
+	@Check
+	def initialStateLeadsToState(Initial i) {
+		val c = i.eContainer
+		val ts = c.eContents.filter(Transition).toList.filter [ t |
+			t.source === i
+		/* && (t.target instanceof circus.robocalc.robochart.State)*/
+		].toList
+		if (ts.size !== 1)
+			warning(
+				'An initial junction must have a single outgoing transition',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				NO_INITIAL_TRANSITION
+			)
+	}
+
+	def inputEvents(StateMachineBody stm) {
+		val input = new HashSet<Event>()
+		stm.eAllContents.filter(Transition).forEach [ t |
+			if(t.trigger !== null && t.trigger.event !== null) input.add(t.trigger.event)
+		]
+		input
+	}
+
+	def outputEvents(StateMachineBody stm) {
+		val output = new HashSet<Event>()
+		stm.eAllContents.filter(SendEvent).forEach[s|output.add(s.trigger?.event)]
+		output
+	}
+
+	def StateMachineBody getStateMachineBody(EObject o) {
+		if (o instanceof StateMachineBody) {
+			return o as StateMachineBody
+		} else {
+			return o.eContainer.stateMachineBody
+		}
+	}
+
+	/*@Check
+	 * def checkInputEvents(Transition t) {
+	 * 	if (t.trigger !== null && t.trigger.event !== null && outputEvents(t.stateMachineBody).contains(t.trigger.event))
+	 * 		error('Input event being used as output event',
+	 * 			RoboChartPackage.Literals.TRANSITION__TRIGGER,
+	 * 			'InputAsOutput'
+	 * 		)
+	 * }
+	 * 
+	 * @Check
+	 * def checkOutputEvents(SendEvent t) {
+	 * 	if (t.trigger !== null && t.trigger.event !== null && inputEvents(t.stateMachineBody).contains(t.trigger?.event))
+	 * 		error('Output event being used as input event',
+	 * 			RoboChartPackage.Literals.SEND_EVENT__TRIGGER,
+	 * 			'OutputAsInput'
+	 * 		)
+	 * }
+	 */
+	@Check
+	def datatypeHasFields(RecordType d) {
+		if (d.fields.size === 0) {
+			error(
+				'A datatype should have at least one field',
+				RoboChartPackage.Literals.RECORD_TYPE__FIELDS,
+				'DataTypeWithoutFields'
+			)
+		}
+	}
+
+	@Check
+	def tupleHasNatIndex(ArrayExp d) {
+		val type = d.value.typeFor
+		if (type instanceof ProductType) {
+			if (d.parameters.size !== 1) {
+				error('Tuple access should contain exactly one index', RoboChartPackage.Literals.ARRAY_EXP__PARAMETERS,
+					'TupleIndexNotSingle')
+			}
+			if (d.parameters.size > 0 && !(d.parameters.get(0) instanceof IntegerExp)) {
+				error('Tuple access index should be numeral', RoboChartPackage.Literals.ARRAY_EXP__PARAMETERS,
+					'TupleIndexNonNumeral')
+			}
+			if (d.parameters.size > 0 && d.parameters.get(0) instanceof IntegerExp) {
+				val i = (d.parameters.get(0) as IntegerExp).value
+				if (i < 1 || i > (type as ProductType).types.size) {
+					error('Tuple access index out of range (' + i + ' out of ' + (type as ProductType).types.size + ")",
+						RoboChartPackage.Literals.ARRAY_EXP__PARAMETERS, 'TupleIndexOutOfBounds')
+				}
+			}
+		} else if (type instanceof TypeRef && (type as TypeRef).ref instanceof Literal) {
+			val c = (type as TypeRef).ref as Literal
+			if (c.types.size > 0 && d.parameters.size > 0 && !(d.parameters.get(0) instanceof IntegerExp)) {
+				error('Constant access index should be numeral', RoboChartPackage.Literals.ARRAY_EXP__PARAMETERS,
+					'ConstantIndexNonNumeral')
+			}
+			if (d.parameters.size > 0 && d.parameters.get(0) instanceof IntegerExp) {
+				val i = (d.parameters.get(0) as IntegerExp).value
+				if (i < 1 || i > c.types.size) {
+					error('Constant access index out of range (' + i + ' out of ' + c.types.size + ")",
+						RoboChartPackage.Literals.ARRAY_EXP__PARAMETERS, 'ConstantIndexOutOfBounds')
+				}
+			}
+		}
+	}
+
+	@Check
+	def roboticPlatformWFC(RoboticPlatformDef rp) {
+		for (i : rp.RInterfaces) {
+			error(
+				rp.name + ' is a robotic platform and cannot require interface ' + i.name,
+				RoboChartPackage.Literals.CONTEXT__RINTERFACES,
+				'RPNoRequiredInterfaces'
+			)
+		}
+		for (Interface i : rp.interfaces) {
+			if (i.variableList.size > 0)
+				error(
+					getName(rp) + ' cannot define interface ' + i.name + ' because it contains variables',
+					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					'UsedInterfaceWithOnlyEvents'
+				)
+		}
+	}
+
+	@Check
+	def operationDefWFC(OperationDef o) {
+		for (i : o.PInterfaces) {
+			error(
+				o.name + ' is an operation definition and cannot provide interface ' + i.name,
+				RoboChartPackage.Literals.CONTEXT__PINTERFACES,
+				'OperationNoProvidedInterfaces'
+			)
+		}
+	}
+
+	@Check
+	def requiredWFC(Context c) {
+		for (i : c.RInterfaces) {
+			if (i.events.size > 0) {
+				error(
+					getName(c) + ' cannot require interface ' + i.name + ' because it contains events',
+					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					'RequiredInterfaceWithEvents'
+				)
+			}
+		}
+
+		for (i : c.PInterfaces) {
+			if (i.events.size > 0) {
+				error(
+					getName(c) + ' cannot provide interface ' + i.name + ' because it contains events',
+					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					'RequiredInterfaceWithEvents'
+				)
+			}
+		}
+
+		for (Interface i : c.interfaces) {
+			if (i.operations.size > 0)
+				error(
+					getName(c) + ' cannot define interface ' + i.name + ' because it contains operations',
+					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					'UsedInterfaceWithOnlyEvents'
+				)
+		}
+	}
+
+	@Check
+	def controllerWFC(ControllerDef c) {
+		for (i : c.PInterfaces) {
+			error(
+				c.name + ' is a controller and cannot provide interface ' + i.name,
+				RoboChartPackage.Literals.CONTEXT__PINTERFACES,
+				'ControllerNoRequiredInterfaces'
+			)
+		}
+
+		if (c.machines.filter[m|m instanceof StateMachine].size === 0) {
+			error(
+				c.name + ' must have at least one state machine',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'ControllerHasOneOrMoreStateMachines'
+			)
+		}
+
+		if (c.operations.filter[o|!(o instanceof OperationDef) && !(o instanceof OperationRef)].size > 0) {
+			error(
+				getName(c) + ' cannot declare operations outside interfaces',
+				RoboChartPackage.Literals.BASIC_CONTEXT__OPERATIONS,
+				'NoOpsOutsideInterfacesInController'
+			)
+		}
+
+		val pVars = getPVars(c)
+		val pOps = getPOps(c)
+		for (s : c.machines) {
+			val rVars = getRVars(s)
+			if (!pVars.containsAll(rVars)) {
+				var vs = ""
+				var started = false
+				for (v : rVars) {
+					if (!pVars.contains(v)) {
+						if(started) vs += ', '
+						vs += v.name
+						started = true
+					}
+				}
+				error(
+					c.name + ' does not provide all variables required by ' + getName(s) + ' (missing variables: ' +
+						vs + ')',
+					RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+					'ControllerProvidesAllVars'
+				)
+			}
+			val rOps = getROps(s)
+			if (!pOps.containsAll(rOps)) {
+				error(
+					c.name + ' does not provide all operations required by ' + getName(s),
+					RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+					'ControllerProvidesAllOps'
+				)
+			}
+		}
+	}
+
+	@Check
+	def stmWFC(StateMachineDef c) {
+		for (i : c.PInterfaces) {
+			error(
+				c.name + ' is a state machine and cannot provided interface ' + i.name,
+				RoboChartPackage.Literals.CONTEXT__PINTERFACES,
+				'ControllerNoRequiredInterfaces'
+			)
+		}
+	}
+
+	def List<Variable> getPVars(EObject o) {
+		if (o instanceof RoboticPlatformDef) {
+			val pVars = new LinkedList<Variable>()
+			o.variableList.forEach[l|pVars.addAll(l.vars)]
+			o.PInterfaces.forEach [ i |
+				i.variableList.forEach [ l |
+					pVars.addAll(l.vars)
+				]
+			]
+			return pVars
+		} else if (o instanceof RoboticPlatformRef) {
+			return getPVars(o.ref)
+		} else if (o instanceof ControllerDef) {
+			val pVars = new LinkedList<Variable>()
+			o.variableList.forEach[l|pVars.addAll(l.vars)]
+			o.RInterfaces.forEach [ i |
+				i.variableList.forEach[l|pVars.addAll(l.vars)]
+			]
+			// any controller required variable is provided to the state machines
+			return pVars
+		} else if (o instanceof ControllerRef) {
+			return getPVars(o.ref)
+		} else if (o instanceof StateMachineDef) {
+			val pVars = new LinkedList<Variable>()
+			o.variableList.forEach[l|pVars.addAll(l.vars)]
+			o.RInterfaces.forEach [ i |
+				i.variableList.forEach[l|pVars.addAll(l.vars)]
+			]
+			return pVars
+		} else if (o instanceof StateMachineRef) {
+			return getPVars(o.ref)
+		}
+	}
+
+	def List<OperationSig> getPOps(EObject o) {
+		if (o instanceof RoboticPlatformDef) {
+			val pOps = new LinkedList<OperationSig>()
+			pOps.addAll(o.operations)
+			o.PInterfaces.forEach[i|pOps.addAll(i.operations)]
+			return pOps
+		} else if (o instanceof RoboticPlatformRef) {
+			return getPOps(o.ref)
+		} else if (o instanceof ControllerDef) {
+			val pOps = new LinkedList<OperationSig>()
+
+			// TODO: review this case as it involves operation definitions
+			o.LOperations.filter[m|m instanceof OperationDef || m instanceof OperationRef].forEach [ m |
+				if(m instanceof OperationRef) pOps.add(m.ref) else pOps.add(m as OperationSig)
+			]
+			// any controller required operation is provided to the state machines
+			o.RInterfaces.forEach[i|pOps.addAll(i.operations)]
+			// any operation defined inside a controller, is provided to the state machines
+			return pOps
+		} else if (o instanceof ControllerRef) {
+			return getPOps(o.ref)
+		} else if (o instanceof StateMachineDef) {
+			// any state machine required operation is provided to the state machine behaviours
+			val pOps = new LinkedList<OperationSig>()
+			o.RInterfaces.forEach[i|pOps.addAll(i.operations)]
+			return pOps
+		} else if (o instanceof StateMachineRef) {
+			return getPOps(o.ref)
+		}
+	}
+
+	def List<Variable> getRVars(EObject o) {
+		if (o instanceof RoboticPlatform) {
+			throw new RuntimeException(
+				"Robotic Platform do not require variables, therefore this call should not happen")
+		} else if (o instanceof ControllerDef) {
+			val rVars = new LinkedList<Variable>()
+			o.RInterfaces.forEach [ i |
+				i.variableList.forEach[l|rVars.addAll(l.vars)]
+			]
+			return rVars
+		} else if (o instanceof ControllerRef) {
+			return getRVars(o.ref)
+		} else if (o instanceof StateMachineDef) {
+			val rVars = new LinkedList<Variable>()
+			o.RInterfaces.forEach [ i |
+				i.variableList.forEach[l|rVars.addAll(l.vars)]
+			]
+			return rVars
+		} else if (o instanceof StateMachineRef) {
+			return getRVars(o.ref)
+		}
+	}
+
+	def List<OperationSig> getROps(EObject o) {
+		if (o instanceof RoboticPlatform) {
+			throw new RuntimeException(
+				"Robotic Platform do not require variables, therefore this call should not happen")
+		} else if (o instanceof ControllerDef) {
+			val rOps = new LinkedList<OperationSig>()
+			o.RInterfaces.forEach[i|rOps.addAll(i.operations)]
+			return rOps
+		} else if (o instanceof ControllerRef) {
+			return getROps(o.ref)
+		} else if (o instanceof StateMachineDef) {
+			val rOps = new LinkedList<OperationSig>()
+			o.RInterfaces.forEach[i|rOps.addAll(i.operations)]
+			return rOps
+		} else if (o instanceof StateMachineRef) {
+			return getROps(o.ref)
+		}
+	}
+
+	@Check
+	def moduleWFC(RCModule m) {
+		val rp = m.nodes.findFirst[n|n instanceof RoboticPlatform]
+		if (rp === null || m.nodes.filter[n|n instanceof RoboticPlatform].size > 1) {
+			error(
+				m.name + ' must have exactly one robotic platform',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'NotUniqueRoboticPlatform'
+			)
+		}
+
+		if (m.nodes.filter[x|x instanceof Controller].size === 0) {
+			error(
+				m.name + ' must have at least one controller',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'ModuleHasOneOrMoreControllers'
+			)
+		}
+
+		// need to update checkRequiredVariables with type comparison when type checker is working
+		val pVars = getPVars(rp)
+		val pOps = getPOps(rp)
+		for (c : m.nodes.filter[n|n instanceof Controller]) {
+			val rVars = getRVars(c)
+			if (!pVars.containsAll(rVars)) {
+				var s = ""
+				var started = false
+				for (v : rVars) {
+					if (!pVars.contains(v)) {
+						if(started) s += ', '
+						s += v.name
+						started = true
+					}
+				}
+				error(
+					m.name + ' does not provide all variables required by ' + getName(c) + '(missing variables: ' + s +
+						')',
+					RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+					'ModuleProvidesAllVars'
+				)
+			}
+			val rOps = getROps(c)
+			if (!pOps.containsAll(rOps)) {
+				error(
+					m.name + ' does not provide all operations required by ' + getName(c),
+					RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+					'ControllerProvidesAllOps'
+				)
+			}
+		}
+	}
+
+	@Check
+	def interfaceEitherEventsOrOthers(Interface d) {
+		if (d.events.size > 0 && (d.operations.size > 0 || d.variableList.size > 0)) {
+			error(
+				'A interface should have either events, or operations and variables',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'InterfaceEitherEventsOrOthers'
+			)
+		}
+	}
+
+	def getName(EObject o) {
+		if (o instanceof ControllerDef)
+			o.name
+		else if (o instanceof ControllerRef)
+			o.ref.name
+		else if (o instanceof StateMachineDef)
+			o.name
+		else if (o instanceof StateMachineRef)
+			o.ref.name
+		else if(o instanceof NamedElement) o.name else null
+	}
+
+	@Check
+	def interfaceEitherEventsOrOthers(Context d) {
+		for (Interface i : d.RInterfaces) {
+			if (i.events.size > 0)
+				error(
+					getName(d) + ' cannot require interface ' + i.name + ' because it contains events',
+					RoboChartPackage.Literals.CONTEXT__RINTERFACES,
+					'RequiredInterfaceWithoutEvents'
+				)
+		}
+		for (Interface i : d.PInterfaces) {
+			if (i.events.size > 0)
+				error(
+					getName(d) + ' cannot provide interface ' + i.name + ' because it contains events',
+					RoboChartPackage.Literals.CONTEXT__PINTERFACES,
+					'ProvidedInterfaceWithoutEvents'
+				)
+		}
+	}
+
+	// Timed validation rules
+//	@Check
+//	def clockExpComparedWithWithCall(CallExp e) {
+//		if (e.eContainer !== null) {
+//			
+//		}
+//	}
+//	
+//	def boolean isClockExp(Expression e) {
+//		switch e {
+//			Plus: 	e.left.isClockExp && e.right.isClockExp
+//			Minus: 	e.left.isClockExp && e.right.isClockExp
+//			Mult: 	e.left.isClockExp && e.right.isClockExp
+//			Div:	 e.left.isClockExp && e.right.isClockExp
+//			Modulus : e.left.isClockExp && e.right.isClockExp
+//		}
+//	}
+//	
+//	def dispatch boolean isParentComparisonWithClock(Expression e) {
+//		switch e {
+//			GreaterThan : e.left.isClockExp || e.right.isClockExp
+//			default : e.eContainer.isParentComparisonWithClock
+//		}
+//	}
+//	
+//	def dispatch boolean isParentComparisonWithClock(EObject e) {
+//		return false
+//	}
+	def boolean isConstantExp(Expression e) {
+		switch e {
+			RefExp: {
+				var n = e.ref
+				return switch n {
+					Variable: {
+						(n.modifier === VariableModifier.CONST)
+					}
+					Literal:
+						true
+					default:
+						false
+				}
+			}
+			IntegerExp:
+				true
+			CallExp: {
+				var isConstant = true
+				for (arg : e.args) {
+					isConstant = isConstant && arg.isConstantExp
+				}
+				return isConstant
+			}
+			Plus:
+				e.left.isConstantExp && e.right.isConstantExp
+			Minus:
+				e.left.isConstantExp && e.right.isConstantExp
+			Mult:
+				e.left.isConstantExp && e.right.isConstantExp
+			Div:
+				e.left.isConstantExp && e.right.isConstantExp
+			Modulus:
+				e.left.isConstantExp && e.right.isConstantExp
+			ArrayExp:
+				e.value.isConstantExp
+			ParExp:
+				e.exp.isConstantExp
+			default:
+				false
+		}
+	}
+
+	@Check
+	def clockExpOnlySupportedComparator(StateClockExp e) {
+		checkClockExpWellTyped(e)
+		clockExpOnlySupported(e)
+	}
+
+	@Check
+	def clockExpOnlySupportedComparator(ClockExp e) {
+		checkClockExpWellTyped(e)
+		clockExpOnlySupported(e)
+	}
+
+	def checkClockExpWellTyped(Expression e) {
+		val nat = getNatType(e)
+		val real = getRealType(e)
+
+		if (e.eContainer !== null && e.eContainer instanceof Expression) {
+			var parent = e.eContainer
+			var isTypeCompatible = false
+
+			switch parent {
+				LessThan: {
+					isTypeCompatible = if (parent.left === e) {
+						var compareType = parent.right.typeFor
+						if (compareType !== null)
+							typeCompatible(compareType, nat) || typeCompatible(compareType, real)
+						else
+							false
+					} else {
+						var compareType = parent.left.typeFor
+						if (compareType !== null)
+							typeCompatible(compareType, nat) || typeCompatible(compareType, real)
+						else
+							false
+					}
+				}
+				LessOrEqual: {
+					isTypeCompatible = if (parent.left === e) {
+						var compareType = parent.right.typeFor
+						if (compareType !== null)
+							typeCompatible(compareType, nat) || typeCompatible(compareType, real)
+						else
+							false
+					} else {
+						var compareType = parent.left.typeFor
+						if (compareType !== null)
+							typeCompatible(compareType, nat) || typeCompatible(compareType, real)
+						else
+							false
+					}
+				}
+				GreaterThan: {
+					isTypeCompatible = if (parent.left === e) {
+						var compareType = parent.right.typeFor
+						if (compareType !== null)
+							typeCompatible(compareType, nat) || typeCompatible(compareType, real)
+						else
+							false
+					} else {
+						var compareType = parent.left.typeFor
+						if (compareType !== null)
+							typeCompatible(compareType, nat) || typeCompatible(compareType, real)
+						else
+							false
+					}
+				}
+				GreaterOrEqual: {
+					isTypeCompatible = if (parent.left === e) {
+						var compareType = parent.right.typeFor
+						if (compareType !== null)
+							typeCompatible(compareType, nat) || typeCompatible(compareType, real)
+						else
+							false
+					} else {
+						var compareType = parent.left.typeFor
+						if (compareType !== null)
+							typeCompatible(compareType, nat) || typeCompatible(compareType, real)
+						else
+							false
+					}
+				}
+				Equals: {
+					isTypeCompatible = if (parent.left === e) {
+						var compareType = parent.right.typeFor
+						if (compareType !== null)
+							typeCompatible(compareType, nat) || typeCompatible(compareType, real)
+						else
+							false
+					} else {
+						var compareType = parent.left.typeFor
+						if (compareType !== null)
+							typeCompatible(compareType, nat) || typeCompatible(compareType, real)
+						else
+							false
+					}
+				}
+				default:
+					error('Unsupported use of timed expression', null, 'TimeExpressionNotSupported', 'timed')
+			}
+			if (!isTypeCompatible) {
+				error('Timed expression being compared should be of type nat or real', null, 'TimeExpressionTypeError',
+					'timed')
+			}
+		} else {
+			error('Unsupported use of timed expression', null, 'TimeExpressionNotSupported', 'timed')
+		}
+	}
+
+	def clockExpOnlySupported(Expression e) {
+		if (e.eContainer !== null && e.eContainer instanceof Expression) {
+			var parent = e.eContainer
+			var isconstant = false
+			switch parent {
+				LessThan: {
+					isconstant = if (parent.left === e) {
+						parent.right.isConstantExp
+					} else {
+						parent.left.isConstantExp
+					}
+				}
+				LessOrEqual: {
+					isconstant = if (parent.left === e) {
+						parent.right.isConstantExp
+					} else {
+						parent.left.isConstantExp
+					}
+				}
+				GreaterThan: {
+					isconstant = if (parent.left === e) {
+						parent.right.isConstantExp
+					} else {
+						parent.left.isConstantExp
+					}
+				}
+				GreaterOrEqual: {
+					isconstant = if (parent.left === e) {
+						parent.right.isConstantExp
+					} else {
+						parent.left.isConstantExp
+					}
+				}
+				Equals: {
+					isconstant = if (parent.left === e) {
+						parent.right.isConstantExp
+					} else {
+						parent.left.isConstantExp
+					}
+				}
+				default:
+					error('Unsupported use of timed expression', null, 'TimeExpressionNotSupported', 'timed')
+			}
+			if (!isconstant) {
+				warning('Timed expression is not constant', null, 'TimeExpressionNotConstant', 'timed')
+			}
+		} else {
+			error('Unsupported use of timed expression', null, 'TimeExpressionNotSupported', 'timed')
+		}
+	}
+
+	// Expressions such as 
+	@Check
+	def statementNoTimedExpressions(Expression e) {
+		if (e !== null && (e instanceof ClockExp || e instanceof StateClockExp) && e.expressionInStatement) {
+			error('Timed expression not allowed in action', null)
+		}
+	}
+
+	def dispatch boolean expressionInStatement(Statement s) {
+		return true
+	}
+
+	def dispatch boolean expressionInStatement(EObject obj) {
+		if (obj.eContainer !== null) {
+			return expressionInStatement(obj.eContainer)
+		} else {
+			return false
+		}
+	}
+
+	@Check
+	def rpConnectionAsync(Connection c) {
+		// if either end of the connection is a robotic platform,
+		// the connections is asynchronous, but it should not be
+		// marked as such
+		if (c.to instanceof RoboticPlatform || c.from instanceof RoboticPlatform) {
+			val rp = if(c.to instanceof RoboticPlatform) c.to else c.from
+			val msg = 'The connection between event ' + c.efrom.name + ' on ' + getName(c.from) + ' and ' + c.eto.name +
+				' on ' + getName(rp) + '  must be asynchronous'
+			if (!c.async) {
+				error(msg, RoboChartPackage.Literals.CONNECTION__ASYNC, 'RPConnectionAsync')
+			}
+		}
+		if ((c.from instanceof StateMachine && c.to instanceof StateMachine) || (c.from instanceof Controller &&
+			c.to instanceof Controller)) {
+			if (c.eto.isBroadcast || c.efrom.isBroadcast) {
+				error('A connection of broadcast events should be a relay between different constructs',
+					RoboChartPackage.Literals.CONNECTION__EFROM, 'RPConnectionBroadcasstNotRelay')
+			}
+		}
+		if (c.efrom.broadcast !== c.eto.broadcast) {
+			error(
+				'Connected events must be both broadcast, or both non-broadcast events',
+				RoboChartPackage.Literals.CONNECTION__EFROM,
+				'RPConnectionBroadcast'
+			)
+		}
+		if (c.efrom.type !== null && c.eto.type !== null && !typeCompatible(c.efrom.type, c.eto.type)) {
+			val msg = 'The events ' + c.efrom.name + ' on ' + getName(c.from) + ' and ' + c.eto.name + ' on ' +
+				getName(c.to) + ' have incompatible types'
+			error(msg, RoboChartPackage.Literals.CONNECTION__EFROM, 'RPConnectionIncompatibleType')
+		} else if (c.efrom.type === null && c.eto.type !== null) {
+			val msg = 'The events ' + c.efrom.name + ' on ' + getName(c.from) + ' and ' + c.eto.name + ' on ' +
+				getName(c.to) + ' have incompatible types'
+			error(msg, RoboChartPackage.Literals.CONNECTION__EFROM, 'RPConnectionIncompatibleType')
+		} else if (c.efrom.type !== null && c.eto.type === null) {
+			val msg = 'The events ' + c.efrom.name + ' on ' + getName(c.from) + ' and ' + c.eto.name + ' on ' +
+				getName(c.to) + ' have incompatible types'
+			error(msg, RoboChartPackage.Literals.CONNECTION__EFROM, 'RPConnectionIncompatibleType')
+		}
+	}
+
+	@Check(CheckType.FAST)
+	def checkUniqueness(NamedElement o) {
+		val project = o.eResource.URI.segment(1)
+		val c = new LinkedList<IEObjectDescription>()
+		val qn = qnp.getFullyQualifiedName(o)
+		rds.allResourceDescriptions.filter[rd|rd.URI.segment(1) === project].forEach [ rd |
+			c.addAll(rd.getExportedObjects(o.eClass, qn, false).toList)
+		]
+		val s = c.size
+		if (s > 1) {
+			warning(
+				qn.toString("::") + ' is not unique',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'UniqueQualifiedName'
+			)
+		}
+	}
+
+	@Check
+	def variableInitWellTyped(Variable v) {
+		if (v.initial !== null) {
+			val t1 = v.initial.typeFor
+			val t2 = v.type
+			if (!typeCompatible(t1, t2)) {
+				val parent = if (v.eContainer.eContainer instanceof NamedElement)
+						(v.eContainer.eContainer as NamedElement).
+							name
+					else
+						null
+				val msg = '''Variable «v.name» «(if(parent !== null) 'in ' + parent else '')» expects type «v.type.printType», but «IF t1 === null»expression cannot be typed.«ELSE»expression has type «t1.printType»«ENDIF»'''
+
+				error(
+					msg,
+					RoboChartPackage.Literals.VARIABLE__INITIAL,
+					'VarInitType'
+				)
+			}
+		}
+	}
+
+//	def dispatch String print(Assignable a) {
+//		switch (a) {
+//			VarRef:
+//				return a.name.name
+//			VarSelection:
+//				return (a.receiver.print + "." + a.member.name)
+//			ArrayAssignable: {
+//				var s = a.value.print + "["
+//				if (a.parameters.size > 0) {
+//					s += a.parameters.get(0).print
+//					for (var i = 1; i < a.parameters.size; i++) {
+//						s += ", " + a.parameters.get(i).print
+//					}
+//				}
+//				s += "]"
+//				return s
+//			}
+//		}
+//	}
+	@Check
+	def assignmentWellTyped(Assignment a) {
+		val t2 = a.left.typeFor
+		val t1 = a.right.typeFor
+		if (!typeCompatible(t1, t2)) { // && t1 !==	null) { I had to remove this otherwise an badly typed expression would not yield an error
+			val msg = '''Variable «a.left.print» expects type «a.left.typeFor.printType», but «IF t1 === null»expression cannot be typed.«ELSE»expression has type «t1.printType»«ENDIF» '''
+			error(
+				msg,
+				RoboChartPackage.Literals.ASSIGNMENT__LEFT,
+				'AssignmentTypeError'
+			)
+		}
+	}
+
+	@Check
+	def ifStmtWellTyped(IfStmt ifstmt) {
+		val bool = getBooleanType(ifstmt)
+		val tcond = ifstmt.expression.typeFor
+		if (!typeCompatible(tcond, bool)) {
+			val msg = 'Condition of if statement should have type boolean, but ' +
+				if(tcond === null) 'actual type could not be computed' else 'actual type is ' + tcond.printType
+			error(
+				msg,
+				RoboChartPackage.Literals.IF_STMT__EXPRESSION,
+				'IfStmtTypeError'
+			)
+		}
+	}
+
+	@Check
+	def waitWellTyped(Wait w) {
+		val integer = getIntType(w)
+		val setInt = RoboChartFactory.eINSTANCE.createSetType
+		setInt.domain = EcoreUtil2.copy(integer)
+		val t = w.duration.typeFor
+		if (!typeCompatible(t, integer) && !typeCompatible(t, setInt)) {
+			error(
+				'Parameter of wait should be an integer or a set of integers',
+				RoboChartPackage.Literals.WAIT__DURATION,
+				'WaitTypeError'
+			)
+		}
+	}
+
+	@Check
+	def callWellTyped(Call c) {
+		val op = c.operation
+		val opSig = if(op instanceof OperationRef) op.ref as OperationSig else op as OperationSig
+		if (opSig.parameters.size !== c.args.size) {
+			error(
+				'Incorrect number of parameters in operation call',
+				RoboChartPackage.Literals.CALL__ARGS,
+				'OperationWrongNumberofParameters'
+			)
+		} else {
+			for (var i = 0; i < opSig.parameters.size; i++) {
+				val argtype = c.args.get(i).typeFor
+				if (!typeCompatible(argtype, opSig.parameters.get(i).type)) {
+					error(
+						'Parameter ' + i + ' of the operation ' + opSig.name + ' expects type ' +
+							opSig.parameters.get(i).type.printType + ', but argument has type ' + argtype.printType,
+						RoboChartPackage.Literals.CALL__ARGS,
+						'CallArgumentTypeError'
+					)
+				}
+			}
+		}
+	}
+
+	@Check
+	def sendEventWFC(SendEvent s) {
+		if (s.trigger.time !== null) {
+			error('A send action cannot have a time associated with it', RoboChartPackage.Literals.SEND_EVENT__TRIGGER,
+				'NoTimeInSendEvent');
+		}
+		if (s.trigger.reset !== null && s.trigger.reset.length > 0) {
+			error('A send action cannot have a reset associated with it', RoboChartPackage.Literals.SEND_EVENT__TRIGGER,
+				'NoResetInSendEvent');
+		}
+		if (s.trigger._type === TriggerType.EMPTY) {
+			error('A send action cannot have an empty trigger', RoboChartPackage.Literals.SEND_EVENT__TRIGGER,
+				'NoEmptyTriggerInSendEvent');
+		}
+	}
+
+	@Check
+	def triggerWellTyped(Trigger t) {
+		if ((t._type === TriggerType.INPUT || t._type === TriggerType.OUTPUT || t._type === TriggerType.SYNC) &&
+			t.event.type === null) {
+			error(
+				'An input, output or sync trigger must refer to an typed event. See ' + t.event.name,
+				RoboChartPackage.Literals.TRIGGER__EVENT,
+				'TypedEventRequired'
+			)
+		}
+		if ((t._type === TriggerType.SIMPLE) && t.event.type !== null) {
+			error(
+				'A simple trigger must refer to an untyped event. See ' + t.event.name,
+				RoboChartPackage.Literals.TRIGGER__EVENT,
+				'UntypedEventRequired'
+			)
+		}
+		if (t._type === TriggerType.INPUT && (t.parameter === null || t.value !== null)) {
+			error(
+				'An input trigger must have a parameter, not a value',
+				RoboChartPackage.Literals.TRIGGER__EVENT,
+				'InputParameterError'
+			)
+		}
+		if (t._type === TriggerType.OUTPUT && (t.parameter !== null || t.value === null)) {
+			error(
+				'An output trigger must have a value, not a parameter',
+				RoboChartPackage.Literals.TRIGGER__EVENT,
+				'OutputParameterError'
+			)
+		}
+		if (t._type === TriggerType.SYNC && (t.parameter !== null || t.value === null)) {
+			error(
+				'An synchronisation trigger must have a value, not a parameter',
+				RoboChartPackage.Literals.TRIGGER__EVENT,
+				'SyncParameterError'
+			)
+		}
+
+		if (t._type === TriggerType.INPUT) {
+			val t1 = t.parameter.type
+			val t2 = t.event.type
+			if (!typeCompatible(t1, t2)) {
+				error(
+					'Event ' + t.event.name + ' expects type ' + t2.printType + ', but input parameter has type ' +
+						t1.printType,
+					RoboChartPackage.Literals.TRIGGER__PARAMETER,
+					'InputTriggerTypeError'
+				)
+			}
+		} else if (t._type === TriggerType.OUTPUT) {
+			val t1 = t.value.typeFor
+			val t2 = t.event.type
+			if (!typeCompatible(t1, t2)) {
+				error(
+					'Event ' + t.event.name + ' expects type ' + t2.printType + ', but output value has type ' +
+						t1.printType,
+					RoboChartPackage.Literals.TRIGGER__VALUE,
+					'OutputTriggerTypeError'
+				)
+			}
+		} else if (t._type === TriggerType.SYNC) {
+			val t1 = t.value.typeFor
+			val t2 = t.event.type
+			if (!typeCompatible(t1, t2)) {
+				error(
+					'Event ' + t.event.name + ' expects type ' + t2.printType +
+						', but synchronisation value has type ' + t1.printType,
+					RoboChartPackage.Literals.TRIGGER__VALUE,
+					'SyncTriggerTypeError'
+				)
+			}
+		} else if (t._type === TriggerType.SIMPLE) {
+			if (t.event.type !== null) {
+				error(
+					'Event ' + t.event.name + ' expects a value of type ' + t.event.type.printType,
+					RoboChartPackage.Literals.TRIGGER__EVENT,
+					'SimpleTriggerTypeError'
+				)
+			}
+		}
+	}
+
+	@Check
+	def transitionWellTyped(Transition t) {
+		val bool = getBooleanType(t)
+		val tcond = t.condition?.typeFor
+		if (t.condition !== null && !typeCompatible(tcond, bool)) {
+			val msg = 'Transition condition should have type boolean, but ' + (if (tcond === null)
+				'actual type could not be computed'
+			else
+				'actual type is ' + tcond.printType)
+			error(
+				msg,
+				RoboChartPackage.Literals.TRANSITION__CONDITION,
+				'TransitionConditionTypeError'
+			)
+		}
+	}
+
+	@Check
+	def constantWellTyped(RefExp e) {
+		if (e.ref instanceof Literal && !(e.eContainer instanceof CallExp)) {
+			val c = e.ref as Literal
+			if (c.types.size > 0) {
+				error(
+					"Constant " + c.name + " expects " + c.types.size + " arguments, but call provides none",
+					RoboChartPackage.Literals.REF_EXP__REF,
+					'IncorrectNumberOfArguments'
+				)
+				return
+			}
+		}
+	}
+
+	@Check
+	def constantConstructionWellTyped(CallExp e) {
+		val t = e.function.typeFor
+		if (t instanceof TypeRef && (t as TypeRef).ref instanceof Enumeration) {
+			val variant = (e.function as RefExp).ref as Literal // a variant is interpreted as a constructor function
+			if (variant.types.size === 0) {
+				warning(
+					"Constructor " + variant.name + " has no parameter. Avoid using a call.",
+					RoboChartPackage.Literals.CALL_EXP__FUNCTION,
+					'ParameterlessConstructorWithCall'
+				)
+				return;
+			}
+
+			if (variant.types.size !== e.args.size) // wrong number of parameters
+			{
+				error(
+					"Constructor " + variant.name + " expects " + variant.types.size +
+						" arguments, but call only provides " + e.args.size,
+					RoboChartPackage.Literals.CALL_EXP__FUNCTION,
+					'IncorrectNumberOfArguments'
+				)
+				return;
+			}
+			val res = e.eResource
+			for (var i = 0; i < variant.types.size; i++) {
+				var type = variant.types.get(i)
+
+				type = type.rewriteType(res)
+				var exp_type = e.args.get(i).typeFor
+				exp_type = exp_type.rewriteType(res)
+				if (exp_type === null) // one of the parameters cannot be typed
+				{
+					error(
+						"Parameter " + (i + 1) + " of the constructor " + variant.name + " could not be typed",
+						RoboChartPackage.Literals.CALL_EXP__FUNCTION,
+						'ParameterWithoutType'
+					)
+					return;
+				}
+
+				if (!typeCompatible(exp_type, type)) // one of the parameters has the wrong type
+				{
+					error(
+						"Parameter " + (i + 1) + " of the constructor " + variant.name + " should have type " +
+							type.printType + ", but the received value has type " + exp_type.printType,
+						RoboChartPackage.Literals.CALL_EXP__FUNCTION,
+						'WrontParameterType'
+					)
+					return;
+				}
+			}
+		}
+	}
+
+	@Check
+	def functionCallWellTyped(CallExp e) {
+		if (e.function instanceof Expression) {
+			val t = e.function.typeFor
+			if (t instanceof FunctionType) {
+				if (t.domain instanceof ProductType) {
+					val p = t.domain as ProductType
+					if (p.types.size !== e.args.size) {
+						val f = e.function.print
+						error(
+							"Function " + f + " expects  " + p.types.size + " arguments, but call only provides " +
+								e.args.size,
+							RoboChartPackage.Literals.CALL_EXP__ARGS,
+							'IncorrectNumberOfArguments'
+						)
+						return;
+					}
+					for (var i = 0; i < p.types.size; i++) {
+						val t1 = e.args.get(i).typeFor
+						val t2 = p.types.get(i)
+						if (!typeCompatible(t1, t2) && t1 !== null) {
+							val arg = e.args.get(i).print()
+							val f = e.function.print()
+							error(
+								"Argument " + arg + " of function " + f + " has type " + t1.printType +
+									": expected type is " + t2.printType,
+								RoboChartPackage.Literals.CALL_EXP__ARGS,
+								'UndefinedTypeInArguments'
+							)
+						}
+					}
+				} else if (e.args.size === 1) {
+					val t1 = e.args.get(0).typeFor
+					val t2 = t.domain
+					val u = unify(t2, t1)
+					val aux = instantiate(t2, u)
+					if (!typeCompatible(t1, aux)) {
+						val arg = e.args.get(0).print()
+						val f = e.function.print()
+						error(
+							"Argument " + arg + " of function " + f + " has type " + t1.printType +
+								": expected type is " + aux.printType,
+							RoboChartPackage.Literals.CALL_EXP__ARGS,
+							'UndefinedTypeInArguments'
+						)
+					}
+				}
+			}
+		}
+	}
+
+	@Check
+	def BroadcastConnectionWFC(Connection c) {
+		// only one of the extremities are broadcasts
+		if ((c.efrom.broadcast || c.eto.broadcast) && !(c.efrom.broadcast && c.eto.broadcast)) {
+			if (!c.efrom.broadcast) {
+				error("A broadcast event must be connected to another broadcast event. See " + c.efrom.name + " in " +
+					c.from.name, RoboChartPackage.Literals.CONNECTION__EFROM, "Broadcast2NonBroadcast");
+			} else if (!c.eto.broadcast) {
+				error("A broadcast event must be connected to another broadcast event. See " + c.eto.name + " in " +
+					c.to.name, RoboChartPackage.Literals.CONNECTION__ETO, "Broadcast2NonBroadcast");
+			}
+		}
+	}
+
+	@Check
+	def moduleOneConnPerEvent(RCModule mod) {
+		var eventConn = new HashMap<String, Connection>()
+
+		for (conn : mod.connections) {
+			val from = qnp.getFullyQualifiedName(conn.from)+"."+conn.efrom.name;
+			val to = qnp.getFullyQualifiedName(conn.to)+"."+conn.eto.name;
+			if (eventConn.containsKey(from)) {
+				error(
+					conn.efrom.name + " on " + conn.from.name + " already has a connection",
+					conn,
+					RoboChartPackage.Literals.CONNECTION__EFROM
+				)
+				eventConn.put(from, conn)
+			}
+
+			if (eventConn.containsKey(to)) {
+				error(
+					conn.eto.name + " on " + conn.to.name + " already has a connection",
+					conn,
+					RoboChartPackage.Literals.CONNECTION__ETO
+				)
+			} else {
+				eventConn.put(to, conn)
+			}
+		}
+	}
+
+	@Check
+	def controllerOneConnPerEvent(ControllerDef ctrl) {
+		var eventConn = new HashMap<String, Connection>()
+
+		for (conn : ctrl.connections) {
+			val from = qnp.getFullyQualifiedName(conn.from)+"."+conn.efrom.name;
+			val to = qnp.getFullyQualifiedName(conn.to)+"."+conn.eto.name;
+//			System.out.println(qnp.getFullyQualifiedName(conn.from));
+//			System.out.println(qnp.getFullyQualifiedName(conn.efrom));
+//			System.out.println(from);
+//			System.out.println(to);
+			if (eventConn.containsKey(from)) {
+				error(
+					conn.efrom.name + " on " + conn.from.name + " already has a connection",
+					conn,
+					RoboChartPackage.Literals.CONNECTION__EFROM
+				)
+				eventConn.put(from, conn)
+			}
+
+			if (eventConn.containsKey(to)) {
+				error(
+					conn.eto.name + " on " + conn.to.name + " already has a connection",
+					conn,
+					RoboChartPackage.Literals.CONNECTION__ETO
+				)
+			} else {
+				eventConn.put(to, conn)
+			}
+		}
+	}
+
+	def private HashSet<Event> ncOutputSet(NodeContainer nc) {
+		var outputs = new HashSet<Event>()
+
+		for (t : nc.transitions) {
+			// need to check trigger and action of each transition, as both may contain a communication
+			if (t.trigger !== null && t.trigger.get_type === TriggerType.OUTPUT)
+				outputs.add(t.trigger.event)
+			if (t.trigger !== null && t.trigger.get_type === TriggerType.SYNC)
+				outputs.add(t.trigger.event) // c.x is an output
+				// simple event in trigger is always an input
+			if(t.action !== null) outputs.addAll(statementOutputSet(t.action))
+		}
+
+		for (n : nc.nodes) {
+			// outputs from nested nodes must be added
+			if(n instanceof NodeContainer) outputs.addAll(ncOutputSet(n))
+
+			// actions in a state may also contain a communication
+			if (n instanceof circus.robocalc.robochart.State) {
+				for (a : n.actions) {
+					if(a.action !== null) outputs.addAll(statementOutputSet(a.action))
+				}
+			}
+		}
+
+		outputs
+	}
+
+	def private HashSet<Event> statementOutputSet(Statement s) {
+		var outputs = new HashSet<Event>()
+
+		if (s instanceof SendEvent) {
+			if (s.trigger !== null && s.trigger.get_type === TriggerType.OUTPUT)
+				outputs.add(s.trigger.event)
+			if (s.trigger !== null && s.trigger.get_type === TriggerType.SYNC)
+				outputs.add(s.trigger.event) // c.x is an output
+				// simple event in statement is always an output
+			if (s.trigger !== null && s.trigger.get_type === TriggerType.SIMPLE)
+				outputs.add(s.trigger.event)
+		} else if (s instanceof SeqStatement) {
+			for (s2 : s.statements) {
+				outputs.addAll(statementOutputSet(s2))
+			}
+		} else if (s instanceof IfStmt) {
+			outputs.addAll(statementOutputSet(s.getThen))
+			outputs.addAll(statementOutputSet(s.getElse))
+		}
+
+		outputs
+	}
+
+	def private HashSet<Event> ncInputSet(NodeContainer nc) {
+		var inputs = new HashSet<Event>()
+
+		for (t : nc.transitions) {
+			// need to check trigger and action of each transition, as both may contain a communication
+			if (t.trigger !== null && t.trigger.get_type === TriggerType.INPUT)
+				inputs.add(t.trigger.event)
+			// simple event in trigger is always an input
+			if (t.trigger !== null && t.trigger.get_type === TriggerType.SIMPLE)
+				inputs.add(t.trigger.event)
+			if(t.action !== null) inputs.addAll(statementInputSet(t.action))
+		}
+
+		for (n : nc.nodes) {
+			// inputs from nested nodes must be added
+			if(n instanceof NodeContainer) inputs.addAll(ncInputSet(n))
+
+			// actions in a state may also contain a communication
+			if (n instanceof circus.robocalc.robochart.State) {
+				for (a : n.actions) {
+					if(a.action !== null) inputs.addAll(statementInputSet(a.action))
+
+				}
+			}
+		}
+
+		inputs
+	}
+
+	def private HashSet<Event> statementInputSet(Statement s) {
+		var inputs = new HashSet<Event>()
+
+		if (s instanceof SendEvent) {
+			if (s.trigger !== null && s.trigger.get_type === TriggerType.INPUT)
+				inputs.add(s.trigger.event)
+		} else if (s instanceof SeqStatement) {
+			for (s2 : s.statements) {
+				inputs.addAll(statementInputSet(s2))
+			}
+		} else if (s instanceof IfStmt) {
+			inputs.addAll(statementInputSet(s.getThen))
+			inputs.addAll(statementInputSet(s.getElse))
+		}
+
+		inputs
+	}
+
+	@Check
+	def checkControllerConnections(ControllerDef ctrl) {
+		var index = 0
+		for (c : ctrl.connections) {
+			if(c.isBidirec) return; // if the connection is bidirectional, then there are no restrictions
+			if (c.from !== ctrl && c.from instanceof StateMachine) {
+				if (ncInputSet(stmDef(c.from as StateMachine)).contains(c.efrom)) {
+					error(
+						c.efrom.name + " on " + c.from.name +
+							" is used as the start of a unidirectional connection, but " + c.from.name +
+							" receives input on " + c.efrom.name,
+						c,
+						RoboChartPackage.Literals.CONNECTION__FROM,
+						index
+					)
+
+				}
+			}
+
+			if (c.to !== ctrl && c.to instanceof StateMachine) {
+				if (ncOutputSet(stmDef(c.to as StateMachine)).contains(c.eto)) {
+					error(
+						c.eto.name + " on " + c.to.name + " is used as the end of a unidirectional connection, but " +
+							c.to.name + " outputs on " + c.eto.name,
+						c,
+						RoboChartPackage.Literals.CONNECTION__TO,
+						index
+					)
+				}
+			}
+
+			index++
+		}
+	}
+
+	def Connection getControllerConnection(ControllerDef ctrl, Event e) {
+		for (conn : ctrl.connections) {
+			if((conn.from === ctrl && conn.efrom === e) || (conn.to === ctrl && conn.eto === e)) return conn
+		}
+
+		return null
+	}
+
+	@Check
+	def checkModuleConnections(RCModule mod) {
+		var index = 0
+
+		for (c : mod.connections) {
+			if (c.isBidirec) {
+				// if the connection is bidirectional, controller connections to the events must be bidirectional
+				if (c.to instanceof Controller) {
+					val ctrlConn = getControllerConnection(ctrlDef(c.to as Controller), c.eto)
+					if (ctrlConn !== null && !ctrlConn.isBidirec) {
+						error(
+							c.eto.name + " on " + c.to.name +
+								" is used as the end of a bidirectional connection, but " + c.to.name +
+								" does not contain a bidirectional connection to " + c.eto.name,
+							c,
+							RoboChartPackage.Literals.CONNECTION__TO,
+							index
+						)
+					}
+				}
+
+				if (c.from instanceof Controller) {
+					val ctrlConn = getControllerConnection(ctrlDef(c.from as Controller), c.efrom)
+					if (ctrlConn !== null && !ctrlConn.isBidirec) {
+						error(
+							c.efrom.name + " on " + c.efrom.name +
+								" is used as the end of a bidirectional connection, but " + c.from.name +
+								" does not contain a bidirectional connection to " + c.efrom.name,
+							c,
+							RoboChartPackage.Literals.CONNECTION__FROM,
+							index
+						)
+					}
+				}
+
+			} else {
+				// otherwise, the direction of the controller connections to the event must be consistent
+				if (c.to instanceof Controller) {
+					val ctrlConn = getControllerConnection(ctrlDef(c.to as Controller), c.eto)
+					if (ctrlConn !== null && ctrlConn.isBidirec) {
+						error(
+							c.eto.name + " on " + c.to.name +
+								" is used as the end of a unidirectional connection, but " + c.to.name +
+								" contains a bidirectional connection to " + c.eto.name,
+							c,
+							RoboChartPackage.Literals.CONNECTION__TO,
+							index
+						)
+					} else if (ctrlConn !== null && ctrlConn.from !== ctrlDef(c.to as Controller)) {
+						error(
+							c.eto.name + " on " + c.to.name +
+								" is used as the end of a unidirectional connection, but " + c.to.name +
+								" contains a connection to " + c.eto.name,
+							c,
+							RoboChartPackage.Literals.CONNECTION__TO,
+							index
+						)
+					}
+				}
+
+				if (c.from instanceof Controller) {
+					val ctrlConn = getControllerConnection(ctrlDef(c.from as Controller), c.efrom)
+					if (ctrlConn !== null && ctrlConn.isBidirec) {
+						error(
+							c.efrom.name + " on " + c.from.name +
+								" is used as the start of a unidirectional connection, but " + c.from.name +
+								" contains a bidirectional connection to " + c.efrom.name,
+							c,
+							RoboChartPackage.Literals.CONNECTION__FROM,
+							index
+						)
+					} else if (ctrlConn !== null && ctrlConn.to !== ctrlDef(c.from as Controller)) {
+						error(
+							c.efrom.name + " on " + c.from.name +
+								" is used as the start of a unidirectional connection, but " + c.from.name +
+								" contains a connection from " + c.efrom.name,
+							c,
+							RoboChartPackage.Literals.CONNECTION__FROM,
+							index
+						)
+					}
+				}
+			}
+			index++
+		}
+	}
+
+	@Check
+	def checkTriggersAreInputs(Transition t) {
+		if (t.trigger !== null) {
+			if (t.trigger.get_type === TriggerType.OUTPUT || t.trigger.get_type === TriggerType.SYNC) {
+				error(
+					"Only simple or input communications can be used as transition triggers",
+					RoboChartPackage.Literals.TRANSITION__TRIGGER
+				)
+			}
+		}
+	}
+
+	@Check
+	def checkAsExp(AsExp e) {
+		val etype = e.exp.typeFor
+		val type = e.type
+		if (!typeCompatible(type, etype)) {
+			error(
+				'Value of type ' + etype.printType + ' cannot be cast as ' + type.printType,
+				RoboChartPackage.Literals.AS_EXP__TYPE,
+				'CastTypeError'
+			)
+		}
+	}
 	
+	@Check
+	def timedConditionInUntimedSemantics(Transition t) {
+		if (t.condition !== null && t.condition.isClockExp) {
+			warning(
+				'A transition condition in '+t.stateMachineBody.name+' uses timed expressions. In the untimed semantics, the whole condition is ignored.',
+				RoboChartPackage.Literals.TRANSITION__CONDITION,
+				'timedConditionInUntimedSemantics'
+			)
+		}
+	}
+
+	def dispatch Set<String> constantsRequired(StateMachineDef m) {
+		var set = new HashSet<String>();
+		for (i : m.RInterfaces) {
+			for (l : i.variableList) {
+				if (l.modifier.equals("const")) {
+					for (v : l.vars)
+						set.add(v.name)
+				}
+			}
+		}
+		return set
+
+	}
+	
+	def dispatch Set<String> constantsRequired(OperationDef m) {
+		var set = new HashSet<String>();
+		for (i : m.RInterfaces) {
+			for (l : i.variableList) {
+				if (l.modifier.equals("const")) {
+					for (v : l.vars)
+						set.add(v.name)
+				}
+			}
+		}
+		return set
+
+	}
+
+	def dispatch Set<String> constantsRequired(ControllerDef m) {
+		var set = new HashSet<String>();
+		for (i : m.RInterfaces) {
+			for (l : i.variableList) {
+				if (l.modifier.equals("const")) {
+					for (v : l.vars)
+						set.add(v.name)
+				}
+			}
+		}
+		return set
+	}
+
+	def rewriteType(Type t, Map<String, Type> map) {
+		if (t instanceof TypeRef) {
+			val ref = t.ref
+			if (ref instanceof PrimitiveType && map.containsKey(ref.name)) {
+				val repl = EcoreUtil2.copy(map.get(ref.name));
+				return repl;
+			} else {
+				return t;
+			}
+		} else {
+			val refs = t.eAllContents.filter[x|x instanceof TypeRef && (x as TypeRef).ref instanceof PrimitiveType].
+				toList
+			for (x : refs) {
+				val ref = (x as TypeRef).ref
+				if (ref instanceof PrimitiveType && map.containsKey(ref.name)) {
+					val repl = EcoreUtil2.copy(map.get(ref.name));
+					EcoreUtil2.replace(x, repl);
+				}
+			}
+			return t;
+		}
+	}
+
+	def rewriteType(Type t, Resource res) {
+		val map = new HashMap<String, Type>()
+		// TODO: check exactly what this line is supposed to do. Type instantiations no longer exist. Need to account for named types however
+		//(res.contents.get(0) as RCPackage).typeInstantiations.forEach[x|map.put(x.left.name, x.right)]
+		return rewriteType(t, map)
+	}
+
+	def Boolean isClockExp(Expression e) {
+		if (e instanceof BooleanExp) {
+			return false
+		} else if (e instanceof IntegerExp) {
+			return false
+		} else if (e instanceof RefExp) {
+			return false
+		} else if (e instanceof SetExp) {
+			return false
+		} else if (e instanceof SeqExp) {
+			return false
+		} else if (e instanceof CallExp) {
+			return false
+		} else if (e instanceof GreaterThan) {
+			return e.left.isClockExp || e.right.isClockExp
+		} else if (e instanceof GreaterOrEqual) {
+			return e.left.isClockExp || e.right.isClockExp
+		} else if (e instanceof LessThan) {
+			return e.left.isClockExp || e.right.isClockExp
+		} else if (e instanceof LessOrEqual) {
+			return e.left.isClockExp || e.right.isClockExp
+		} else if (e instanceof Equals) {
+			return e.left.isClockExp || e.right.isClockExp
+		} else if (e instanceof Different) {
+			return e.left.isClockExp || e.right.isClockExp
+		} else if (e instanceof And) {
+			return e.left.isClockExp || e.right.isClockExp
+		} else if (e instanceof Or) {
+			return e.left.isClockExp || e.right.isClockExp
+		} else if (e instanceof Implies) {
+			return e.left.isClockExp || e.right.isClockExp
+		} else if (e instanceof Iff) {
+			return e.left.isClockExp || e.right.isClockExp
+		} else if (e instanceof Not) {
+			return e.exp.isClockExp
+		} else if (e instanceof Plus) {
+			return e.left.isClockExp || e.right.isClockExp
+		} else if (e instanceof Minus) {
+			return e.left.isClockExp || e.right.isClockExp
+		} else if (e instanceof Mult) {
+			return e.left.isClockExp || e.right.isClockExp
+		} else if (e instanceof Div) {
+			return e.left.isClockExp || e.right.isClockExp
+		} else if (e instanceof Modulus) {
+			return e.left.isClockExp || e.right.isClockExp
+		} else if (e instanceof Neg) {
+			return e.exp.isClockExp
+		} else if (e instanceof Cat) {
+			return false
+		} else if (e instanceof ParExp) {
+			return e.exp.isClockExp
+		} else if (e instanceof ClockExp) {
+			return true
+		} else if (e instanceof TupleExp) {
+			return false
+		} else if (e instanceof ArrayExp) {
+			return false
+		} else if (e instanceof StateClockExp) {
+			return true
+		} else {
+			return false
+		}
+	}
 }

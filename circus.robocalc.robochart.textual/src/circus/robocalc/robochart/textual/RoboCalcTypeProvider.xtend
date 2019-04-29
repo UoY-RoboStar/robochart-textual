@@ -146,7 +146,7 @@ class RoboCalcTypeProvider {
 		if (natType === null) {
 			val types = rs.allContents.filter(PrimitiveType).filter[t|t.name.equals("nat")].toList
 			if (types.size === 0) {
-				throw new Error("No nat type found")
+				throw new RuntimeException("No nat type found")
 			}
 			natType = RoboChartFactory.eINSTANCE.createTypeRef()
 			var bool = types.get(0)

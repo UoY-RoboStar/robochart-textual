@@ -17,18 +17,20 @@
 package circus.robocalc.robochart.textual
 
 import circus.robocalc.robochart.textual.scoping.RoboChartImportURIGlobalScopeProvider
+import circus.robocalc.robochart.textual.scoping.RoboChartScopeProvider
 import org.eclipse.xtext.generator.IOutputConfigurationProvider
 import org.eclipse.xtext.naming.IQualifiedNameConverter
 import org.eclipse.xtext.scoping.IGlobalScopeProvider
+import org.eclipse.xtext.scoping.IScopeProvider
 
 /**
  * Use this class to register components to be used at runtime / without the Equinox extension registry.
  */
 class RoboChartRuntimeModule extends AbstractRoboChartRuntimeModule {
-//	override public Class<? extends IScopeProvider> bindIScopeProvider() {
-//		return RoboChartScopeProvider
-//	}
-//	
+	override Class<? extends IScopeProvider> bindIScopeProvider() {
+		return RoboChartScopeProvider
+	}
+	
 	def Class<? extends IOutputConfigurationProvider> bindIOutputConfigurationProvider() {
 		return RoboChartOutputConfigurationProvider
 	}
