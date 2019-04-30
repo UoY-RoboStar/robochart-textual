@@ -559,7 +559,7 @@ Wait:
 ;
 
 Call:
-	{Call} operation=[Operation|QualifiedName] '(' (args+=Expression (',' args+=Expression)*)? ')'
+	{Call} operation=[OperationSig|QualifiedName] '(' (args+=Expression (',' args+=Expression)*)? ')'
 ;
 
 Skip:
