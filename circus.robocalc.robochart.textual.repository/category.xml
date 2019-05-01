@@ -6,6 +6,6 @@
    <feature id="circus.robocalc.robochart.textual.feature.source" version="0.0.0">
       <category name="main.source"/>
    </feature>
-   <category-def name="main" label="RoboChart"/>
-   <category-def name="main.source" label="RoboChart (Sources)"/>
+   <category-def name="main" label="RoboChart Textual Editor"/>
+   <category-def name="main.source" label="RoboChart Textual Editor (Source)"/>
 </site>
