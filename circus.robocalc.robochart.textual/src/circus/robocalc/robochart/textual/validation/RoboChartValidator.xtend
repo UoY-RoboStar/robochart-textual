@@ -647,6 +647,9 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 					pVars.addAll(l.vars)
 				]
 			]
+			o.interfaces.forEach [ i |
+				i.variableList.forEach[l|pVars.addAll(l.vars)]
+			]
 			return pVars
 		} else if (o instanceof RoboticPlatformRef) {
 			return getPVars(o.ref)
@@ -654,6 +657,9 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			val pVars = new LinkedList<Variable>()
 			o.variableList.forEach[l|pVars.addAll(l.vars)]
 			o.RInterfaces.forEach [ i |
+				i.variableList.forEach[l|pVars.addAll(l.vars)]
+			]
+			o.interfaces.forEach [ i |
 				i.variableList.forEach[l|pVars.addAll(l.vars)]
 			]
 			// any controller required variable is provided to the state machines
@@ -664,6 +670,9 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			val pVars = new LinkedList<Variable>()
 			o.variableList.forEach[l|pVars.addAll(l.vars)]
 			o.RInterfaces.forEach [ i |
+				i.variableList.forEach[l|pVars.addAll(l.vars)]
+			]
+			o.interfaces.forEach [ i |
 				i.variableList.forEach[l|pVars.addAll(l.vars)]
 			]
 			return pVars
