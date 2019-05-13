@@ -1847,7 +1847,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		var set = new HashSet<String>();
 		for (i : m.RInterfaces) {
 			for (l : i.variableList) {
-				if (l.modifier.equals("const")) {
+				if (l.modifier == VariableModifier.CONST) {
 					for (v : l.vars)
 						set.add(v.name)
 				}
@@ -1861,7 +1861,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		var set = new HashSet<String>();
 		for (i : m.RInterfaces) {
 			for (l : i.variableList) {
-				if (l.modifier.equals("const")) {
+				if (l.modifier == VariableModifier.CONST) {
 					for (v : l.vars)
 						set.add(v.name)
 				}
@@ -1875,7 +1875,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		var set = new HashSet<String>();
 		for (i : m.RInterfaces) {
 			for (l : i.variableList) {
-				if (l.modifier.equals("const")) {
+				if (l.modifier == VariableModifier.CONST) {
 					for (v : l.vars)
 						set.add(v.name)
 				}

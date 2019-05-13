@@ -62,6 +62,7 @@ import circus.robocalc.robochart.TypeDecl
 import circus.robocalc.robochart.TypeRef
 import circus.robocalc.robochart.VarRef
 import circus.robocalc.robochart.VarSelection
+import circus.robocalc.robochart.VariableModifier
 import circus.robocalc.robochart.textual.RoboCalcTypeProvider
 import com.google.inject.Inject
 import java.util.ArrayList
@@ -872,13 +873,13 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	def dispatch IScope constantsDeclared(RoboticPlatformDef rp, IScope parent) {
 				var s = parent
 				for (l: rp.variableList) {
-					if (l.modifier.equals("const")) {
+					if (l.modifier == VariableModifier.CONST) {
 						s = Scopes.scopeFor(l.vars,s);
 					}
 				}
 				for (i : rp.PInterfaces) {
 					for (l: i.variableList) {
-						if (l.modifier.equals("const")) {
+						if (l.modifier == VariableModifier.CONST) {
 							s = Scopes.scopeFor(l.vars,s);
 						}
 					}
@@ -894,20 +895,20 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	def dispatch IScope constantsDeclared(StateMachineDef m, IScope parent) {
 				var s = parent
 				for (l: m.variableList) {
-					if (l.modifier.equals("const")) {
+					if (l.modifier == VariableModifier.CONST) {
 						s = Scopes.scopeFor(l.vars,s);
 					}
 				}
 				for (i : m.RInterfaces) {
 					for (l: i.variableList) {
-						if (l.modifier.equals("const")) {
+						if (l.modifier == VariableModifier.CONST) {
 							s = Scopes.scopeFor(l.vars,s);
 						}
 					}
 				}
 				for (i : m.interfaces) {
 					for (l: i.variableList) {
-						if (l.modifier.equals("const")) {
+						if (l.modifier == VariableModifier.CONST) {
 							s = Scopes.scopeFor(l.vars,s);
 						}
 					}
@@ -918,20 +919,20 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	def dispatch IScope constantsDeclared(OperationDef m, IScope parent) {
 				var s = parent
 				for (l: m.variableList) {
-					if (l.modifier.equals("const")) {
+					if (l.modifier == VariableModifier.CONST) {
 						s = Scopes.scopeFor(l.vars,s);
 					}
 				}
 				for (i : m.RInterfaces) {
 					for (l: i.variableList) {
-						if (l.modifier.equals("const")) {
+						if (l.modifier == VariableModifier.CONST) {
 							s = Scopes.scopeFor(l.vars,s);
 						}
 					}
 				}
 				for (i : m.interfaces) {
 					for (l: i.variableList) {
-						if (l.modifier.equals("const")) {
+						if (l.modifier == VariableModifier.CONST) {
 							s = Scopes.scopeFor(l.vars,s);
 						}
 					}
@@ -943,20 +944,20 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	def dispatch IScope constantsDeclared(ControllerDef m, IScope parent) {
 				var s = parent
 				for (l: m.variableList) {
-					if (l.modifier.equals("const")) {
+					if (l.modifier == VariableModifier.CONST) {
 						s = Scopes.scopeFor(l.vars,s);
 					}
 				}
 				for (i : m.RInterfaces) {
 					for (l: i.variableList) {
-						if (l.modifier.equals("const")) {
+						if (l.modifier == VariableModifier.CONST) {
 							s = Scopes.scopeFor(l.vars,s);
 						}
 					}
 				}
 				for (i : m.interfaces) {
 					for (l: i.variableList) {
-						if (l.modifier.equals("const")) {
+						if (l.modifier == VariableModifier.CONST) {
 							s = Scopes.scopeFor(l.vars,s);
 						}
 					}
