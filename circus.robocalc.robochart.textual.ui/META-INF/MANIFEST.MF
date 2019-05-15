@@ -23,7 +23,7 @@ Require-Bundle: circus.robocalc.robochart.textual,
  org.eclipse.core.resources,
  org.eclipse.ui.forms
 Import-Package: org.apache.log4j
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Export-Package: circus.robocalc.robochart.textual.ui.internal,
  circus.robocalc.robochart.textual.ui.wizard,
  circus.robocalc.robochart.textual.ui.contentassist,
