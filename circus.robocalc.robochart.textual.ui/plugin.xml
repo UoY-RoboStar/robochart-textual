@@ -431,6 +431,8 @@
 			type="text">
 		</fileTypes>
 	</extension>
+	
+<!--
 	<extension
 		point="org.eclipse.ui.newWizards">
 		<category id="circus.robocalc.robochart.textual.ui.category" name="RoboChart">
@@ -488,4 +490,5 @@
 			<newWizardShortcut id="circus.robocalc.robochart.textual.ui.wizard.RoboChartNewFileWizard"/>
 		</perspectiveExtension>
 	</extension>
+	-->
 </plugin>
