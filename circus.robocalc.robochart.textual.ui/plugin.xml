@@ -502,11 +502,6 @@
              id="robotool.menu"
              label="RoboTool"
              mnemonic="R">
-          <command
-                commandId="circus.robocalc.robochart.generator.csp.commands.sampleCommand"
-                id="circus.robocalc.robochart.generator.csp.menus.sampleCommand"
-                mnemonic="S">
-          </command>
        </menu>
     </menuContribution>
  </extension>
