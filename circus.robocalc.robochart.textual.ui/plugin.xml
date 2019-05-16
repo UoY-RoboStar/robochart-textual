@@ -432,7 +432,6 @@
 		</fileTypes>
 	</extension>
 	
-<!--
 	<extension
 		point="org.eclipse.ui.newWizards">
 		<category id="circus.robocalc.robochart.textual.ui.category" name="RoboChart">
@@ -445,6 +444,13 @@
 			icon="icons/new_RoboChart_proj.gif"
 			project="true">
 		</wizard>
+  <wizard
+        category="circus.robocalc.robochart.textual.ui.category"
+        class="circus.robocalc.robochart.textual.ui.RoboChartExecutableExtensionFactory:org.eclipse.xtext.ui.wizard.template.TemplateNewFileWizard"
+        icon="icons/new_RoboChart_file.png"
+        id="circus.robocalc.robochart.textual.ui.wizard.RoboChartNewFileWizard"
+        name="RoboChart File">
+  </wizard>
 	</extension>
 	<extension
 		point="org.eclipse.xtext.ui.projectTemplate">
@@ -463,18 +469,6 @@
 		</perspectiveExtension>
 	</extension>
 	<extension
-		point="org.eclipse.ui.newWizards">
-		<category id="circus.robocalc.robochart.textual.ui.category" name="RoboChart">
-		</category>
-		<wizard
-			category="circus.robocalc.robochart.textual.ui.category"
-			class="circus.robocalc.robochart.textual.ui.RoboChartExecutableExtensionFactory:org.eclipse.xtext.ui.wizard.template.TemplateNewFileWizard"
-			id="circus.robocalc.robochart.textual.ui.wizard.RoboChartNewFileWizard"
-			name="RoboChart File"
-			icon="icons/new_RoboChart_file.png">
-		</wizard>
-	</extension>
-	<extension
 		point="org.eclipse.xtext.ui.fileTemplate">
 		<fileTemplateProvider
 			class="circus.robocalc.robochart.textual.ui.RoboChartExecutableExtensionFactory:circus.robocalc.robochart.textual.ui.wizard.RoboChartFileTemplateProvider"
@@ -490,5 +484,31 @@
 			<newWizardShortcut id="circus.robocalc.robochart.textual.ui.wizard.RoboChartNewFileWizard"/>
 		</perspectiveExtension>
 	</extension>
-	-->
+ <extension
+       id="robotool.menu"
+       name="RoboTool"
+       point="org.eclipse.ui.menus">
+    <menuContribution
+          allPopups="true"
+          locationURI="popup:org.eclipse.ui.popup.any?after=additions">
+       <menu
+             id="robotool.contextMenu"
+             label="RoboTool">
+       </menu>
+    </menuContribution>
+    <menuContribution
+          locationURI="menu:org.eclipse.ui.main.menu?after=additions">
+       <menu
+             id="robotool.menu"
+             label="RoboTool"
+             mnemonic="R">
+          <command
+                commandId="circus.robocalc.robochart.generator.csp.commands.sampleCommand"
+                id="circus.robocalc.robochart.generator.csp.menus.sampleCommand"
+                mnemonic="S">
+          </command>
+       </menu>
+    </menuContribution>
+ </extension>
+	
 </plugin>
