@@ -67,13 +67,6 @@ Workflow {
 			generator = {
 				generateXtendMain = true
 			}
-			fileWizard = {
-				generate = true
-			}
-			projectWizard = {
-				generate = true
-				pluginProject = false
-			}
 		}
 	}
 }
