@@ -25,7 +25,6 @@ Require-Bundle: circus.robocalc.robochart.textual,
 Import-Package: org.apache.log4j
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Export-Package: circus.robocalc.robochart.textual.ui.internal,
- circus.robocalc.robochart.textual.ui.wizard,
  circus.robocalc.robochart.textual.ui.contentassist,
  circus.robocalc.robochart.textual.ui.quickfix
 Bundle-Activator: circus.robocalc.robochart.textual.ui.internal.TextualActivator
