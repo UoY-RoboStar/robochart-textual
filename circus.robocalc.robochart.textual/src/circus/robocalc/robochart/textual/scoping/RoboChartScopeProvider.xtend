@@ -79,6 +79,7 @@ import org.eclipse.xtext.scoping.Scopes
 import org.eclipse.xtext.scoping.impl.MultimapBasedScope
 
 import static circus.robocalc.robochart.RoboChartPackage.Literals.*
+import org.eclipse.xtext.EcoreUtil2
 
 /**
  * This class contains custom scoping description.
@@ -119,6 +120,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 		 }*/
 		else if (context instanceof RefExp) {
 			if (reference === REF_EXP__REF) {
+				EcoreUtil2.resolveAll(context);
 				/* this can be uncommented if we want constants to be in the global
 				 * scope of the RCPackage the enumeration is declared. the autocomplete
 				 * only offers the qualified name (don't know how to change that yet)
@@ -128,7 +130,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 				 * 		}
 				 * 		val constants = (spec as RCPackage).constants
 				 */
-				val result = delegateGetScope(context, reference)
+				val result = IScope::NULLSCOPE // delegateGetScope(context, reference)
 //				val predicate = new Predicate<IEObjectDescription>() {
 //					override public boolean apply(IEObjectDescription input) {
 //						val b1 = input.EObjectOrProxy instanceof Constant
