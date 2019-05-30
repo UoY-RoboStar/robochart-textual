@@ -64,6 +64,8 @@ import circus.robocalc.robochart.VarRef
 import circus.robocalc.robochart.VarSelection
 import circus.robocalc.robochart.VariableModifier
 import circus.robocalc.robochart.textual.RoboCalcTypeProvider
+import com.google.common.base.Predicate
+import com.google.common.collect.Iterables
 import com.google.inject.Inject
 import java.util.ArrayList
 import java.util.LinkedList
@@ -71,15 +73,16 @@ import java.util.List
 import java.util.Queue
 import org.eclipse.emf.ecore.EObject
 import org.eclipse.emf.ecore.EReference
+import org.eclipse.xtext.EcoreUtil2
 import org.eclipse.xtext.naming.QualifiedName
 import org.eclipse.xtext.resource.EObjectDescription
 import org.eclipse.xtext.resource.IEObjectDescription
 import org.eclipse.xtext.scoping.IScope
 import org.eclipse.xtext.scoping.Scopes
 import org.eclipse.xtext.scoping.impl.MultimapBasedScope
+import org.eclipse.xtext.scoping.impl.SimpleScope
 
 import static circus.robocalc.robochart.RoboChartPackage.Literals.*
-import org.eclipse.xtext.EcoreUtil2
 
 /**
  * This class contains custom scoping description.
@@ -130,7 +133,17 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 				 * 		}
 				 * 		val constants = (spec as RCPackage).constants
 				 */
-				val result = IScope::NULLSCOPE // delegateGetScope(context, reference)
+				 val predicate = new Predicate<IEObjectDescription>() {
+					override boolean apply(IEObjectDescription input) {
+						return input.EObjectOrProxy instanceof Function
+					}
+				}
+				
+				
+				val result = super.getScope(context, reference)//delegateGetScope(context, reference) //IScope::NULLSCOPE //
+				
+				val functions = new SimpleScope(Iterables.filter(result.allElements, predicate), false)
+				 
 //				val predicate = new Predicate<IEObjectDescription>() {
 //					override public boolean apply(IEObjectDescription input) {
 //						val b1 = input.EObjectOrProxy instanceof Constant
@@ -140,7 +153,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 //				}
 //				val objects = Iterables.filter(result.allElements, predicate)
 //				val functions = context.functionsDeclared(result)
-				val variables = context.variablesDeclared(result)//functions)
+				val variables = context.variablesDeclared(functions)
 				val constants = context.variantsDeclared(variables)
 				return constants
 			// return new SimpleScope(variables, objects)
