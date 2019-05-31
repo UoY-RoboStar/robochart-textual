@@ -630,13 +630,13 @@ class RoboCalcTypeProvider {
 			Different: {
 				val bool = getBooleanType(e)
 				val t1 = e.left.typeFor
-				val t2 = e.left.typeFor
+				val t2 = e.right.typeFor
 				if(t1 !== null && t2 !== null) return bool else return null
 			}
 			Equals: {
 				val bool = getBooleanType(e)
 				val t1 = e.left.typeFor
-				val t2 = e.left.typeFor
+				val t2 = e.right.typeFor
 				if(t1 !== null && t2 !== null) return bool else return null
 			}
 			InExp: {
