@@ -17,8 +17,8 @@ SPDX-License-Identifier: EPL-2.0
 	<properties>
 		<xtextVersion>2.17.1</xtextVersion>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>11</maven.compiler.source>
-		<maven.compiler.target>11</maven.compiler.target>
+		<maven.compiler.source>8</maven.compiler.source>
+		<maven.compiler.target>8</maven.compiler.target>
 		<!-- Tycho settings -->
 		<tycho-version>1.3.0</tycho-version>
 		<!-- Define overridable properties for tycho-surefire-plugin -->
