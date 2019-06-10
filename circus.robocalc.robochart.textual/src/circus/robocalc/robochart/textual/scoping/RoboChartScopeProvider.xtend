@@ -133,16 +133,15 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 				 * 		}
 				 * 		val constants = (spec as RCPackage).constants
 				 */
-				 val predicate = new Predicate<IEObjectDescription>() {
+				 val isFunctionOrLiteral = new Predicate<IEObjectDescription>() {
 					override boolean apply(IEObjectDescription input) {
-						return input.EObjectOrProxy instanceof Function
+						return input.EObjectOrProxy instanceof Function || input.EObjectOrProxy instanceof Literal
 					}
-				}
-				
+				}			
 				
 				val result = super.getScope(context, reference)//delegateGetScope(context, reference) //IScope::NULLSCOPE //
 				
-				val functions = new SimpleScope(Iterables.filter(result.allElements, predicate), false)
+				val functionsAndLiterals = new SimpleScope(Iterables.filter(result.allElements, isFunctionOrLiteral), false)
 				 
 //				val predicate = new Predicate<IEObjectDescription>() {
 //					override public boolean apply(IEObjectDescription input) {
@@ -153,7 +152,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 //				}
 //				val objects = Iterables.filter(result.allElements, predicate)
 //				val functions = context.functionsDeclared(result)
-				val variables = context.variablesDeclared(functions)
+				val variables = context.variablesDeclared(functionsAndLiterals)
 				val constants = context.variantsDeclared(variables)
 				return constants
 			// return new SimpleScope(variables, objects)
