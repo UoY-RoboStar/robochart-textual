@@ -18,10 +18,13 @@ package circus.robocalc.robochart.textual
 
 import circus.robocalc.robochart.textual.scoping.RoboChartImportURIGlobalScopeProvider
 import circus.robocalc.robochart.textual.scoping.RoboChartScopeProvider
+import com.google.inject.Binder
 import org.eclipse.xtext.generator.IOutputConfigurationProvider
 import org.eclipse.xtext.naming.IQualifiedNameConverter
 import org.eclipse.xtext.scoping.IGlobalScopeProvider
 import org.eclipse.xtext.scoping.IScopeProvider
+import org.eclipse.xtext.scoping.impl.AbstractDeclarativeScopeProvider
+import circus.robocalc.robochart.textual.scoping.RoboChartImportedNamespaceAwareLocalScopeProvider
 
 /**
  * Use this class to register components to be used at runtime / without the Equinox extension registry.
@@ -41,5 +44,11 @@ class RoboChartRuntimeModule extends AbstractRoboChartRuntimeModule {
 	
 	override Class<? extends IGlobalScopeProvider> bindIGlobalScopeProvider() {
     	return RoboChartImportURIGlobalScopeProvider
+	}
+	
+	override void configureIScopeProviderDelegate(Binder binder) {
+		binder.bind(org.eclipse.xtext.scoping.IScopeProvider)
+		.annotatedWith(com.google.inject.name.Names.named(AbstractDeclarativeScopeProvider.NAMED_DELEGATE))
+		.to(RoboChartImportedNamespaceAwareLocalScopeProvider)
 	}
 }
