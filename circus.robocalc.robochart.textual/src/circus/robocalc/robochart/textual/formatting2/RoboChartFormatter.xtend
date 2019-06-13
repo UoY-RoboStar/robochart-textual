@@ -1,12 +1,12 @@
 /********************************************************************************
  * Copyright (c) 2019 University of York and others
- *
+ * 
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
  * http://www.eclipse.org/legal/epl-2.0.
- *
+ * 
  * SPDX-License-Identifier: EPL-2.0
- *
+ * 
  * Contributors:
  *   Alvaro Miyazawa - initial definition
  ********************************************************************************/
@@ -16,15 +16,20 @@
  */
 package circus.robocalc.robochart.textual.formatting2
 
+import circus.robocalc.robochart.BasicContext
 import circus.robocalc.robochart.Event
+import circus.robocalc.robochart.RCModule
 import circus.robocalc.robochart.RCPackage
+import circus.robocalc.robochart.RoboChartPackage
+import circus.robocalc.robochart.State
+import circus.robocalc.robochart.Transition
 import circus.robocalc.robochart.textual.services.RoboChartGrammarAccess
 import com.google.inject.Inject
 import org.eclipse.xtext.formatting2.AbstractFormatter2
 import org.eclipse.xtext.formatting2.IFormattableDocument
 
 class RoboChartFormatter extends AbstractFormatter2 {
-	
+
 	@Inject extension RoboChartGrammarAccess
 
 	def dispatch void format(RCPackage rCPackage, extension IFormattableDocument document) {
@@ -62,6 +67,61 @@ class RoboChartFormatter extends AbstractFormatter2 {
 		// TODO: format HiddenRegions around keywords, attributes, cross references, etc. 
 		event.type.format
 	}
+
+	def dispatch void format(BasicContext context, extension IFormattableDocument document) {
+		context.regionFor.feature(RoboChartPackage.eINSTANCE.namedElement_Name).surround[oneSpace]
+		interior(
+			context.regionFor.keyword('{').append[newLine],
+			context.regionFor.keyword('}').append[newLines = 2],
+			[indent]
+		)
+		for (_child : context.eContents) {
+			format(_child, document)
+			_child.append[setNewLines(1, 1, 2)]
+		}
+	}
+
+	def dispatch void format(RCModule module, extension IFormattableDocument document) {
+		module.regionFor.feature(RoboChartPackage.eINSTANCE.namedElement_Name).surround[oneSpace]
+		interior(
+			module.regionFor.keyword('{').append[newLine],
+			module.regionFor.keyword('}').append[newLines = 2],
+			[indent]
+		)
+		for (_child : module.eContents) {
+			format(_child, document)
+			_child.append[setNewLines(1, 1, 2)]
+		}
+	}
 	
-	// TODO: implement for RelationType, FunctionType, ProductType, SetType, SeqType, RecordType, Field, Enumeration, Literal, Interface, RoboticPlatformDef, ControllerDef, StateMachineDef, OperationSig, Function, OperationDef, State, Transition, Trigger, EntryAction, DuringAction, ExitAction, VariableList, Variable, Parameter, Forall, Exists, LambdaExp, Iff, Implies, Or, And, Not, BinaryExpression, InExp, DefiniteDescription, Declaration, LetExpression, IfExpression, AsExp, IsExp, Cat, Neg, ArrayExp, CallExp, SeqExp, SetExp, SetRange, SetComp, TupleExp, RangeExp, SeqStatement, TimedStatement, ParStmt, Wait, Call, IfStmt, Assignment, ArrayAssignable, SendEvent, RCModule, Equals, Different, GreaterThan, GreaterOrEqual, LessThan, LessOrEqual, Plus, Minus, Mult, Div, Modulus, Selection, ParExp, VarSelection
+	
+	def dispatch void format(State state, extension IFormattableDocument document) {
+		state.regionFor.feature(RoboChartPackage.eINSTANCE.namedElement_Name).surround[oneSpace]
+		interior(
+			state.regionFor.keyword('{').append[newLine],
+			state.regionFor.keyword('}'),
+			[indent]
+		)
+		for (_child : state.eContents) {
+			format(_child, document)
+			_child.append[setNewLines(1, 1, 2)]
+		}
+	}
+	
+	def dispatch void format(Transition transition, extension IFormattableDocument document) {
+		transition.regionFor.feature(RoboChartPackage.eINSTANCE.namedElement_Name).surround[oneSpace]
+		interior(
+			transition.regionFor.keyword('{').append[newLine],
+			transition.regionFor.keyword('}').append[newLine],
+			[indent]
+		)
+		transition.regionFor.feature(RoboChartPackage.eINSTANCE.transition_Source).append[newLine]
+		transition.regionFor.feature(RoboChartPackage.eINSTANCE.transition_Target).append[newLine]
+		for (_child : transition.eContents) {
+			format(_child, document)
+			_child.append[setNewLines(1, 1, 2)]
+		}
+	}
+
+// TODO: implement for RelationType, FunctionType, ProductType, SetType, SeqType, RecordType, Field, Enumeration, Literal, Interface, RoboticPlatformDef, ControllerDef, StateMachineDef, OperationSig, Function, OperationDef, State, Transition, Trigger, EntryAction, DuringAction, ExitAction, VariableList, Variable, Parameter, Forall, Exists, LambdaExp, Iff, Implies, Or, And, Not, BinaryExpression, InExp, DefiniteDescription, Declaration, LetExpression, IfExpression, AsExp, IsExp, Cat, Neg, ArrayExp, CallExp, SeqExp, SetExp, SetRange, SetComp, TupleExp, RangeExp, SeqStatement, TimedStatement, ParStmt, Wait, Call, IfStmt, Assignment, ArrayAssignable, SendEvent, RCModule, Equals, Different, GreaterThan, GreaterOrEqual, LessThan, LessOrEqual, Plus, Minus, Mult, Div, Modulus, Selection, ParExp, VarSelection
 }
