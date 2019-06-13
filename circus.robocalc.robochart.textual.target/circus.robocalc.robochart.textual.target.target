@@ -35,8 +35,8 @@
 	<repository location="http://download.eclipse.org/modeling/tmf/xtext/updates/orbit/2019-03"/>
 </location>
 	<location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="planner" includeSource="true" type="InstallableUnit">
-		<unit id="circus.robocalc.robochart.feature.feature.group" version="2.0.0.201905131628"/>
-		<unit id="circus.robocalc.robochart.feature.source.feature.group" version="2.0.0.201905131628"/>
+		<unit id="circus.robocalc.robochart.feature.feature.group" version="0.0.0"/>
+		<unit id="circus.robocalc.robochart.feature.source.feature.group" version="0.0.0"/>
 		<repository location="https://www.cs.york.ac.uk/robostar/robotool/metamodel/update"/>
 	</location>
 </locations>
