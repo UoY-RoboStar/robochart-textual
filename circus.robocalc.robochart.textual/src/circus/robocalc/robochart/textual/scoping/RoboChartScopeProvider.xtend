@@ -83,6 +83,11 @@ import org.eclipse.xtext.scoping.impl.MultimapBasedScope
 import org.eclipse.xtext.scoping.impl.SimpleScope
 
 import static circus.robocalc.robochart.RoboChartPackage.Literals.*
+import org.eclipse.xtext.scoping.impl.ImportScope
+import org.eclipse.xtext.naming.IQualifiedNameProvider
+import circus.robocalc.robochart.NamedElement
+import org.eclipse.xtext.scoping.impl.ImportNormalizer
+import java.util.Collections
 
 /**
  * This class contains custom scoping description.
@@ -92,6 +97,7 @@ import static circus.robocalc.robochart.RoboChartPackage.Literals.*
  */
 class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	@Inject extension RoboCalcTypeProvider
+	@Inject protected IQualifiedNameProvider qnp
 
 	override getScope(EObject context, EReference reference) {
 		if (context instanceof Connection) {
@@ -227,7 +233,78 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 					)
 				}
 			}
-		}	
+		/*} else if (context instanceof StateMachineRef) {
+			if (reference === STATE_MACHINE_REF__REF) {
+				EcoreUtil2.resolveAll(context);
+				// get 
+				val result = super.getScope(context, reference)//delegateGetScope(context, reference)
+				printScope("StateMachineRef/delegate ", result)
+				
+				val fullqfn_of_stmref = qnp.getFullyQualifiedName(context)
+//				
+//				val rootElement = EcoreUtil2.getRootContainer(context)
+//              	val candidates = EcoreUtil2.getAllContentsOfType(rootElement, StateMachineDef)
+//              	
+//              	val r = Scopes.scopeFor(candidates, [NamedElement n | return QualifiedName.create(n.name)], result)
+//               	val r1 = context.ref.eventsDeclared(r)
+//               	printScope("StateMachineRef/r1: ", r1)
+//               	val r2 = context.ref.typesDeclared(r1)
+//               	// printScope("StateMachineRef/: ", r2)
+//               	val r3 = context.ref.variablesDeclared(r2)
+//               	// printScope("StateMachineRef/: ", r3)
+//               	val r4 = context.ref.statesDeclared(r3)
+//               	// printScope("StateMachineRef/: ", r4)
+//               	val r5 = context.ref.constantsDeclared(r4)
+//               	// printScope("StateMachineRef/: ", r5)
+//              	
+//				// Scopes.scopeFor(candidates, [StateMachineDef def | return QualifiedName.create("def+" + def.name)], result)
+//
+//				val list = new LinkedList<IEObjectDescription>()
+//				for (eod: r5.allElements) {
+//					val qod = EObjectDescription.create(fullqfn_of_stmref.append(eod.qualifiedName), eod.getEObjectOrProxy)
+//					val od = EObjectDescription.create(eod.getName, eod.getEObjectOrProxy)
+//					list.add(qod)
+//					list.add(od)
+//				}
+//				val r6 = MultimapBasedScope.createScope(result, list, false)
+//				//val r6 = new SimpleScope(result, r5.allElements, false)
+//				printScope("StateMachineRef/r6: ", r6)
+//				return r5
+				// https://www.eclipse.org/forums/index.php/t/1092865/
+				// System.out.println("ref name: " + context.ref.name)
+				if (result instanceof ImportScope){
+					// Module module = EcoreUtil2.getContainerOfType(context, Module.class);
+					val rootElement = EcoreUtil2.getRootContainer(context)
+              		val candidates = EcoreUtil2.getAllContentsOfType(rootElement, StateMachineDef)
+//              		val isTheSTMDef = new Predicate<StateMachineDef>() {
+//						override boolean apply(StateMachineDef input) {
+//							return input.name === context.ref.name
+//						}
+//					}
+//              		val theSTMs = Iterables.filter(candidates, isTheSTMDef)
+//              		
+//					//Module is the qualifying element 
+//					if(theSTMs != null && theSTMs.get(0) != null){
+//						val qname = qnp.getFullyQualifiedName(theSTMs.get(0));				
+//						if(qname != null){
+//							val importNormalizer = new ImportNormalizer(qname, true, true);
+//							val r6 = new ImportScope(Collections.singletonList(importNormalizer), result, null, reference.eClass(), false);
+//							printScope("StateMachineRef/r6: ", r6)
+//							return r6
+//						}
+//					}
+					for(c: candidates) {
+						val qname = qnp.getFullyQualifiedName(c);			
+						if(qname != null){
+							val importNormalizer = new ImportNormalizer(fullqfn_of_stmref.append(qname), true, true);
+							val r6 = new ImportScope(Collections.singletonList(importNormalizer), result, null, reference.eClass(), false);
+							printScope("StateMachineRef/r6: ", r6)
+							return r6
+						}
+					}
+				}
+			}*/
+		}
 		else {
 			val s = delegateGetScope(context, reference)
 			return s
@@ -981,5 +1058,15 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	
 	def dispatch IScope constantsDeclared(EObject o, IScope parent) {
 		parent
+	}
+	
+	def printScope(String str, IScope s) {
+		System.out.println("[Scope] " + str + ":" + s.allElements.map[name].join(", "));
+		System.out.println("[Scope] " + str + ":" + s.toString);
+	}
+	
+	def printContext(EObject context, EReference reference) {
+		// System.out.println("[Context@" + level + "]:" + context);
+		// System.out.println("[Reference]:" + reference);
 	}
 }
