@@ -25,6 +25,8 @@ import org.eclipse.xtext.scoping.IGlobalScopeProvider
 import org.eclipse.xtext.scoping.IScopeProvider
 import org.eclipse.xtext.scoping.impl.AbstractDeclarativeScopeProvider
 import circus.robocalc.robochart.textual.scoping.RoboChartImportedNamespaceAwareLocalScopeProvider
+import org.eclipse.xtext.resource.IDefaultResourceDescriptionStrategy
+import org.eclipse.xtext.naming.IQualifiedNameProvider
 
 /**
  * Use this class to register components to be used at runtime / without the Equinox extension registry.
@@ -50,5 +52,14 @@ class RoboChartRuntimeModule extends AbstractRoboChartRuntimeModule {
 		binder.bind(org.eclipse.xtext.scoping.IScopeProvider)
 		.annotatedWith(com.google.inject.name.Names.named(AbstractDeclarativeScopeProvider.NAMED_DELEGATE))
 		.to(RoboChartImportedNamespaceAwareLocalScopeProvider)
+	}
+	
+	def Class<? extends IDefaultResourceDescriptionStrategy> bindIDefaultResourceDescriptionStrategy() {
+ 		return RoboChartResourceDescriptionsStrategy
+ 	}
+ 	
+ 	// contributed by org.eclipse.xtext.xtext.generator.exporting.QualifiedNamesFragment2
+	override Class<? extends IQualifiedNameProvider> bindIQualifiedNameProvider() {
+		return RoboChartQualifiedNameProvider
 	}
 }
