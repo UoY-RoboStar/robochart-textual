@@ -631,13 +631,14 @@ class RoboCalcTypeProvider {
 				val bool = getBooleanType(e)
 				val t1 = e.left.typeFor
 				val t2 = e.right.typeFor
-				if(t1 !== null && t2 !== null) return bool else return null
+				if(t1 !== null && t2 !== null && typeCompatible(t1,t2)) return bool else return null
 			}
 			Equals: {
+				//val v = EcoreUtil2.resolve(e.left,e.eResource.resourceSet)
 				val bool = getBooleanType(e)
 				val t1 = e.left.typeFor
 				val t2 = e.right.typeFor
-				if(t1 !== null && t2 !== null) return bool else return null
+				if(t1 !== null && t2 !== null && typeCompatible(t1,t2)) return bool else return null
 			}
 			InExp: {
 				val bool = getBooleanType(e)
