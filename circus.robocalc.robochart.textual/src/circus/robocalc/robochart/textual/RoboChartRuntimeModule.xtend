@@ -59,7 +59,7 @@ class RoboChartRuntimeModule extends AbstractRoboChartRuntimeModule {
  	}
  	
  	// contributed by org.eclipse.xtext.xtext.generator.exporting.QualifiedNamesFragment2
-	override Class<? extends IQualifiedNameProvider> bindIQualifiedNameProvider() {
+	/* override Class<? extends IQualifiedNameProvider> bindIQualifiedNameProvider() {
 		return RoboChartQualifiedNameProvider
-	}
+	}*/
 }
