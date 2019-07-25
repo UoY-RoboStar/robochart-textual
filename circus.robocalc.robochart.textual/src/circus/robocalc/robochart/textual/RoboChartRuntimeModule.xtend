@@ -27,6 +27,7 @@ import org.eclipse.xtext.scoping.impl.AbstractDeclarativeScopeProvider
 import circus.robocalc.robochart.textual.scoping.RoboChartImportedNamespaceAwareLocalScopeProvider
 import org.eclipse.xtext.resource.IDefaultResourceDescriptionStrategy
 import org.eclipse.xtext.naming.IQualifiedNameProvider
+import circus.robocalc.robochart.textual.index.RoboChartResourceDescriptionsStrategy
 
 /**
  * Use this class to register components to be used at runtime / without the Equinox extension registry.

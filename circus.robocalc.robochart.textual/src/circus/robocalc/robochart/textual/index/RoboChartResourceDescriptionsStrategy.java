@@ -1,10 +1,11 @@
-package circus.robocalc.robochart.textual;
+package circus.robocalc.robochart.textual.index;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.xtext.EcoreUtil2;
+import org.eclipse.xtext.naming.DefaultDeclarativeQualifiedNameProvider;
 import org.eclipse.xtext.naming.QualifiedName;
 import org.eclipse.xtext.naming.SimpleNameProvider;
 import org.eclipse.xtext.resource.EObjectDescription;
@@ -23,7 +24,7 @@ import circus.robocalc.robochart.StateMachineRef;
 @Singleton
 public class RoboChartResourceDescriptionsStrategy extends DefaultResourceDescriptionStrategy {
 
-	@Inject RoboChartQualifiedNameProvider qualifiedNameProvider;
+	@Inject DefaultDeclarativeQualifiedNameProvider qualifiedNameProvider;
 	@Inject  SimpleNameProvider simNameProvider;
 	
 	@Override
@@ -41,7 +42,7 @@ public class RoboChartResourceDescriptionsStrategy extends DefaultResourceDescri
 			// otherwise, if there is no reference, just leave it as it is because default behaviour will create EObjectDescription for them
 			for(StateMachineRef ref: lstRefs) {
 				// if the StateMachineRef is in a ControllerDef, then the ControllerDef might be referred from multiple places as well.
-				System.out.println("createEObjectDescriptions for StateMachineDef/eContainer: " + ref.eContainer());
+//				System.out.println("createEObjectDescriptions for StateMachineDef/eContainer: " + ref.eContainer());
 				if(ref.eContainer() instanceof ControllerDef) {
 					// 4. get all controller references to this ControllerDef
 					List<ControllerRef> lstCtrlRefs = new ArrayList<ControllerRef>();
@@ -62,7 +63,7 @@ public class RoboChartResourceDescriptionsStrategy extends DefaultResourceDescri
 								for(EObject ele: allElements) {
 									QualifiedName eleName = simNameProvider.getFullyQualifiedName(ele);
 									if(eleName != null) {
-										System.out.println("createEObjectDescriptions for StateMachineDef/Element:" + refname.toString() + "." + eleName.toString());
+//										System.out.println("createEObjectDescriptions for StateMachineDef/Element:" + refname.toString() + "." + eleName.toString());
 										acceptor.accept(EObjectDescription.create(
 												refname.append(eleName), ele));
 									}
@@ -79,7 +80,7 @@ public class RoboChartResourceDescriptionsStrategy extends DefaultResourceDescri
 							for(EObject ele: allElements) {
 								QualifiedName eleName = simNameProvider.getFullyQualifiedName(ele);
 								if(eleName != null) {
-									System.out.println("createEObjectDescriptions for StateMachineDef/Element:" + refname.toString() + "." + eleName.toString());
+//									System.out.println("createEObjectDescriptions for StateMachineDef/Element:" + refname.toString() + "." + eleName.toString());
 									acceptor.accept(EObjectDescription.create(
 											refname.append(eleName), ele));
 								}
@@ -120,11 +121,11 @@ public class RoboChartResourceDescriptionsStrategy extends DefaultResourceDescri
 					acceptor.accept(EObjectDescription.create(
 							refname.append(((ControllerDef)e).getName()), e)); */
 					for(EObject ele: allElements) {
-						System.out.println("ControllerDef/Element:" + ele.toString());
+//						System.out.println("ControllerDef/Element:" + ele.toString());
 						
 						QualifiedName eleName = simNameProvider.getFullyQualifiedName(ele);
 						if(eleName != null) {
-							System.out.println("createEObjectDescriptions for ControllerDef/Element:" + refname.toString() + "." + eleName.toString());
+//							System.out.println("createEObjectDescriptions for ControllerDef/Element:" + refname.toString() + "." + eleName.toString());
 							acceptor.accept(EObjectDescription.create(
 									refname.append(eleName), e));
 						}

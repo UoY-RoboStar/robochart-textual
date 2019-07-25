@@ -1,4 +1,4 @@
-package circus.robocalc.robochart.textual;
+package circus.robocalc.robochart.textual.naming;
 
 import java.util.ArrayList;
 import java.util.List;
