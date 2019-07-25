@@ -64,7 +64,7 @@ public class RoboChartResourceDescriptionsStrategy extends DefaultResourceDescri
 									if(eleName != null) {
 										System.out.println("createEObjectDescriptions for StateMachineDef/Element:" + refname.toString() + "." + eleName.toString());
 										acceptor.accept(EObjectDescription.create(
-												refname.append(eleName), e));
+												refname.append(eleName), ele));
 									}
 								}
 							}
@@ -81,7 +81,7 @@ public class RoboChartResourceDescriptionsStrategy extends DefaultResourceDescri
 								if(eleName != null) {
 									System.out.println("createEObjectDescriptions for StateMachineDef/Element:" + refname.toString() + "." + eleName.toString());
 									acceptor.accept(EObjectDescription.create(
-											refname.append(eleName), e));
+											refname.append(eleName), ele));
 								}
 							}
 						}
