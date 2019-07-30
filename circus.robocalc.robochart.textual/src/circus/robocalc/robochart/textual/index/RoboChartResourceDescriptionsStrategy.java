@@ -18,14 +18,19 @@ import com.google.inject.Singleton;
 
 import circus.robocalc.robochart.ControllerDef;
 import circus.robocalc.robochart.ControllerRef;
+import circus.robocalc.robochart.RoboChartFactory;
+import circus.robocalc.robochart.State;
 import circus.robocalc.robochart.StateMachineDef;
 import circus.robocalc.robochart.StateMachineRef;
+import circus.robocalc.robochart.Type;
+import circus.robocalc.robochart.Variable;
+import circus.robocalc.robochart.VariableModifier;
 
 @Singleton
 public class RoboChartResourceDescriptionsStrategy extends DefaultResourceDescriptionStrategy {
 
 	@Inject DefaultDeclarativeQualifiedNameProvider qualifiedNameProvider;
-	@Inject  SimpleNameProvider simNameProvider;
+	@Inject SimpleNameProvider simNameProvider;
 	
 	@Override
 	public boolean createEObjectDescriptions(EObject e, IAcceptor<IEObjectDescription> acceptor) {
@@ -61,9 +66,12 @@ public class RoboChartResourceDescriptionsStrategy extends DefaultResourceDescri
 //								// the reference to the state machine
 //								acceptor.accept(EObjectDescription.create(refname, e));
 								for(EObject ele: allElements) {
-									QualifiedName eleName = simNameProvider.getFullyQualifiedName(ele);
+									QualifiedName eleName = qualifiedNameProvider.getFullyQualifiedName(ele);
+									// extract the element's partial qualified name by removing its prefix till stmdef
+									// (such as ....stmdef.state0.state1.ele by state0.state1.ele)
 									if(eleName != null) {
-//										System.out.println("createEObjectDescriptions for StateMachineDef/Element:" + refname.toString() + "." + eleName.toString());
+										eleName = removePrefix(eleName, ((StateMachineDef)e).getName());
+										System.out.println("createEObjectDescriptions for StateMachineDef/Element:" + refname.toString() + "+" + eleName.toString());
 										acceptor.accept(EObjectDescription.create(
 												refname.append(eleName), ele));
 									}
@@ -78,9 +86,11 @@ public class RoboChartResourceDescriptionsStrategy extends DefaultResourceDescri
 						if (refname != null) {
 							refname = refname.append(ref.getName());
 							for(EObject ele: allElements) {
-								QualifiedName eleName = simNameProvider.getFullyQualifiedName(ele);
+								QualifiedName eleName = qualifiedNameProvider.getFullyQualifiedName(ele);
+								
 								if(eleName != null) {
-//									System.out.println("createEObjectDescriptions for StateMachineDef/Element:" + refname.toString() + "." + eleName.toString());
+									eleName = removePrefix(eleName, ((StateMachineDef)e).getName());
+									System.out.println("createEObjectDescriptions for StateMachineDef/Element:" + refname.toString() + "+" + eleName.toString());
 									acceptor.accept(EObjectDescription.create(
 											refname.append(eleName), ele));
 								}
@@ -123,9 +133,10 @@ public class RoboChartResourceDescriptionsStrategy extends DefaultResourceDescri
 					for(EObject ele: allElements) {
 //						System.out.println("ControllerDef/Element:" + ele.toString());
 						
-						QualifiedName eleName = simNameProvider.getFullyQualifiedName(ele);
+						QualifiedName eleName = qualifiedNameProvider.getFullyQualifiedName(ele);
 						if(eleName != null) {
-//							System.out.println("createEObjectDescriptions for ControllerDef/Element:" + refname.toString() + "." + eleName.toString());
+							eleName = removePrefix(eleName, ((ControllerDef)e).getName());
+							System.out.println("createEObjectDescriptions for ControllerDef/Element:" + refname.toString() + "." + eleName.toString());
 							acceptor.accept(EObjectDescription.create(
 									refname.append(eleName), e));
 						}
@@ -173,4 +184,52 @@ public class RoboChartResourceDescriptionsStrategy extends DefaultResourceDescri
 		}
 	}
 	
+	/**
+	 * Remove prefixing segments till the given one.
+	 * For instance, removePrefix("a.b.c.d", "b") will return "c.d"
+	 * @param name
+	 * @param endseg
+	 * @return
+	 */
+	private QualifiedName removePrefix(QualifiedName name, String endseg) {
+		List<String> newQualifiedName = new ArrayList<String>();
+		if(name != null) {
+			List<String> lstStr = name.getSegments();
+			if(lstStr.indexOf(endseg) != -1 && lstStr.indexOf(endseg)+1 < lstStr.size()) {
+				newQualifiedName.addAll(lstStr.subList(lstStr.indexOf(endseg)+1, lstStr.size()));
+				return QualifiedName.create(newQualifiedName);
+			} else {
+				return name;
+			}
+		} else {
+			return QualifiedName.create(newQualifiedName);
+		}
+	}
+	
+	private boolean isCompositeState(State s) {
+		if(s != null) {
+			if(!(s.getNodes().isEmpty()) && !(s.getTransitions().isEmpty()) ) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+
+//	private void createAddVariables(EObject s, QualifiedName name, IAcceptor<IEObjectDescription> acceptor) {
+//		if(s instanceof StateMachineDef) {
+//			
+//		} else if(s instanceof State) {
+//			if(isCompositeState((State)s)) {
+//				
+//				System.out.println("createEObjectDescriptions for StateMachineDef/Element:" + name.toString() + "+" + "scpc");
+//				Variable scpc = RoboChartFactory.eINSTANCE.createVariable();
+//				scpc.setName("scpc");
+//				scpc.setModifier(VariableModifier.VAR);
+//				scpc.setType(getIntType(s));
+//				acceptor.accept(EObjectDescription.create(
+//						name.append("scpc"), ));
+//			}
+//		}
+//	}
 }
