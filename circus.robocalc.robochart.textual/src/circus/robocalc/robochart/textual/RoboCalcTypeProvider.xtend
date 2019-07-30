@@ -15,6 +15,7 @@ import circus.robocalc.robochart.DefiniteDescription
 import circus.robocalc.robochart.Different
 import circus.robocalc.robochart.Div
 import circus.robocalc.robochart.ElseExp
+import circus.robocalc.robochart.EnumExp
 import circus.robocalc.robochart.Enumeration
 import circus.robocalc.robochart.Equals
 import circus.robocalc.robochart.Exists
@@ -293,6 +294,12 @@ class RoboCalcTypeProvider {
 			}
 			t.domain = EcoreUtil2.copy(t1)
 		}
+		t
+	}
+	
+	def dispatch Type typeFor(EnumExp e) {
+		val t = RoboChartFactory.eINSTANCE.createTypeRef()
+		t.ref = e.type
 		t
 	}
 

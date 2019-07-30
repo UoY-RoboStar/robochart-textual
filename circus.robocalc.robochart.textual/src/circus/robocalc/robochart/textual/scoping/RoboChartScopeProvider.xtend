@@ -26,6 +26,7 @@ import circus.robocalc.robochart.Context
 import circus.robocalc.robochart.ControllerDef
 import circus.robocalc.robochart.ControllerRef
 import circus.robocalc.robochart.DefiniteDescription
+import circus.robocalc.robochart.EnumExp
 import circus.robocalc.robochart.Enumeration
 import circus.robocalc.robochart.Exists
 import circus.robocalc.robochart.Final
@@ -64,8 +65,6 @@ import circus.robocalc.robochart.VarRef
 import circus.robocalc.robochart.VarSelection
 import circus.robocalc.robochart.VariableModifier
 import circus.robocalc.robochart.textual.RoboCalcTypeProvider
-import com.google.common.base.Predicate
-import com.google.common.collect.Iterables
 import com.google.inject.Inject
 import java.util.ArrayList
 import java.util.LinkedList
@@ -73,7 +72,9 @@ import java.util.List
 import java.util.Queue
 import org.eclipse.emf.ecore.EObject
 import org.eclipse.emf.ecore.EReference
+import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.xtext.EcoreUtil2
+import org.eclipse.xtext.naming.IQualifiedNameProvider
 import org.eclipse.xtext.naming.QualifiedName
 import org.eclipse.xtext.resource.EObjectDescription
 import org.eclipse.xtext.resource.IEObjectDescription
@@ -92,6 +93,7 @@ import static circus.robocalc.robochart.RoboChartPackage.Literals.*
  */
 class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	@Inject extension RoboCalcTypeProvider
+	@Inject IQualifiedNameProvider qnp
 
 	override getScope(EObject context, EReference reference) {
 		if (context instanceof Connection) {
@@ -111,19 +113,16 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 				return s
 			}
 		}
-		/* else if (context instanceof EnumExp) {
-		 * 	if (reference === ENUM_EXP__CONSTANT) {
-		 * 		var spec = context.eContainer
-		 * 		while (!(spec instanceof RCPackage)) {
-		 * 			spec = spec.eContainer
-		 * 		}
-		 * 		val constants = (spec as RCPackage).constants
-		 * 		Scopes::scopeFor(constants)				
-		 * 	}
-		 }*/
+		else if (context instanceof EnumExp) {
+			if (reference === ENUM_EXP__TYPE) {
+				super.getScope(context,reference)
+			} else if (reference === ENUM_EXP__LITERAL) {
+				val enum = EcoreUtil2.resolve(context.type, context.eResource.resourceSet) as Enumeration
+		 		Scopes::scopeFor(enum.literals)				
+		 	}
+		}
 		else if (context instanceof RefExp) {
 			if (reference === REF_EXP__REF) {
-				EcoreUtil2.resolveAll(context);
 				/* this can be uncommented if we want constants to be in the global
 				 * scope of the RCPackage the enumeration is declared. the autocomplete
 				 * only offers the qualified name (don't know how to change that yet)
@@ -133,16 +132,16 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 				 * 		}
 				 * 		val constants = (spec as RCPackage).constants
 				 */
-				 val isFunctionOrLiteral = new Predicate<IEObjectDescription>() {
-					override boolean apply(IEObjectDescription input) {
-						return input.EObjectOrProxy instanceof Function || input.EObjectOrProxy instanceof Literal
-					}
-				}			
-				
-				val result = super.getScope(context, reference)//delegateGetScope(context, reference) //IScope::NULLSCOPE //
-				
-				val functionsAndLiterals = new SimpleScope(Iterables.filter(result.allElements, isFunctionOrLiteral), false)
-				 
+//				 val isFunctionOrLiteral = new Predicate<IEObjectDescription>() {
+//					override boolean apply(IEObjectDescription input) {
+//						return input.EObjectOrProxy instanceof Function || input.EObjectOrProxy instanceof Literal
+//					}
+//				}			
+//				
+				val result = IScope::NULLSCOPE//delegateGetScope(context, reference) //IScope::NULLSCOPE //
+//				
+//				val functionsAndLiterals = new SimpleScope(Iterables.filter(result.allElements, isFunctionOrLiteral), false)
+//				 
 //				val predicate = new Predicate<IEObjectDescription>() {
 //					override public boolean apply(IEObjectDescription input) {
 //						val b1 = input.EObjectOrProxy instanceof Constant
@@ -152,7 +151,21 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 //				}
 //				val objects = Iterables.filter(result.allElements, predicate)
 //				val functions = context.functionsDeclared(result)
-				val variables = context.variablesDeclared(functionsAndLiterals)
+
+//				val functions = new HashSet<Function>();
+//				context.eResource.resourceSet.allContents.filter[t|t instanceof Function].forEach[
+//					f | functions.add(f as Function)
+//				]
+//				val literals = new HashSet<Literal>();
+//				context.eResource.resourceSet.allContents.filter[t|t instanceof Literal].forEach[
+//					f | literals.add(f as Literal)
+//				]
+//				val fscope = Scopes.scopeFor(functions);
+//				val lscope = Scopes.scopeFor(literals, fscope)
+
+				val functions = new SimpleScope(delegateGetScope(context,reference).allElements.filter[e|e.EObjectOrProxy instanceof Function], false)				
+//				val functions = allFunctions(context)
+				val variables = context.variablesDeclared(functions)
 				val constants = context.variantsDeclared(variables)
 				return constants
 			// return new SimpleScope(variables, objects)
@@ -232,6 +245,18 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 			val s = delegateGetScope(context, reference)
 			return s
 		}
+	}
+	
+	def IScope allFunctions(EObject o) {
+		var scope = IScope::NULLSCOPE
+		for (Resource r: o.eResource.resourceSet.resources) {
+			if (r.contents.size > 0 && r.contents.get(0) instanceof RCPackage) {
+				val package = r.contents.get(0) as RCPackage
+				if (package.functions.size > 0)
+					scope = Scopes.scopeFor(package.functions, scope)
+			}
+		}
+		return scope
 	}
 
 // calculates the types as those declared by the RCPackage, or by the RCPackage of the context

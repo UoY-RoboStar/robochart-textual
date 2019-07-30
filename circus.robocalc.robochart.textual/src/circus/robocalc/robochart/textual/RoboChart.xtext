@@ -488,6 +488,7 @@ Atomic returns Expression:
 	{StringExp} value=STRING |
 	{BooleanExp} value=BOOLEAN |
 	RefExp |
+	{EnumExp} type=[Enumeration] '::' literal=[Literal] |
 	RangeAndParExp | // Range expression
 	ClockExp |
 	StateClockExp |
@@ -505,7 +506,7 @@ Atomic returns Expression:
 
 
 RefExp:
-	{RefExp} ref=[NamedExpression|QualifiedName]
+	{RefExp} ref=[NamedExpression]
 ;
 
 StateClockExp:
