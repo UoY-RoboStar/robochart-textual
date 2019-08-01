@@ -597,7 +597,11 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 		val pVars = getPVars(c)
 		val pOps = getPOps(c)
-		for (s : c.machines) {
+		val machinesAndOperations = new HashSet<EObject>();
+		machinesAndOperations.addAll(c.machines)
+		machinesAndOperations.addAll(c.LOperations)
+//		for (s : c.machines) {
+		for (s : machinesAndOperations) {
 			val rVars = getRVars(s)
 			if (!pVars.containsAll(rVars)) {
 				var vs = ""
@@ -732,6 +736,14 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			return rVars
 		} else if (o instanceof StateMachineRef) {
 			return getRVars(o.ref)
+		} else if (o instanceof OperationDef) {
+			val rVars = new LinkedList<Variable>()
+			o.RInterfaces.forEach [ i |
+				i.variableList.forEach[l|rVars.addAll(l.vars)]
+			]
+			return rVars
+		} else if (o instanceof OperationRef) {
+			return getRVars(o.ref)
 		}
 	}
 
@@ -750,6 +762,12 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			o.RInterfaces.forEach[i|rOps.addAll(i.operations)]
 			return rOps
 		} else if (o instanceof StateMachineRef) {
+			return getROps(o.ref)
+		} else if (o instanceof OperationDef) {
+			val rOps = new LinkedList<OperationSig>()
+			o.RInterfaces.forEach[i|rOps.addAll(i.operations)]
+			return rOps
+		} else if (o instanceof OperationRef) {
 			return getROps(o.ref)
 		}
 	}
