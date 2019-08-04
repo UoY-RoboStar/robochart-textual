@@ -15,6 +15,7 @@ import circus.robocalc.robochart.DefiniteDescription
 import circus.robocalc.robochart.Different
 import circus.robocalc.robochart.Div
 import circus.robocalc.robochart.ElseExp
+import circus.robocalc.robochart.EnumExp
 import circus.robocalc.robochart.Enumeration
 import circus.robocalc.robochart.Equals
 import circus.robocalc.robochart.Exists
@@ -293,6 +294,12 @@ class RoboCalcTypeProvider {
 			}
 			t.domain = EcoreUtil2.copy(t1)
 		}
+		t
+	}
+	
+	def dispatch Type typeFor(EnumExp e) {
+		val t = RoboChartFactory.eINSTANCE.createTypeRef()
+		t.ref = e.type
 		t
 	}
 
@@ -631,13 +638,14 @@ class RoboCalcTypeProvider {
 				val bool = getBooleanType(e)
 				val t1 = e.left.typeFor
 				val t2 = e.right.typeFor
-				if(t1 !== null && t2 !== null) return bool else return null
+				if(t1 !== null && t2 !== null && (typeCompatible(t1,t2) || typeCompatible(t2,t1))) return bool else return null
 			}
 			Equals: {
+				//val v = EcoreUtil2.resolve(e.left,e.eResource.resourceSet)
 				val bool = getBooleanType(e)
 				val t1 = e.left.typeFor
 				val t2 = e.right.typeFor
-				if(t1 !== null && t2 !== null) return bool else return null
+				if(t1 !== null && t2 !== null && (typeCompatible(t1,t2) || typeCompatible(t2,t1))) return bool else return null
 			}
 			InExp: {
 				val bool = getBooleanType(e)

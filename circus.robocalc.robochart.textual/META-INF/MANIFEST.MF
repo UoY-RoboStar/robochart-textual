@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Automatic-Module-Name: circus.robocalc.robochart.textual
 Bundle-ManifestVersion: 2
-Bundle-Name: Textual Editor Plugin
+Bundle-Name: RoboChart Textual Editor
 Bundle-Vendor: RoboCalc Project
 Bundle-Version: 2.0.0.qualifier
 Bundle-SymbolicName: circus.robocalc.robochart.textual;singleton:=true
