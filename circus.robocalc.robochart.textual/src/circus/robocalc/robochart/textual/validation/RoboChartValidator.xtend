@@ -148,6 +148,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	public static val COMPOSITE_STATE_WITHOUT_STATE = 'compositeStateWithoutState'
 	public static val ASSIGNEMENT_TO_PARAMETER = 'assignmentToParameter'
 
+	/* S2 */
 	@Check
 	def stateWFC(circus.robocalc.robochart.State s) {
 		if (s.actions.filter[a|a instanceof EntryAction].size > 1) {
@@ -177,6 +178,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	@Check
 	def initialWFC(Initial i) {
 		val parent = i.eContainer as NodeContainer
+		/* IJ1 */
 		if (parent.transitions.filter[t|t.target === i].size > 0) {
 			error(
 				'A transition cannot target the initial junction in ' + parent.name,
@@ -184,9 +186,17 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				'noTransitionToInitial'
 			)
 		}
+		/* IJ2 */
 		if (parent.transitions.filter[t|t.source === i].size === 0) {
 			error(
-				'A initial junction in ' + parent.name + ' should have at least one outgoing transition',
+				'An initial junction in ' + parent.name + ' should have at least one outgoing transition',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'transitionFromJunction'
+			)
+		}
+		if (parent.transitions.filter[t|t.source === i].size > 1) {
+			error(
+				'An initial junction in ' + parent.name + ' should not have more than one outgoing transition',
 				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
 				'transitionFromJunction'
 			)
@@ -196,6 +206,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	@Check
 	def finalWFC(Final f) {
 		val parent = f.eContainer as NodeContainer
+		/* FS1 */
 		if (parent.transitions.filter[t|t.source === f].size > 0) {
 			error(
 				'A transition cannot start in the final state in ' + parent.name,
@@ -203,6 +214,9 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				'noTransitionFromFinal'
 			)
 		}
+		/* @TODO: (FS2/S3) currently missing in RefMan, should FS2 be 
+		 * generalised to all states?
+		 */
 		if (parent.transitions.filter[t|t.target === f].size === 0) {
 			error(
 				'The final state in ' + parent.name + ' should have at least one incoming transition',
@@ -213,7 +227,8 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	}
 
 	@Check
-	def trasitionWFC(Transition t) {
+	def transitionWFC(Transition t) {
+		/* J3 */
 		if (t.trigger !== null && t.trigger.event !== null) {
 			if (!(t.source instanceof circus.robocalc.robochart.State)) {
 				error(
@@ -223,6 +238,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				)
 			}
 		}
+		/* T1 */
 		val srcParent = t.source.eContainer
 		val tgtParent = t.target.eContainer
 		if (srcParent !== tgtParent) {
@@ -234,6 +250,8 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 	}
 
+	
+	/* J1 */
 	@Check
 	def junctionWFC1(Junction j) {
 		if(j instanceof Initial) return
@@ -270,6 +288,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			)
 	}
 
+	/* STM3 and (because OperationDef is a NodeContainer) O1:STM3 */
 	@Check
 	def checkStateMachineHasInitialState(NodeContainer stm) {
 		if (stm.nodes.size > 0 && stm.nodes.filter(Initial).size !== 1)
@@ -280,6 +299,8 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			)
 	}
 
+	/* STM3 */
+	/* TODO: redundant with @method checkStateMachineHasInitialState? */
 	@Check
 	def checkStateInitialState(circus.robocalc.robochart.State s) {
 		if (s.nodes.size > 0 && s.nodes.filter(Initial).size !== 1)
@@ -290,6 +311,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			)
 	}
 
+	/* STM4 and (because OperationDef is a NodeContainer) O1:STM4 */
 	@Check
 	def checkNodeContainerHasStates(NodeContainer c) {
 		if (c.nodes.size > 0 && c.nodes.filter [ n |
@@ -300,6 +322,17 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				RoboChartPackage.Literals.NODE_CONTAINER__NODES,
 				COMPOSITE_STATE_WITHOUT_STATE
 			)
+	}
+
+	/* STM6 */
+	@Check
+	def wfcSTM6_noOpDeclInStms(StateMachineDef stm) {
+		if(!stm.getOperations().isEmpty()) {
+			error(
+				"STM6: State machines must not have operations declared directly within them",
+				RoboChartPackage.Literals.BASIC_CONTEXT__OPERATIONS
+			)			
+		}
 	}
 
 	def stmDef(StateMachine s) {
@@ -407,6 +440,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	public static val NO_INITIAL_TRANSITION = 'noInitialTransition'
 
 	@Check
+	/* IJ2 */
 	def initialStateLeadsToState(Initial i) {
 		val c = i.eContainer
 		val ts = c.eContents.filter(Transition).toList.filter [ t |
@@ -415,7 +449,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		].toList
 		if (ts.size !== 1)
 			warning(
-				'An initial junction must have a single outgoing transition',
+				'An initial junction must have exactly one outgoing transition',
 				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
 				NO_INITIAL_TRANSITION
 			)
@@ -509,6 +543,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 	@Check
 	def roboticPlatformWFC(RoboticPlatformDef rp) {
+		/* RP1 */
 		for (i : rp.RInterfaces) {
 			error(
 				rp.name + ' is a robotic platform and cannot require interface ' + i.name,
@@ -516,6 +551,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				'RPNoRequiredInterfaces'
 			)
 		}
+		/* RP2 */
 		for (Interface i : rp.interfaces) {
 			if (i.variableList.size > 0)
 				error(
@@ -527,6 +563,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	}
 
 	@Check
+	/* O1:STM1 */
 	def operationDefWFC(OperationDef o) {
 		for (i : o.PInterfaces) {
 			error(
@@ -539,6 +576,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 	@Check
 	def requiredWFC(Context c) {
+		/* I1 */
 		for (i : c.RInterfaces) {
 			if (i.events.size > 0) {
 				error(
@@ -549,16 +587,18 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			}
 		}
 
+		/* I1 */
 		for (i : c.PInterfaces) {
 			if (i.events.size > 0) {
 				error(
 					getName(c) + ' cannot provide interface ' + i.name + ' because it contains events',
 					RoboChartPackage.Literals.CONTEXT__INTERFACES,
-					'RequiredInterfaceWithEvents'
+					'ProvidedInterfaceWithEvents'
 				)
 			}
 		}
 
+		/* I2, together with I2 implies STM2 and (because OperationDef is a Context) O1:STM2 */
 		for (Interface i : c.interfaces) {
 			if (i.operations.size > 0)
 				error(
@@ -571,6 +611,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 	@Check
 	def controllerWFC(ControllerDef c) {
+		/* C2 */
 		for (i : c.PInterfaces) {
 			error(
 				c.name + ' is a controller and cannot provide interface ' + i.name,
@@ -578,7 +619,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				'ControllerNoRequiredInterfaces'
 			)
 		}
-
+		/* C1 */
 		if (c.machines.filter[m|m instanceof StateMachine].size === 0) {
 			error(
 				c.name + ' must have at least one state machine',
@@ -586,7 +627,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				'ControllerHasOneOrMoreStateMachines'
 			)
 		}
-
+		/* TODO: C2+C4? */
 		if (c.operations.filter[o|!(o instanceof OperationDef) && !(o instanceof OperationRef)].size > 0) {
 			error(
 				getName(c) + ' cannot declare operations outside interfaces',
@@ -598,6 +639,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		val pVars = getPVars(c)
 		val pOps = getPOps(c)
 		for (s : c.machines) {
+			/* C3 */
 			val rVars = getRVars(s)
 			if (!pVars.containsAll(rVars)) {
 				var vs = ""
@@ -616,6 +658,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 					'ControllerProvidesAllVars'
 				)
 			}
+			/* C4 */
 			val rOps = getROps(s)
 			if (!pOps.containsAll(rOps)) {
 				error(
@@ -627,13 +670,14 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 	}
 
+	/* STM1, together with I2 implies STM2 and (because OperationDef is a Context) O1:STM2 */
 	@Check
 	def stmWFC(StateMachineDef c) {
 		for (i : c.PInterfaces) {
 			error(
-				c.name + ' is a state machine and cannot provided interface ' + i.name,
+				c.name + ' is a state machine and cannot provide interface ' + i.name,
 				RoboChartPackage.Literals.CONTEXT__PINTERFACES,
-				'ControllerNoRequiredInterfaces'
+				'StateMachineNoProvidedInterfaces'
 			)
 		}
 	}
@@ -756,6 +800,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 	@Check
 	def moduleWFC(RCModule m) {
+		/* M1 */
 		val rp = m.nodes.findFirst[n|n instanceof RoboticPlatform]
 		if (rp === null || m.nodes.filter[n|n instanceof RoboticPlatform].size > 1) {
 			error(
@@ -773,6 +818,15 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			)
 		}
 
+		if (m.nodes.filter[x|x instanceof StateMachine].size > 0) {
+			error(
+				m.name + ' must not have a state machine outside a controller',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'ModuleHasNoStateMachines'
+			)
+		}
+
+		/* M2 */
 		// need to update checkRequiredVariables with type comparison when type checker is working
 		val pVars = getPVars(rp)
 		val pOps = getPOps(rp)
@@ -806,11 +860,12 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 	}
 
+	/* I2 */
 	@Check
 	def interfaceEitherEventsOrOthers(Interface d) {
-		if (d.events.size > 0 && (d.operations.size > 0 || d.variableList.size > 0)) {
+		if (d.events.size > 0 && d.operations.size > 0) {
 			error(
-				'A interface should have either events, or operations and variables',
+				'Aside from variables, an interface should have either events or operations',
 				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
 				'InterfaceEitherEventsOrOthers'
 			)
@@ -829,6 +884,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		else if(o instanceof NamedElement) o.name else null
 	}
 
+	/* I1 */
 	@Check
 	def interfaceEitherEventsOrOthers(Context d) {
 		for (Interface i : d.RInterfaces) {
@@ -1103,6 +1159,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		// if either end of the connection is a robotic platform,
 		// the connections is asynchronous, but it should not be
 		// marked as such
+		/* Cn2 */
 		if (c.to instanceof RoboticPlatform || c.from instanceof RoboticPlatform) {
 			val rp = if(c.to instanceof RoboticPlatform) c.to else c.from
 			val msg = 'The connection between event ' + c.efrom.name + ' on ' + getName(c.from) + ' and ' + c.eto.name +
@@ -1118,6 +1175,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 					RoboChartPackage.Literals.CONNECTION__EFROM, 'RPConnectionBroadcasstNotRelay')
 			}
 		}
+		/* Cn4 */
 		if (c.efrom.broadcast !== c.eto.broadcast) {
 			error(
 				'Connected events must be both broadcast, or both non-broadcast events',
@@ -1140,6 +1198,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 	}
 
+	/* RP3, I3, C5, STM5, O1:STM5 */
 	@Check(CheckType.FAST)
 	def checkUniqueness(NamedElement o) {
 		val project = o.eResource.URI.segment(1)
@@ -1286,14 +1345,34 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 	@Check
 	def triggerWellTyped(Trigger t) {
+		/* Tg1 */
+		// Violation is currently not possible because the syntax (editors) doesn't allow the creation of such objects
+		if (t._type === TriggerType.SIMPLE) {
+			if (t.parameter !== null) {
+				error(
+					'A simple trigger should not specify a parameter attribute',
+					RoboChartPackage.Literals.TRIGGER__PARAMETER,
+					'NoParametersForSimpleTriggers'
+				)							
+			}
+			if (t.value !== null) {
+				error(
+					'A simple trigger should not specify a value attribute',
+					RoboChartPackage.Literals.TRIGGER__VALUE,
+					'NoValueForSimpleTriggers'
+				)							
+			}
+		}
+		/* Tg5 */
 		if ((t._type === TriggerType.INPUT || t._type === TriggerType.OUTPUT || t._type === TriggerType.SYNC) &&
 			t.event.type === null) {
 			error(
-				'An input, output or sync trigger must refer to an typed event. See ' + t.event.name,
+				'An input, output or sync trigger must refer to a typed event. See ' + t.event.name,
 				RoboChartPackage.Literals.TRIGGER__EVENT,
 				'TypedEventRequired'
 			)
 		}
+		/* Tg2 */
 		if ((t._type === TriggerType.SIMPLE) && t.event.type !== null) {
 			error(
 				'A simple trigger must refer to an untyped event. See ' + t.event.name,
@@ -1301,6 +1380,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				'UntypedEventRequired'
 			)
 		}
+		/* Tg3 */
 		if (t._type === TriggerType.INPUT && (t.parameter === null || t.value !== null)) {
 			error(
 				'An input trigger must have a parameter, not a value',
@@ -1308,6 +1388,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				'InputParameterError'
 			)
 		}
+		/* Tg4 */
 		if (t._type === TriggerType.OUTPUT && (t.parameter !== null || t.value === null)) {
 			error(
 				'An output trigger must have a value, not a parameter',
@@ -1315,6 +1396,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				'OutputParameterError'
 			)
 		}
+		/* Tg4 */
 		if (t._type === TriggerType.SYNC && (t.parameter !== null || t.value === null)) {
 			error(
 				'An synchronisation trigger must have a value, not a parameter',
@@ -1523,6 +1605,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	def moduleOneConnPerEvent(RCModule mod) {
 		var eventConn = new HashMap<String, Connection>()
 
+		/* M3 */
 		for (conn : mod.connections) {
 			val from = qnp.getFullyQualifiedName(conn.from)+"."+conn.efrom.name;
 			val to = qnp.getFullyQualifiedName(conn.to)+"."+conn.eto.name;
@@ -1547,6 +1630,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 	}
 
+	/* C6 */
 	@Check
 	def controllerOneConnPerEvent(ControllerDef ctrl) {
 		var eventConn = new HashMap<String, Connection>()
@@ -1576,6 +1660,19 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			} else {
 				eventConn.put(to, conn)
 			}
+		}
+	}
+	
+	/* C7 */
+	/* Currently not allowed by the meta-model, hence, ineffective. */
+	@Check
+	def wfcC7_noOpDeclInCtr(ControllerDef c) {
+		if (!c.getOperations().isEmpty()) {
+			error(
+				"C7: Operations must not be declared directly in a controller, but may be defined in the controller",
+				c,
+				RoboChartPackage.Literals.BASIC_CONTEXT__OPERATIONS 
+			)
 		}
 	}
 
@@ -1682,6 +1779,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		var index = 0
 		for (c : ctrl.connections) {
 			if(c.isBidirec) return; // if the connection is bidirectional, then there are no restrictions
+			/* Cn9 */
 			if (c.from !== ctrl && c.from instanceof StateMachine) {
 				if (ncInputSet(stmDef(c.from as StateMachine)).contains(c.efrom)) {
 					error(
@@ -1696,6 +1794,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				}
 			}
 
+			/* Cn8 */
 			if (c.to !== ctrl && c.to instanceof StateMachine) {
 				if (ncOutputSet(stmDef(c.to as StateMachine)).contains(c.eto)) {
 					error(
@@ -1726,6 +1825,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 		for (c : mod.connections) {
 			if (c.isBidirec) {
+				/* Cn5 */
 				// if the connection is bidirectional, controller connections to the events must be bidirectional
 				if (c.to instanceof Controller) {
 					val ctrlConn = getControllerConnection(ctrlDef(c.to as Controller), c.eto)
@@ -1756,6 +1856,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				}
 
 			} else {
+				/* Cn6 */
 				// otherwise, the direction of the controller connections to the event must be consistent
 				if (c.to instanceof Controller) {
 					val ctrlConn = getControllerConnection(ctrlDef(c.to as Controller), c.eto)
@@ -1779,7 +1880,8 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 						)
 					}
 				}
-
+				
+				/* Cn7 */
 				if (c.from instanceof Controller) {
 					val ctrlConn = getControllerConnection(ctrlDef(c.from as Controller), c.efrom)
 					if (ctrlConn !== null && ctrlConn.isBidirec) {
@@ -1807,6 +1909,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 	}
 
+	/* T2 */
 	@Check
 	def checkTriggersAreInputs(Transition t) {
 		if (t.trigger !== null) {
