@@ -114,6 +114,9 @@ import org.eclipse.xtext.resource.IResourceDescriptions
 import org.eclipse.xtext.serializer.ISerializer
 import org.eclipse.xtext.validation.Check
 import org.eclipse.xtext.validation.CheckType
+import circus.robocalc.robochart.ProbabilisticJunction
+import java.util.ArrayList
+import circus.robocalc.robochart.FloatExp
 
 /**
  * This class contains custom validation rules. 
@@ -1993,6 +1996,147 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			return true
 		} else {
 			return false
+		}
+	}
+	
+	/////////////// Introduced in the probabilistic semantics generator ////////////
+	@Check
+	def junctionWFC_P_J1(Junction j) {
+		if(j instanceof Initial) return
+		val parent = j.eContainer as NodeContainer
+		for (t : parent.transitions.filter[t|t.target === j]) {
+			if(t.action !== null) {
+				error(
+					'Incoming transitions of a junction in ' + parent.name + ' couldn\'t have an action',
+					RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+					'incomingTransToJuncWithActionError'
+				)
+			}
+		}
+	}
+	
+	@Check
+	def junctionWFC_P_J2(Junction j) {
+		if(j instanceof Initial) return
+		val parent = j.eContainer as NodeContainer
+		if (parent.transitions.filter[t|t.target === j].empty) {
+			error(
+				'A junction in ' + parent.name + ' should have at least one incoming transition',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'noIncomingTransToJuncError'
+			)
+		}
+	}
+	
+	@Check
+	def junctionWFC_PJ1(ProbabilisticJunction j) {
+		val parent = j.eContainer as NodeContainer
+		for (t : parent.transitions.filter[t|t.source === j]) {
+			if(t.trigger !== null) {
+				error(
+					'Outgoing transitions of a ProbabilisticJunction in ' + parent.name + ' couldn\'t have a trigger',
+					RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+					'outgoingTransfromProbJuncWithTrigError'
+				)
+			}
+		}
+	}
+	
+	@Check
+	def junctionWFC_PJ2(ProbabilisticJunction j) {
+		val parent = j.eContainer as NodeContainer
+		for (t : parent.transitions.filter[t|t.source === j]) {
+			if(t.probability === null) {
+				error(
+					'Outgoing transitions of a ProbabilisticJunction in ' + parent.name + ' should have one probability value',
+					RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+					'outgoingTransProbJuncWithoutProbValueError'
+				)
+			}
+		}
+	}
+	
+	@Check
+	def junctionWFC_PJ3(ProbabilisticJunction j) {
+		val parent = j.eContainer as NodeContainer
+		val lstExpr = new ArrayList<Expression>()
+		
+		for (t : parent.transitions.filter[t|t.source === j]) {
+			lstExpr.add(t.probability)
+		}
+		
+		if(!sumExprEq1(lstExpr)) {
+			warning(
+				'Sum of probabilities of outgoing transitions from a ProbabilisticJunction in ' + parent.name + ' might not be equal to 1',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'probsfromProbJuncNotEqual1'
+			)
+		}
+	}
+	
+	def private Boolean sumExprEq1(List<Expression> exprs) {
+		val num = exprs.filter[t|(t instanceof IntegerExp) || (t instanceof FloatExp)].size
+		if(exprs.size === num) {
+			var sum = 0.0
+			for(e: exprs) {
+				if(e instanceof IntegerExp) {
+					sum = sum + (e as IntegerExp).value
+				} else if(e instanceof FloatExp) {
+					sum = sum + (e as FloatExp).value
+				}
+			}
+			
+			if(sum === 1.0) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+		
+		return false
+	}
+	
+	@Check
+	def junctionWFC_PJ4(ProbabilisticJunction j) {
+		val parent = j.eContainer as NodeContainer
+		
+		for (t : parent.transitions.filter[t|t.target === j]) {
+			if(t.probability !== null) {
+				error(
+					'Incoming transitions of a ProbabilisticJunction in ' + parent.name + ' couldn\'t have a probability value \'p{...}\'',
+					RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+					'incomingTransitionToProbJuncWithProbValueError'
+				)
+				
+			}
+		}
+	}
+	
+	@Check
+	def junctionWFC_PT1(Transition t) {
+		if(t.probability !== null && t.trigger !== null) {
+			error(
+				'Transition ' + t.name + ' couldn\'t have a probability value \'p{...}\' and a trigger at the same time',
+				RoboChartPackage.Literals.TRANSITION__TRIGGER,
+				'probValueAndTriggerTogetherError'
+			)
+			
+		}
+	}
+	
+	@Check
+	def junctionWFC_PT2(Transition t) {
+		val parent = t.eContainer as NodeContainer
+		if(t.probability !== null) {
+			for (n : parent.nodes.filter[n|n === t.source]) {
+				if(!(n instanceof ProbabilisticJunction)) {
+					error(
+					'The source of the transitions with a probability value should be ProbabilisticJunction, but it is ' + n,
+					RoboChartPackage.Literals.TRANSITION__PROBABILITY,
+					'sourceOfTransWithProbValueNotProbJuncError'
+					)
+				}
+			}
 		}
 	}
 }
