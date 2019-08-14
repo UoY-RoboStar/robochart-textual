@@ -25,7 +25,9 @@ import circus.robocalc.robochart.Call
 import circus.robocalc.robochart.CallExp
 import circus.robocalc.robochart.Cat
 import circus.robocalc.robochart.ClockExp
+import circus.robocalc.robochart.ClockReset
 import circus.robocalc.robochart.Connection
+import circus.robocalc.robochart.ConnectionNode
 import circus.robocalc.robochart.Context
 import circus.robocalc.robochart.Controller
 import circus.robocalc.robochart.ControllerDef
@@ -50,6 +52,7 @@ import circus.robocalc.robochart.Initial
 import circus.robocalc.robochart.IntegerExp
 import circus.robocalc.robochart.Interface
 import circus.robocalc.robochart.Junction
+import circus.robocalc.robochart.LambdaExp
 import circus.robocalc.robochart.LessOrEqual
 import circus.robocalc.robochart.LessThan
 import circus.robocalc.robochart.Literal
@@ -69,6 +72,7 @@ import circus.robocalc.robochart.Parameter
 import circus.robocalc.robochart.Plus
 import circus.robocalc.robochart.PrimitiveType
 import circus.robocalc.robochart.ProductType
+import circus.robocalc.robochart.QuantifierExpression
 import circus.robocalc.robochart.RCModule
 import circus.robocalc.robochart.RecordType
 import circus.robocalc.robochart.RefExp
@@ -80,6 +84,7 @@ import circus.robocalc.robochart.RoboticPlatformRef
 import circus.robocalc.robochart.SendEvent
 import circus.robocalc.robochart.SeqExp
 import circus.robocalc.robochart.SeqStatement
+import circus.robocalc.robochart.SetComp
 import circus.robocalc.robochart.SetExp
 import circus.robocalc.robochart.StateClockExp
 import circus.robocalc.robochart.StateMachine
@@ -335,6 +340,22 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 	}
 
+	/* TODO: generalisation of stmDef, to be substituted */
+	def Context getContext(ConnectionNode cn) {
+		if (cn instanceof StateMachineDef)
+			return cn as StateMachineDef
+		else if (cn instanceof ControllerDef)
+			return cn as ControllerDef
+		else if (cn instanceof RoboticPlatformDef)
+			return cn as RoboticPlatformDef
+		else if (cn instanceof StateMachineRef)
+			return cn.ref
+		else if (cn instanceof ControllerRef)
+			return cn.ref
+		else if (cn instanceof RoboticPlatformRef)
+			return cn.ref
+	}
+	
 	def stmDef(StateMachine s) {
 		if (s instanceof StateMachineRef)
 			return s.ref
@@ -638,7 +659,11 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 		val pVars = getPVars(c)
 		val pOps = getPOps(c)
-		for (s : c.machines) {
+		val machinesAndOperations = new HashSet<EObject>();
+		machinesAndOperations.addAll(c.machines)
+		machinesAndOperations.addAll(c.LOperations)
+//		for (s : c.machines) {
+		for (s : machinesAndOperations) {
 			/* C3 */
 			val rVars = getRVars(s)
 			if (!pVars.containsAll(rVars)) {
@@ -776,6 +801,14 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			return rVars
 		} else if (o instanceof StateMachineRef) {
 			return getRVars(o.ref)
+		} else if (o instanceof OperationDef) {
+			val rVars = new LinkedList<Variable>()
+			o.RInterfaces.forEach [ i |
+				i.variableList.forEach[l|rVars.addAll(l.vars)]
+			]
+			return rVars
+		} else if (o instanceof OperationRef) {
+			return getRVars(o.ref)
 		}
 	}
 
@@ -794,6 +827,12 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			o.RInterfaces.forEach[i|rOps.addAll(i.operations)]
 			return rOps
 		} else if (o instanceof StateMachineRef) {
+			return getROps(o.ref)
+		} else if (o instanceof OperationDef) {
+			val rOps = new LinkedList<OperationSig>()
+			o.RInterfaces.forEach[i|rOps.addAll(i.operations)]
+			return rOps
+		} else if (o instanceof OperationRef) {
 			return getROps(o.ref)
 		}
 	}
@@ -1151,6 +1190,52 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			return expressionInStatement(obj.eContainer)
 		} else {
 			return false
+		}
+	}
+	
+	@Check
+	def wfcCn_EventsFromSameContext(Connection c) {
+		var cont = c.eContainer
+		/* Cn1 (approximation via to/from) */
+		if (cont instanceof RCModule) {
+			if (!(cont.nodes.contains(c.to) && cont.nodes.contains(c.from))) {
+				error('Cn1: Connections of a module must associate only its robotic platform and its controllers',
+					RoboChartPackage.Literals.CONNECTION__EFROM, 
+					'NodesNotFromSameModule')
+			}
+		}
+			
+		/* Cn3 (approximation via to/from) */
+		if (cont instanceof ControllerDef) {
+			var nodes = new LinkedList<ConnectionNode>
+			nodes.add(cont) 
+			nodes.addAll(cont.machines)
+			if (!(nodes.contains(c.to) && nodes.contains(c.from))) {
+				error('Cn3: Connections of a controller must associate only itself and its state machines',
+					RoboChartPackage.Literals.CONNECTION__EFROM, 
+					'NodesNotFromSameController')
+			}
+		}
+		 
+		/* Cn10 */
+		// identify context and collect set of events of this context for to/from
+		val toEvents = new LinkedList<Event>()
+		toEvents.addAll(getContext(c.to).events)
+		getContext(c.to).interfaces.forEach[i | toEvents.addAll(i.events)]
+		// check whether eto is in this list
+		if (!toEvents.contains(c.eto)) {
+			error('Cn10: The eto-event of a connection must be an event of its to-node',
+				RoboChartPackage.Literals.CONNECTION__ETO, 
+				'ToEventFromForeignContext')
+		}
+		val fromEvents = new LinkedList<Event>()
+		fromEvents.addAll(getContext(c.from).events)
+		getContext(c.from).interfaces.forEach[i | fromEvents.addAll(i.events)]
+		// check whether efrom is in this list
+		if (!fromEvents.contains(c.efrom)) {
+			error('Cn10: The efrom-event of a connection must be an event of its from-node',
+				RoboChartPackage.Literals.CONNECTION__EFROM, 
+				'FromEventFromForeignContext')
 		}
 	}
 
@@ -2079,5 +2164,63 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		} else {
 			return false
 		}
+	}
+	
+	def wfcE_NoInitVal(Expression e) {
+		/* E1 */
+		if (e instanceof SetComp) {
+			if (e.variables.filter[v | v.initial !== null].size > 0) {
+				error("E1: The variables declared in a set comprehension must not have initial values",
+					RoboChartPackage.Literals.SET_COMP__VARIABLES,
+					"SetCompNoInitVal"
+				)
+			}
+		} else 
+		/* E2 */
+		if (e instanceof QuantifierExpression) {
+			if (e.variables.filter[v | v.initial !== null].size > 0) {
+				error("E2: Quantified variables in existential and universal quantifications must not have initial values",
+					RoboChartPackage.Literals.QUANTIFIER_EXPRESSION__VARIABLES,
+					"QuantExpNoInitVal"
+				)
+			}
+		} else 
+		/* E2 */
+		if (e instanceof LambdaExp) {
+			if (e.variables.filter[v | v.initial !== null].size > 0) {
+				error("E3: The variables quantified in a lambda expression must not have initial values",
+					RoboChartPackage.Literals.LAMBDA_EXP__VARIABLES,
+					"LambdaExpNoInitVal"
+				)
+			}
+		}
+	}
+	
+	
+	/**
+	 * Identify containing StateMachineBody
+	 * @returns first StateMachineBody found in containment hierarchy or null if @par o is not transitively contained by a StateMachineBody
+	 */
+	def StateMachineBody identifyContainingStateMachineBody(EObject o) {
+		if (o.eContainer instanceof StateMachineBody) {
+			o.eContainer as StateMachineBody
+		} else if (o.eContainer === null) {
+			null
+		} else {	
+			identifyContainingStateMachineBody(o.eContainer)
+		}
+	}
+	
+	/* TS1 (is currently not allowed in RoboChart syntax) */
+	@Check
+	def wfcTS1_InvalidClockRef(ClockReset cr) {
+		var stm = identifyContainingStateMachineBody(cr)
+		if (stm !== null && !stm.clocks.contains(cr.clock)) {
+			error("TS1: A clock reset #C may only reference a clock declared within the action's containing state-machine," 
+				+ "or in the case of a trigger, within the trigger's containing state-machine",
+				RoboChartPackage.Literals.CLOCK_RESET__CLOCK,
+				"InvalidClockRef"
+			)
+		} 
 	}
 }
