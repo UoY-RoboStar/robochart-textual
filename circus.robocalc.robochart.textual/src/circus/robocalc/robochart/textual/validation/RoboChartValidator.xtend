@@ -2057,6 +2057,35 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	}
 	
 	@Check
+	def junctionWFC_PT3(Transition t) {
+		if(t.probability !== null) {
+			if(t.probability instanceof IntegerExp) {
+				if((t.probability as IntegerExp).value < 0 || (t.probability as IntegerExp).value > 1) {
+					error(
+						'The probability value of transitions must be between 0 and 1, but it is ' + (t.probability as IntegerExp).value,
+						RoboChartPackage.Literals.TRANSITION__PROBABILITY,
+						'probValueNotInRangeError'
+					)
+				} 
+			} else if (t.probability instanceof FloatExp) {
+				if ((t.probability as FloatExp).value < 0 || (t.probability as FloatExp).value > 1) {
+					error(
+						'The probability value of transitions must be between 0 and 1, but it is ' + (t.probability as IntegerExp).value,
+						RoboChartPackage.Literals.TRANSITION__PROBABILITY,
+						'probValueNotInRangeError'
+					)
+				} 
+			} else {
+				warning(
+						'The probability value of transitions must be between 0 and 1. ' + t.probability.toString + ' might be out of range',
+						RoboChartPackage.Literals.TRANSITION__PROBABILITY,
+						'probValueMayNotInRangeWarning'
+					)
+			}
+		}
+	}
+	
+	@Check
 	def junctionWFC_PJ3(ProbabilisticJunction j) {
 		val parent = j.eContainer as NodeContainer
 		val lstExpr = new ArrayList<Expression>()
