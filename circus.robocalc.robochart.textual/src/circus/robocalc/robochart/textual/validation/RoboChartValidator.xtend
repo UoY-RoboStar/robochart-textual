@@ -972,6 +972,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 //	def dispatch boolean isParentComparisonWithClock(EObject e) {
 //		return false
 //	}
+	/* Helper for TE4 */
 	def boolean isConstantExp(Expression e) {
 		switch e {
 			RefExp: {
@@ -1014,18 +1015,21 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 	}
 
+	/* SCE2, covers TE4 for sinceEntry(state) */
 	@Check
 	def clockExpOnlySupportedComparator(StateClockExp e) {
 		checkClockExpWellTyped(e)
 		clockExpOnlySupported(e)
 	}
 
+	/* CE2, covers TE4 for since(clock) */
 	@Check
 	def clockExpOnlySupportedComparator(ClockExp e) {
 		checkClockExpWellTyped(e)
 		clockExpOnlySupported(e)
 	}
 
+	/* TE4 (helper) */
 	def checkClockExpWellTyped(Expression e) {
 		val nat = getNatType(e)
 		val real = getRealType(e)
@@ -1122,6 +1126,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 	}
 
+	/* TE4 (part for checking comparison to constant) */
 	def clockExpOnlySupported(Expression e) {
 		if (e.eContainer !== null && e.eContainer instanceof Expression) {
 			var parent = e.eContainer
@@ -1173,7 +1178,8 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 	}
 
-	// Expressions such as 
+	/* TE1' (covers "TE1: since and sinceEntry only in transition guards" and CE1/SCE1) */
+	// Expressions such as
 	@Check
 	def statementNoTimedExpressions(Expression e) {
 		if (e !== null && (e instanceof ClockExp || e instanceof StateClockExp) && e.expressionInStatement) {
@@ -1190,6 +1196,18 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			return expressionInStatement(obj.eContainer)
 		} else {
 			return false
+		}
+	}
+	
+	/* TE2 */
+	@Check
+	def wfcTE2_NoForeignClock(ClockExp ce) {
+		if (!identifyContainingStateMachineBody(ce).clocks.contains(ce.clock)) {
+			error("TE2: The clock " + ce.name + " in since(" + ce.name
+			 	+ ") is not declared within the expression's containing state-machine",
+			 	RoboChartPackage.Literals.CLOCK_EXP__CLOCK,
+			 	"NoForeignClock"
+			)
 		}
 	}
 	
@@ -2020,6 +2038,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 	}
 	
+	/* TODO: Provide identifier for new WFC */
 	@Check
 	def timedConditionInUntimedSemantics(Transition t) {
 		if (t.condition !== null && t.condition.isClockExp) {
@@ -2102,6 +2121,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		return rewriteType(t, map)
 	}
 
+	/* Helper */
 	def Boolean isClockExp(Expression e) {
 		if (e instanceof BooleanExp) {
 			return false
