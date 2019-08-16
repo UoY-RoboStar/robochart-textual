@@ -1,12 +1,12 @@
 /********************************************************************************
  * Copyright (c) 2019 University of York and others
- *
+ * 
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
  * http://www.eclipse.org/legal/epl-2.0.
- *
+ * 
  * SPDX-License-Identifier: EPL-2.0
- *
+ * 
  * Contributors:
  *   Alvaro Miyazawa - initial definition
  ********************************************************************************/
@@ -17,7 +17,9 @@
 package circus.robocalc.robochart.textual
 
 import circus.robocalc.robochart.RoboChartPackage
+import circus.robocalc.robochart.impl.RoboChartFactoryImplCustom
 import com.google.inject.Injector
+import org.eclipse.emf.ecore.EFactory
 import org.eclipse.emf.ecore.EPackage
 
 /**
@@ -28,10 +30,20 @@ class RoboChartStandaloneSetup extends RoboChartStandaloneSetupGenerated {
 	def static void doSetup() {
 		new RoboChartStandaloneSetup().createInjectorAndDoEMFRegistration()
 	}
-	
+
 	override register(Injector injector) {
 		if (!EPackage.Registry.INSTANCE.containsKey(RoboChartPackage.eNS_URI)) {
-			EPackage.Registry.INSTANCE.put(RoboChartPackage.eNS_URI, RoboChartPackage.eINSTANCE);	
+			// this has been modified to register the custom factory for RoboChart
+			EPackage.Registry.INSTANCE.put(RoboChartPackage.eNS_URI, new EPackage.Descriptor() {
+				override EPackage getEPackage() {
+					return RoboChartPackage.eINSTANCE;
+				}
+
+				override EFactory getEFactory() {
+					return new RoboChartFactoryImplCustom()
+				}
+
+			});
 		}
 		super.register(injector)
 	}

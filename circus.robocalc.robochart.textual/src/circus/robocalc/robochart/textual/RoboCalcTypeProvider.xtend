@@ -278,7 +278,21 @@ class RoboCalcTypeProvider {
 
 	def dispatch Type typeFor(SetComp e) {
 		val t = RoboChartFactory.eINSTANCE.createSetType
-		t.domain = EcoreUtil2.copy(e.expression?.typeFor)
+		if (e.expression !== null) {
+			t.domain = EcoreUtil2.copy(e.expression.typeFor)	
+		} else {
+			val tuple = RoboChartFactory.eINSTANCE.createProductType
+			if (e.variables.size == 1) {
+				t.domain = EcoreUtil2.copy(e.variables.get(0).type)
+			} else if (e.variables.size > 1) {
+				for (v: e.variables) {
+					tuple.types.add(EcoreUtil2.copy(v.type))
+				}
+				t.domain = tuple	
+			} else {
+				return null
+			}
+		}
 		t
 	}
 
