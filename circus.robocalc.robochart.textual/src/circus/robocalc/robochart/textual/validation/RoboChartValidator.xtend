@@ -110,6 +110,7 @@ import java.util.LinkedList
 import java.util.List
 import java.util.Map
 import java.util.Set
+import org.eclipse.emf.common.util.BasicEList
 import org.eclipse.emf.ecore.EObject
 import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.xtext.EcoreUtil2
@@ -1202,11 +1203,38 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	/* TE2 */
 	@Check
 	def wfcTE2_NoForeignClock(ClockExp ce) {
-		if (!identifyContainingStateMachineBody(ce).clocks.contains(ce.clock)) {
-			error("TE2: The clock " + ce.name + " in since(" + ce.name
-			 	+ ") is not declared within the expression's containing state-machine",
+		val stm = identifyContainingStateMachineBody(ce)
+		if (!stm.clocks.contains(ce.clock)) {
+			error("TE2: The clock in " + print(ce) 
+				+ " is not declared within state machine " + stm.name,
 			 	RoboChartPackage.Literals.CLOCK_EXP__CLOCK,
 			 	"NoForeignClock"
+			)
+		}
+	}
+
+	/* Helper for TE3 (termination requires on absence of loops in node hierarchy) */
+	def BasicEList<circus.robocalc.robochart.State> identifyNestedStates(NodeContainer nc) {
+		val nestedStates = new BasicEList<circus.robocalc.robochart.State>
+		for (n : nc.nodes) {
+			if (n instanceof circus.robocalc.robochart.State) {
+				nestedStates.addAll(identifyNestedStates(n as NodeContainer))
+			 	nestedStates.add(n as circus.robocalc.robochart.State)
+		 	}
+	 	} 
+		nestedStates
+	}
+
+	/* TE3 */
+	@Check
+	def wfcTE3_NoForeignState(StateClockExp sce) {
+		val stm =  identifyContainingStateMachineBody(sce)
+		val nestedStates = identifyNestedStates(stm)
+		if (sce.state !== null && !nestedStates.contains(sce.state)) {
+			error("TE3: The state in " + print(sce) 
+				+ " is not declared within state machine " + stm.name,
+			 	RoboChartPackage.Literals.STATE_CLOCK_EXP__STATE,
+			 	"NoForeignState"
 			)
 		}
 	}
@@ -2219,6 +2247,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	
 	/**
 	 * Identify containing StateMachineBody
+	 * Termination requires absence of loops in containment hierarchy!
 	 * @returns first StateMachineBody found in containment hierarchy or null if @par o is not transitively contained by a StateMachineBody
 	 */
 	def StateMachineBody identifyContainingStateMachineBody(EObject o) {
