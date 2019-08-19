@@ -1,8 +1,8 @@
 Manifest-Version: 1.0
 Automatic-Module-Name: circus.robocalc.robochart.textual.ui
 Bundle-ManifestVersion: 2
-Bundle-Name: RoboChart Editor UI
-Bundle-Vendor: RoboCalc Project
+Bundle-Name: %pluginName
+Bundle-Vendor: %providerName
 Bundle-Version: 2.0.0.qualifier
 Bundle-SymbolicName: circus.robocalc.robochart.textual.ui; singleton:=true
 Bundle-ActivationPolicy: lazy
