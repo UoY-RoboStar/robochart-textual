@@ -29,6 +29,5 @@ Export-Package: circus.robocalc.robochart.textual,
  circus.robocalc.robochart.textual.serializer,
  circus.robocalc.robochart.textual.services,
  circus.robocalc.robochart.textual.validation,
- robochart,
- semantics
+ robochart
 Import-Package: org.apache.log4j
