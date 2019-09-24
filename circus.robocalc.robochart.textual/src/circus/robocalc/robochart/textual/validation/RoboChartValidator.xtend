@@ -63,6 +63,7 @@ import circus.robocalc.robochart.NamedElement
 import circus.robocalc.robochart.Neg
 import circus.robocalc.robochart.NodeContainer
 import circus.robocalc.robochart.Not
+import circus.robocalc.robochart.Operation
 import circus.robocalc.robochart.OperationDef
 import circus.robocalc.robochart.OperationRef
 import circus.robocalc.robochart.OperationSig
@@ -660,11 +661,10 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 		val pVars = getPVars(c)
 		val pOps = getPOps(c)
-		val machinesAndOperations = new HashSet<EObject>();
-		machinesAndOperations.addAll(c.machines)
-		machinesAndOperations.addAll(c.LOperations)
-//		for (s : c.machines) {
-		for (s : machinesAndOperations) {
+		val machines = new HashSet<EObject>();
+		machines.addAll(c.machines)
+		//machinesAndOperations.addAll(c.LOperations)
+		for (s : machines) {
 			/* C3 */
 			val rVars = getRVars(s)
 			if (!pVars.containsAll(rVars)) {
@@ -695,6 +695,18 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			}
 		}
 	}
+	
+	def Boolean OpEqual(OperationSig sig, Operation op) {
+		val OperationDef def = if (op instanceof OperationRef) op.ref else op as OperationDef;
+		if (!def.name.equals(sig.name)) return false;
+		if (sig.parameters.size != def.parameters.size) return false;
+		for (var i = 0; i < sig.parameters.size; i++) {
+			val par1 = sig.parameters.get(i);
+			val par2 = def.parameters.get(i);
+			if (!par1.equals(par2)) return false;
+		}
+		return true;
+	}
 
 	/* STM1, together with I2 implies STM2 and (because OperationDef is a Context) O1:STM2 */
 	@Check
@@ -705,6 +717,104 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				RoboChartPackage.Literals.CONTEXT__PINTERFACES,
 				'StateMachineNoProvidedInterfaces'
 			)
+		}
+		
+		if (c.eContainer instanceof ControllerDef) {
+			val operations = new HashSet<OperationDef>();
+			val parent = c.eContainer as ControllerDef;
+			val pVars = getPVars(c);
+			val pOps = getPOps(c);
+			c.eAllContents.filter(Call).forEach[x|
+				val sig = x.operation;
+				val op = parent.LOperations.findFirst[y|OpEqual(sig,y)]
+				if (op !== null) {
+					if (op instanceof OperationRef) 	
+						operations.add(op.ref)
+					else operations.add(op as OperationDef)
+				} 
+			]
+			for (s : operations) {
+				/* C3 */
+				val rVars = getRVars(s)
+				if (!pVars.containsAll(rVars)) {
+					var vs = ""
+					var started = false
+					for (v : rVars) {
+						if (!pVars.contains(v)) {
+							if(started) vs += ', '
+							vs += v.name
+							started = true
+						}
+					}
+					error(
+						c.name + ' does not provide all variables required by call to operation ' + getName(s) + ' (missing variables: ' + vs + ')',
+						RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+						'ControllerProvidesAllVars'
+					)
+				}
+				/* C4 */
+				val rOps = getROps(s)
+				if (!pOps.containsAll(rOps)) {
+					error(
+						c.name + ' does not provide all operations required by ' + getName(s),
+						RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+						'ControllerProvidesAllOps'
+					)
+				}
+			
+			}
+			
+		}
+		
+	}
+	
+	@Check
+	def stmRefWFC(StateMachineRef c) {
+		if (c.eContainer instanceof ControllerDef) {
+			val operations = new HashSet<OperationDef>();
+			val parent = c.eContainer as ControllerDef;
+			val pVars = getPVars(c);
+			val pOps = getPOps(c);
+			c.ref.eAllContents.filter(Call).forEach[x|
+				val sig = x.operation;
+				val op = parent.LOperations.findFirst[y|OpEqual(sig,y)]
+				if (op !== null) {
+					if (op instanceof OperationRef) 	
+						operations.add(op.ref)
+					else operations.add(op as OperationDef)
+				} 
+			]
+			for (s : operations) {
+				/* C3 */
+				val rVars = getRVars(s)
+				if (!pVars.containsAll(rVars)) {
+					var vs = ""
+					var started = false
+					for (v : rVars) {
+						if (!pVars.contains(v)) {
+							if(started) vs += ', '
+							vs += v.name
+							started = true
+						}
+					}
+					error(
+						c.name + ' in the context of the controller ' + parent.name + ' does not provide all variables required by call to operation ' + getName(s) + ' (missing variables: ' + vs + ')',
+						RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+						'ControllerProvidesAllVars'
+					)
+				}
+				/* C4 */
+				val rOps = getROps(s)
+				if (!pOps.containsAll(rOps)) {
+					error(
+						c.name + ' in the context of the controller ' + parent.name + ' does not provide all operations required by ' + getName(s),
+						RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+						'ControllerProvidesAllOps'
+					)
+				}
+			
+			}
+			
 		}
 	}
 
