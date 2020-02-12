@@ -68,10 +68,10 @@ FunctionType returns Type:
 ;
 
 ProductType returns Type:
-	ExponentialType ({ProductType.types+=current} ('*' types+=TypeRef)+)? 
+	VectorType ({ProductType.types+=current} ('*' types+=TypeRef)+)? 
 ;
 
-ExponentialType returns Type:
+VectorType returns Type:
 	TypeRef ({VectorType.base=current} ('^' size=INT))?
 ;
 
