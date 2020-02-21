@@ -12,6 +12,7 @@ import circus.robocalc.robochart.SeqType;
 import circus.robocalc.robochart.SetType;
 import circus.robocalc.robochart.Type;
 import circus.robocalc.robochart.TypeRef;
+import circus.robocalc.robochart.VectorType;
 
 public class PrintingServices {
 
@@ -21,6 +22,11 @@ public class PrintingServices {
 	public String printType(Type t) {
 		if (t instanceof TypeRef) {
 			return ((TypeRef) t).getRef().getName();
+		} else if (t instanceof VectorType) {
+			VectorType vt = (VectorType) t;
+			int n = vt.getSize();
+			String s = printType(vt.getBase());
+			return s+"^"+n;
 		} else if (t instanceof ProductType) {
 			ProductType pt = (ProductType) t;
 			int i = 1;

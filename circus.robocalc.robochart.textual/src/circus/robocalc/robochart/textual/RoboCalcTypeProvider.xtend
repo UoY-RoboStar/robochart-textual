@@ -765,25 +765,42 @@ class RoboCalcTypeProvider {
 	}
 	
 	def Type normalise(Type x) {
-		if (x instanceof VectorType) {
-			val pt = RoboChartFactory.eINSTANCE.createProductType();
-			val base = x.base
-			val size = x.size
-			for (var i = 0; i < size; i++) {
-				val t = EcoreUtil2.copy(base)
-				pt.types.add(t)
-			}
-			return pt;
-		} else {
-			val copy = EcoreUtil2.copy(x)
-			for (var i = 0; i < copy.eContents.length; i++) {
-				val r = copy.eContents.get(i)
-				if (r instanceof Type) {
-					val rt = normalise(r)
-					x.eContents.set(i,rt)	
+		switch x {
+			VectorType: {
+				val pt = RoboChartFactory.eINSTANCE.createProductType();
+				val base = normalise(x.base)
+				val size = x.size
+				for (var i = 0; i < size; i++) {
+					val t = EcoreUtil2.copy(base)
+					pt.types.add(t)
 				}
+				return pt
 			}
-			return x
+			ProductType: {
+				val pt = RoboChartFactory.eINSTANCE.createProductType();
+				for (var i = 0; i < x.types.size; i++) {
+					pt.types.add(normalise(x.types.get(i)))
+				}
+				return pt
+			}
+			FunctionType: {
+				val ft = RoboChartFactory.eINSTANCE.createFunctionType();
+				ft.domain = normalise(x.domain)
+				ft.range = normalise(x.range)
+				return ft
+			}
+			RelationType: {
+				val ft = RoboChartFactory.eINSTANCE.createRelationType();
+				ft.domain = normalise(x.domain)
+				ft.range = normalise(x.range)
+				return ft
+			}
+			SetType: {
+				val st = RoboChartFactory.eINSTANCE.createSetType();
+				st.domain = normalise(x.domain)
+				return st
+			}			
+			default: return EcoreUtil2.copy(x)	
 		}
 	}
 
