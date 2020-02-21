@@ -75,6 +75,7 @@ import java.util.Map
 import org.eclipse.emf.ecore.EObject
 import org.eclipse.emf.ecore.resource.ResourceSet
 import org.eclipse.xtext.EcoreUtil2
+import circus.robocalc.robochart.VectorType
 
 class RoboCalcTypeProvider {
 	var TypeRef booleanType = null
@@ -762,13 +763,36 @@ class RoboCalcTypeProvider {
 			return null
 		else if(o instanceof Function) return o else return getFunction(o.eContainer)
 	}
+	
+	def Type normalise(Type x) {
+		if (x instanceof VectorType) {
+			val pt = RoboChartFactory.eINSTANCE.createProductType();
+			val base = x.base
+			val size = x.size
+			for (var i = 0; i < size; i++) {
+				val t = EcoreUtil2.copy(base)
+				pt.types.add(t)
+			}
+			return pt;
+		} else {
+			val copy = EcoreUtil2.copy(x)
+			for (var i = 0; i < copy.eContents.length; i++) {
+				val r = copy.eContents.get(i)
+				if (r instanceof Type) {
+					val rt = normalise(r)
+					x.eContents.set(i,rt)	
+				}
+			}
+			return x
+		}
+	}
 
 	def Boolean typeCompatible(Type x, Type y) {
 		if (x === null || y === null) return false
 		
 		val u = unify(y,x)
-		val a = instantiate(x,u)
-		val b = instantiate(y,u)
+		val a = normalise(instantiate(x,u))
+		val b = normalise(instantiate(y,u))
 		
 		if (a === null || b === null)
 			return false
