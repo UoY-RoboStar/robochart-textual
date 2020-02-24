@@ -72,7 +72,9 @@ ProductType returns Type:
 ;
 
 VectorType returns Type:
-	TypeRef ({VectorType.base=current} ('^' size=INT))?
+	{VectorType} 'vector' '(' base=Type ',' size=INT ')' |
+	{MatrixType} 'matrix' '(' base=Type ',' rows=INT ',' columns=INT ')' |
+	TypeRef
 ;
 
 TypeRef returns Type:
