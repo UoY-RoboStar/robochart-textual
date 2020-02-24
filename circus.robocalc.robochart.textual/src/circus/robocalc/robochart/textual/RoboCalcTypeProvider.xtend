@@ -656,9 +656,12 @@ class RoboCalcTypeProvider {
 						return normalise(t)
 					} else return null
 					
-				}
-				
-				else return null
+				} else if ((t1 instanceof ProductType && isNumeric(t2))) {
+					return EcoreUtil2.copy(t1)
+				} else if ((t2 instanceof ProductType && isNumeric(t1))) {
+					return EcoreUtil2.copy(t2)
+				} else
+					return null
 			}
 			Modulus: {
 				val nat = getNatType(e)
@@ -1477,6 +1480,13 @@ class RoboCalcTypeProvider {
 			return EcoreUtil2.copy(e)
 		} else
 			return null
+	}
+	
+	def boolean isNumeric(Type t) {
+		val nat = getNatType(t)
+		val integer = getIntType(t)
+		val real = getRealType(t)
+		return (typeCompatible(t,nat) || typeCompatible(t,integer) || typeCompatible(t,real))
 	}
 }
 
