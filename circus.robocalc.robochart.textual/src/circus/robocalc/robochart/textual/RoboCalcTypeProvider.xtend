@@ -912,21 +912,35 @@ class RoboCalcTypeProvider {
 				}
 				return pt
 			}
+			FunctionType: {
+				val t = RoboChartFactory.eINSTANCE.createFunctionType
+				t.domain = normalise(x.domain)
+				t.range = normalise(x.range)
+				return t
+			}
+			
 			RelationType: {
-				val t = RoboChartFactory.eINSTANCE.createSetType
-				val p = RoboChartFactory.eINSTANCE.createProductType
-				p.types.add(normalise(x.domain))
-				p.types.add(normalise(x.range))
-				t.domain = p
+//				val t = RoboChartFactory.eINSTANCE.createSetType
+//				val p = RoboChartFactory.eINSTANCE.createProductType
+//				p.types.add(normalise(x.domain))
+//				p.types.add(normalise(x.range))
+//				t.domain = p
+//				return t
+				val t = RoboChartFactory.eINSTANCE.createRelationType
+				t.domain = normalise(x.domain)
+				t.range = normalise(x.range)
 				return t
 			}
 			SeqType: {
-				val t = RoboChartFactory.eINSTANCE.createSetType
-				val p = RoboChartFactory.eINSTANCE.createProductType
-				p.types.add(normalise(x.domain))
-				val nat = getNatType(x)
-				p.types.add(EcoreUtil2.copy(nat))
-				t.domain = p
+//				val t = RoboChartFactory.eINSTANCE.createSetType
+//				val p = RoboChartFactory.eINSTANCE.createProductType
+//				p.types.add(normalise(x.domain))
+//				val nat = getNatType(x)
+//				p.types.add(EcoreUtil2.copy(nat))
+//				t.domain = p
+//				return t
+				val t = RoboChartFactory.eINSTANCE.createSeqType
+				t.domain = normalise(x.domain)
 				return t
 			}
 			SetType: {
@@ -1025,7 +1039,41 @@ class RoboCalcTypeProvider {
 					false
 			}
 		} else {
-			return false
+			val ga = getGeneralType(a)
+			val gb = getGeneralType(b)
+			if(ga === null && gb === null) return false else return typeCompatible(ga, gb)
+		}
+
+	}
+	
+	def Type getGeneralType(Type x) {
+		val a = x.normalise
+		
+		if (a instanceof RelationType) {
+			val t = RoboChartFactory.eINSTANCE.createSetType
+			val p = RoboChartFactory.eINSTANCE.createProductType
+			p.types.add(EcoreUtil2.copy(a.domain))
+			p.types.add(EcoreUtil2.copy(a.range))
+			t.domain = p
+			return t
+//		A functionType is a relationType, so this case is subsumed by the case above. 
+// 		} else if (a instanceof FunctionType) {
+//			val t = RoboChartFactory.eINSTANCE.createSetType
+//			val p = RoboChartFactory.eINSTANCE.createProductType
+//			p.types.add(EcoreUtil2.copy(a.domain))
+//			p.types.add(EcoreUtil2.copy(a.range))
+//			t.domain = p
+//			return t
+		} else if (a instanceof SeqType) {
+			val t = RoboChartFactory.eINSTANCE.createSetType
+			val p = RoboChartFactory.eINSTANCE.createProductType
+			p.types.add(EcoreUtil2.copy(a.domain))
+			val nat = getNatType(a)
+			p.types.add(EcoreUtil2.copy(nat))
+			t.domain = p
+			return t
+		} else {
+			return null
 		}
 
 	}
