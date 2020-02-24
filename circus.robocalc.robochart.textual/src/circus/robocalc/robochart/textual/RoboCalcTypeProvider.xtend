@@ -70,12 +70,12 @@ import circus.robocalc.robochart.VarExp
 import circus.robocalc.robochart.VarRef
 import circus.robocalc.robochart.VarSelection
 import circus.robocalc.robochart.Variable
+import circus.robocalc.robochart.VectorType
 import java.util.HashMap
 import java.util.Map
 import org.eclipse.emf.ecore.EObject
 import org.eclipse.emf.ecore.resource.ResourceSet
 import org.eclipse.xtext.EcoreUtil2
-import circus.robocalc.robochart.VectorType
 
 class RoboCalcTypeProvider {
 	var TypeRef booleanType = null
@@ -882,7 +882,9 @@ class RoboCalcTypeProvider {
 
 	}
 
-	def Type getGeneralType(Type a) {
+	def Type getGeneralType(Type x) {
+		val a = x.normalise
+		
 		if (a instanceof RelationType) {
 			val t = RoboChartFactory.eINSTANCE.createSetType
 			val p = RoboChartFactory.eINSTANCE.createProductType
@@ -917,7 +919,9 @@ class RoboCalcTypeProvider {
 		if(t1.class !== t2.class) return false else return t1.name.equals(t2.name)
 	}
 
-	def Map<String, Type> unify(Type t1, Type t2) {
+	def Map<String, Type> unify(Type x1, Type x2) {
+		val t1 = x1.normalise
+		val t2 = x2.normalise
 		if (t1 instanceof AnyType && (t1 as AnyType).identifier === null) {
 			// t1 is the type of an empty set or sequence
 			if (t2 instanceof AnyType) {
@@ -1026,7 +1030,10 @@ class RoboCalcTypeProvider {
 		}
 	}
 
-	def Type mostGeneralType(Type a, Type b) {
+	def Type mostGeneralType(Type x, Type y) {
+		val a = x.normalise
+		val b = y.normalise
+		
 		if (a === null || b === null)
 			return null
 		else if (a instanceof AnyType && (a as AnyType).identifier === null && b instanceof AnyType &&
