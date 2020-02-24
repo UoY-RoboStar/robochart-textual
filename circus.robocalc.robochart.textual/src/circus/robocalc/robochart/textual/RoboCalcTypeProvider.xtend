@@ -1122,7 +1122,9 @@ class RoboCalcTypeProvider {
 		}
 	}
 
-	def Type instantiate(Type a, Map<String, Type> map) {
+	def Type instantiate(Type x, Map<String, Type> map) {
+		val a = normalise(x)
+		
 		if (map === null) return a
 		if (a === null)
 			return null
