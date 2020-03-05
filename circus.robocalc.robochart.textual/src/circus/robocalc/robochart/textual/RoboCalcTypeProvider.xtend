@@ -1044,7 +1044,9 @@ class RoboCalcTypeProvider {
 		} else {
 			val ga = getGeneralType(a)
 			val gb = getGeneralType(b)
-			if(ga === null && gb === null) return false else return typeCompatible(ga, gb)
+			if(ga === null && gb === null) return false
+			else if (ga.class !== gb.class) return false
+			else return typeCompatible(ga, gb)
 		}
 
 	}
