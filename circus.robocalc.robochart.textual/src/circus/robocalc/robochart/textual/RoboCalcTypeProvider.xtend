@@ -1076,7 +1076,7 @@ class RoboCalcTypeProvider {
 			t.domain = p
 			return t
 		} else {
-			return null
+			return a
 		}
 
 	}
