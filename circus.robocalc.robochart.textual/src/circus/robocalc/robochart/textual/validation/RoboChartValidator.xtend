@@ -634,6 +634,22 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 	@Check
 	def controllerWFC(ControllerDef c) {
+		val opcount = new HashMap<OperationDef,Integer>()
+		for (o: c.LOperations) {
+			val def = if (o instanceof OperationRef) o.ref else o as OperationDef
+			val cnt = opcount.getOrDefault(def,0)
+			opcount.put(def,cnt+1)
+		}
+		val mdef = opcount.filter[p1, p2| p2 > 1]
+		if (!mdef.empty) {
+			error(
+				'''The controller «c.name» declares multiple copies of the same operations: «FOR o: mdef.keySet SEPARATOR ","»«o.name»«ENDFOR»''',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'ControllerMultipleReferencesToOperation'
+			)
+		}
+		
+		
 		/* C2 */
 		for (i : c.PInterfaces) {
 			error(
