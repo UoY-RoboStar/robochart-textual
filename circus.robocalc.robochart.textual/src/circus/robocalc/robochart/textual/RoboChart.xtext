@@ -68,7 +68,13 @@ FunctionType returns Type:
 ;
 
 ProductType returns Type:
-	TypeRef ({ProductType.types+=current} ('*' types+=TypeRef)+)? 
+	VectorType ({ProductType.types+=current} ('*' types+=TypeRef)+)? 
+;
+
+VectorType returns Type:
+	{VectorType} 'vector' '(' base=Type ',' size=INT ')' |
+	{MatrixType} 'matrix' '(' base=Type ',' rows=INT ',' columns=INT ')' |
+	TypeRef
 ;
 
 TypeRef returns Type:

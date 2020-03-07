@@ -1,8 +1,9 @@
 Manifest-Version: 1.0
 Automatic-Module-Name: circus.robocalc.robochart.textual
 Bundle-ManifestVersion: 2
-Bundle-Name: RoboChart Textual Editor
-Bundle-Vendor: RoboCalc Project
+Bundle-Localization: plugin
+Bundle-Name: %pluginName
+Bundle-Vendor: %providerName
 Bundle-Version: 2.0.0.qualifier
 Bundle-SymbolicName: circus.robocalc.robochart.textual;singleton:=true
 Bundle-ActivationPolicy: lazy
@@ -28,6 +29,5 @@ Export-Package: circus.robocalc.robochart.textual,
  circus.robocalc.robochart.textual.serializer,
  circus.robocalc.robochart.textual.services,
  circus.robocalc.robochart.textual.validation,
- robochart,
- semantics
+ robochart
 Import-Package: org.apache.log4j

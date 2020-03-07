@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
       id="circus.robocalc.robochart.textual.feature"
-      label="RoboChart Textual Editor Feature"
+      label="RoboChart Textual Editor"
       version="2.0.0.qualifier"
       provider-name="RoboCalc Project">
 
