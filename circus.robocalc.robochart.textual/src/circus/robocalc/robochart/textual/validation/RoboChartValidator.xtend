@@ -2401,7 +2401,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		} 
 	}
 
-	/////////////// Introduced in probabilistic semantics generator ////////////
+	/////////////// Introduced in the probabilistic semantics generator ////////////
 	@Check
 	def junctionWFC_P_J1(Junction j) {
 		if(j instanceof Initial) return
@@ -2414,6 +2414,19 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 					'incomingTransToJuncWithActionError'
 				)
 			}
+		}
+	}
+	
+	@Check
+	def junctionWFC_P_J2(Junction j) {
+		if(j instanceof Initial) return
+		val parent = j.eContainer as NodeContainer
+		if (parent.transitions.filter[t|t.target === j].empty) {
+			error(
+				'A junction in ' + parent.name + ' should have at least one incoming transition',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'noIncomingTransToJuncError'
+			)
 		}
 	}
 	
@@ -2440,11 +2453,11 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 					'Outgoing transitions of a ProbabilisticJunction in ' + parent.name + ' should have one probability value',
 					RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
 					'outgoingTransProbJuncWithoutProbValueError'
-                )
-            }
-        }
-    }
-
+				)
+			}
+		}
+	}
+	
 	@Check
 	def junctionWFC_PJ3(ProbabilisticJunction j) {
 		val parent = j.eContainer as NodeContainer
@@ -2506,7 +2519,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		if(t.probability !== null && t.trigger !== null) {
 			error(
 				'Transition ' + t.name + ' couldn\'t have a probability value \'p{...}\' and a trigger at the same time',
-				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				RoboChartPackage.Literals.TRANSITION__TRIGGER,
 				'probValueAndTriggerTogetherError'
 			)
 			
@@ -2520,12 +2533,41 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			for (n : parent.nodes.filter[n|n === t.source]) {
 				if(!(n instanceof ProbabilisticJunction)) {
 					error(
-					'The source of the transitions with a probability value ' + parent.name + ' should be ProbabilisticJunction, but it is ' + n,
-					RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+					'The source of the transitions with a probability value should be ProbabilisticJunction, but it is ' + n,
+					RoboChartPackage.Literals.TRANSITION__PROBABILITY,
 					'sourceOfTransWithProbValueNotProbJuncError'
 					)
 				}
 			}
 		}
-    }
+	}
+
+	@Check
+	def junctionWFC_PT3(Transition t) {
+		if(t.probability !== null) {
+			if(t.probability instanceof IntegerExp) {
+				if((t.probability as IntegerExp).value < 0 || (t.probability as IntegerExp).value > 1) {
+					error(
+						'The probability value of transitions must be between 0 and 1, but it is ' + (t.probability as IntegerExp).value,
+						RoboChartPackage.Literals.TRANSITION__PROBABILITY,
+						'probValueNotInRangeError'
+					)
+				} 
+			} else if (t.probability instanceof FloatExp) {
+				if ((t.probability as FloatExp).value < 0 || (t.probability as FloatExp).value > 1) {
+					error(
+						'The probability value of transitions must be between 0 and 1, but it is ' + (t.probability as IntegerExp).value,
+						RoboChartPackage.Literals.TRANSITION__PROBABILITY,
+						'probValueNotInRangeError'
+					)
+				} 
+			} else {
+				warning(
+						'The probability value of transitions must be between 0 and 1. ' + t.probability.toString + ' might be out of range',
+						RoboChartPackage.Literals.TRANSITION__PROBABILITY,
+						'probValueMayNotInRangeWarning'
+					)
+			}
+		}
+	}
 }

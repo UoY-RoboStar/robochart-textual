@@ -22,6 +22,8 @@ import circus.robocalc.robochart.RoboChartFactory;
 import circus.robocalc.robochart.State;
 import circus.robocalc.robochart.StateMachineDef;
 import circus.robocalc.robochart.StateMachineRef;
+import circus.robocalc.robochart.RoboticPlatformDef;
+import circus.robocalc.robochart.RoboticPlatformRef;
 import circus.robocalc.robochart.Type;
 import circus.robocalc.robochart.Variable;
 import circus.robocalc.robochart.VariableModifier;
@@ -62,7 +64,7 @@ public class RoboChartResourceDescriptionsStrategy extends DefaultResourceDescri
 							if (refname != null) {
 								refname = refname.append(ref.getName());
 								// references to stmref from ctrlref are not needed to be created here because they will be created in ControllerDef below
-//								System.out.println("= Create reference [" + refname.toString() + "] to " + ref.getName());
+								System.out.println("= Create reference [" + refname.toString() + "] to " + ref.getName());
 //								// the reference to the state machine
 //								acceptor.accept(EObjectDescription.create(refname, e));
 								for(EObject ele: allElements) {
@@ -127,16 +129,43 @@ public class RoboChartResourceDescriptionsStrategy extends DefaultResourceDescri
 				QualifiedName refname = qualifiedNameProvider.getFullyQualifiedName(ref);
 				
 				if (refname != null) {
-					/* System.out.println("=== Create reference [" + refname.toString() + "] to " + ref.getName());
-					acceptor.accept(EObjectDescription.create(
+					System.out.println("=== Create reference [" + refname.toString() + "] to " + ref.getName());
+					/* acceptor.accept(EObjectDescription.create(
 							refname.append(((ControllerDef)e).getName()), e)); */
 					for(EObject ele: allElements) {
-//						System.out.println("ControllerDef/Element:" + ele.toString());
+						System.out.println("ControllerDef/Element:" + ele.toString());
 						
 						QualifiedName eleName = qualifiedNameProvider.getFullyQualifiedName(ele);
 						if(eleName != null) {
 							eleName = removePrefix(eleName, ((ControllerDef)e).getName());
 							System.out.println("createEObjectDescriptions for ControllerDef/Element:" + refname.toString() + "." + eleName.toString());
+							acceptor.accept(EObjectDescription.create(
+									refname.append(eleName), e));
+						}
+					}
+				}
+			}
+			
+			// return true;
+		} else if (e instanceof RoboticPlatformDef) {
+			List<EObject> allElements = EcoreUtil2.eAllContentsAsList(e);
+			
+			List<RoboticPlatformRef> lstRefs = new ArrayList<RoboticPlatformRef>();
+			getAllRefs((RoboticPlatformDef)e, lstRefs);
+			for(RoboticPlatformRef ref: lstRefs) {
+				QualifiedName refname = qualifiedNameProvider.getFullyQualifiedName(ref);
+				
+				if (refname != null) {
+					System.out.println("=== Create reference [" + refname.toString() + "] to " + ref.getName());
+					/* acceptor.accept(EObjectDescription.create(
+							refname.append(((RoboticPlatformDef)e).getName()), e)); */
+					for(EObject ele: allElements) {
+						System.out.println("RoboticPlatformDef/Element:" + ele.toString());
+						
+						QualifiedName eleName = qualifiedNameProvider.getFullyQualifiedName(ele);
+						if(eleName != null) {
+							eleName = removePrefix(eleName, ((RoboticPlatformDef)e).getName());
+							System.out.println("createEObjectDescriptions for RoboticPlatformDef/Element:" + refname.toString() + "." + eleName.toString());
 							acceptor.accept(EObjectDescription.create(
 									refname.append(eleName), e));
 						}
@@ -178,6 +207,23 @@ public class RoboChartResourceDescriptionsStrategy extends DefaultResourceDescri
 				EcoreUtil2.getAllContentsOfType(rootElement, ControllerRef.class);
 		for(ControllerRef c : candidates) {
 //			System.out.println("[ControllerRef]getAllRefs: " + c.toString());
+			if(c.getRef() != null && c.getRef() == obj) {
+				refs.add(c);
+			}
+		}
+	}
+
+	/**
+	 * Get all robotic platform references to the robotic platform definition
+	 * @param obj
+	 * @param refs
+	 */
+	private void getAllRefs(RoboticPlatformDef obj, List<RoboticPlatformRef> refs) {
+		EObject rootElement = EcoreUtil2.getRootContainer(obj);
+		List<RoboticPlatformRef> candidates = 
+				EcoreUtil2.getAllContentsOfType(rootElement, RoboticPlatformRef.class);
+		for(RoboticPlatformRef c : candidates) {
+//			System.out.println("[RoboticPlatformRef]getAllRefs: " + c.toString());
 			if(c.getRef() != null && c.getRef() == obj) {
 				refs.add(c);
 			}
