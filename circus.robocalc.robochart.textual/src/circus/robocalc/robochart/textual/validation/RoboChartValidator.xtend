@@ -634,6 +634,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 	@Check
 	def controllerWFC(ControllerDef c) {
+		/* C8 */
 		val opcount = new HashMap<OperationDef,Integer>()
 		for (o: c.LOperations) {
 			val def = if (o instanceof OperationRef) o.ref else o as OperationDef
