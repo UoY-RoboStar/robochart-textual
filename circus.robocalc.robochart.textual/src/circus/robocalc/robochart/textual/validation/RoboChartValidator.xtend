@@ -583,6 +583,15 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 					'UsedInterfaceWithOnlyEvents'
 				)
 		}
+		
+		/* RP3 */
+		if (rp.clocks.size > 0) {
+			error(
+				getName(rp) + ' cannot declare clocks',
+				RoboChartPackage.Literals.BASIC_CONTEXT__CLOCKS,
+				'NoClocksInRoboticPlatform'
+			)
+		}
 	}
 
 	@Check
@@ -710,6 +719,15 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 					'ControllerProvidesAllOps'
 				)
 			}
+		}
+		
+		/* C9 */
+		if (c.clocks.size > 0) {
+			error(
+				getName(c) + ' cannot declare clocks',
+				RoboChartPackage.Literals.BASIC_CONTEXT__CLOCKS,
+				'NoClocksInController'
+			)
 		}
 	}
 	

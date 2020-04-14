@@ -116,7 +116,8 @@ Interface:
 		(
 			operations+=OperationSig |
 			events+=Event |
-			variableList+=VariableList
+			variableList+=VariableList |
+			clocks+=Clock
 		)*
 	'}'
 ;
