@@ -582,6 +582,13 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 					RoboChartPackage.Literals.CONTEXT__INTERFACES,
 					'UsedInterfaceWithOnlyEvents'
 				)
+				
+			if (i.clocks.size > 0)
+				error(
+					getName(rp) + ' cannot define interface ' + i.name + ' because it contains clocks',
+					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					'UsedInterfaceWithOnlyEvents'
+				)
 		}
 		
 		/* RP3 */
@@ -626,6 +633,14 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 					getName(c) + ' cannot provide interface ' + i.name + ' because it contains events',
 					RoboChartPackage.Literals.CONTEXT__INTERFACES,
 					'ProvidedInterfaceWithEvents'
+				)
+			}
+			
+			if (i.clocks.size > 0) {
+				error(
+					getName(c) + ' cannot provide interface ' + i.name + ' because it contains clocks',
+					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					'ProvidedInterfaceWithClocks'
 				)
 			}
 		}
@@ -729,6 +744,26 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				'NoClocksInController'
 			)
 		}
+		
+		/* C10 */
+		for (i : c.interfaces) {
+			if (i.clocks.size > 0)
+				error(
+					c.name + ' is a controller and cannot define interface ' + i.name + ' because it contains clocks',
+					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					'ControllerNoDefinedInterfacesWithClocks'
+				)
+		}
+		
+		/* C11 */
+		for (i : c.RInterfaces) {
+			if (i.clocks.size > 0)
+				error(
+					c.name + ' is a controller and cannot require interface ' + i.name + ' because it contains clocks',
+					RoboChartPackage.Literals.CONTEXT__RINTERFACES,
+					'ControllerNoRequiredInterfacesWithClocks'
+				)
+		}
 	}
 	
 	def Boolean OpEqual(OperationSig sig, Operation op) {
@@ -799,6 +834,16 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			
 			}
 			
+		}
+		
+		/* STM7 */
+		for (i : c.RInterfaces) {
+			if (i.clocks.size > 0)
+				error(
+					c.name + ' is a state machine and cannot require interface ' + i.name + ' because it contains clocks',
+					RoboChartPackage.Literals.CONTEXT__RINTERFACES,
+					'StateMachineNoRequiredInterfacesWithClocks'
+				)
 		}
 		
 	}
