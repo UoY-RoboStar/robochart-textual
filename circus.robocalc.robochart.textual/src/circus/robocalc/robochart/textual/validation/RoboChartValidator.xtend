@@ -41,6 +41,7 @@ import circus.robocalc.robochart.Equals
 import circus.robocalc.robochart.Event
 import circus.robocalc.robochart.ExitAction
 import circus.robocalc.robochart.Expression
+import circus.robocalc.robochart.FieldDefinition
 import circus.robocalc.robochart.Final
 import circus.robocalc.robochart.FunctionType
 import circus.robocalc.robochart.GreaterOrEqual
@@ -75,6 +76,7 @@ import circus.robocalc.robochart.PrimitiveType
 import circus.robocalc.robochart.ProductType
 import circus.robocalc.robochart.QuantifierExpression
 import circus.robocalc.robochart.RCModule
+import circus.robocalc.robochart.RecordExp
 import circus.robocalc.robochart.RecordType
 import circus.robocalc.robochart.RefExp
 import circus.robocalc.robochart.RoboChartFactory
@@ -2461,5 +2463,19 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				"InvalidClockRef"
 			)
 		} 
+	}
+	
+	@Check
+	def wfc_RecordFieldDefinition(FieldDefinition e) {
+		val t2 = e.field.type
+		val t1 = e.value.typeFor
+		if (!typeCompatible(t1, t2)) {
+			val msg = '''Field «e.field.name» of record «(e.eContainer as RecordExp).record.name» expects type «t2.printType», but «IF t1 === null»expression cannot be typed.«ELSE»expression has type «t1.printType»«ENDIF» '''
+			error(
+				msg,
+				RoboChartPackage.Literals.FIELD_DEFINITION__VALUE,
+				'FieldDefinitionTypeError'
+			)
+		}
 	}
 }

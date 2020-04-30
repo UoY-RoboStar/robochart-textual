@@ -49,6 +49,7 @@ import circus.robocalc.robochart.Plus
 import circus.robocalc.robochart.PrimitiveType
 import circus.robocalc.robochart.ProductType
 import circus.robocalc.robochart.RangeExp
+import circus.robocalc.robochart.RecordExp
 import circus.robocalc.robochart.RefExp
 import circus.robocalc.robochart.RelationType
 import circus.robocalc.robochart.ResultExp
@@ -317,6 +318,12 @@ class RoboCalcTypeProvider {
 		val t = RoboChartFactory.eINSTANCE.createTypeRef()
 		t.ref = e.type
 		t
+	}
+	
+	def dispatch Type typeFor(RecordExp e) {
+		val t = RoboChartFactory.eINSTANCE.createTypeRef()
+		t.ref = e.record
+		return t
 	}
 
 	def dispatch Type typeFor(RefExp e) {

@@ -14,7 +14,7 @@
 
 grammar circus.robocalc.robochart.textual.RoboChart with org.eclipse.xtext.common.Terminals
 
-import "http://www.robocalc.circus/RoboChart" 
+import "http://www.robocalc.circus/RoboChart"
 import "http://www.eclipse.org/emf/2002/Ecore" as ecore
 
 RCPackage:
@@ -483,7 +483,16 @@ CallExp returns Expression:
 	Atomic (
 		{CallExp.function=current} '(' (args+=Expression (',' args+=Expression)*)? ')'
 	)?
-	
+;
+
+RecordExp returns Expression:
+	{RecordExp} record=[RecordType] '(|'
+		definitions+=FieldDefinition (',' definitions+=FieldDefinition)*
+	'|)'
+;
+
+FieldDefinition returns FieldDefinition:
+	field=[Field] '=' value=Expression
 ;
 
 Atomic returns Expression:
@@ -495,6 +504,7 @@ Atomic returns Expression:
 	{StringExp} value=STRING |
 	{BooleanExp} value=BOOLEAN |
 	RefExp |
+	RecordExp |
 	{EnumExp} type=[Enumeration] '::' literal=[Literal] |
 	RangeAndParExp | // Range expression
 	ClockExp |
