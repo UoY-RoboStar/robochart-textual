@@ -188,7 +188,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 		} else if (context instanceof Call) {
 			if (reference === CALL__OPERATION) {
 				//changed the parent scope to avoid accepting OperationDefs being in the scope for Calls
-				val s = IScope::NULLSCOPE//super.getScope(context, reference)
+				val s = delegateGetScope(context, reference) //IScope::NULLSCOPE
 				return context.operationsDeclared(s)
 			}
 		} else if (context instanceof CallExp) {
