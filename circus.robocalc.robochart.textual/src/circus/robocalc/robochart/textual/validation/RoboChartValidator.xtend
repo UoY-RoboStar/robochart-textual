@@ -1999,7 +1999,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 	}
 
-	def private HashSet<Event> ncOutputSet(NodeContainer nc) {
+	def HashSet<Event> ncOutputSet(NodeContainer nc) {
 		var outputs = new HashSet<Event>()
 
 		for (t : nc.transitions) {
@@ -2027,7 +2027,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		outputs
 	}
 
-	def private HashSet<Event> statementOutputSet(Statement s) {
+	def HashSet<Event> statementOutputSet(Statement s) {
 		var outputs = new HashSet<Event>()
 
 		if (s instanceof SendEvent) {
@@ -2050,7 +2050,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		outputs
 	}
 
-	def private HashSet<Event> ncInputSet(NodeContainer nc) {
+	def HashSet<Event> ncInputSet(NodeContainer nc) {
 		var inputs = new HashSet<Event>()
 
 		for (t : nc.transitions) {
@@ -2079,7 +2079,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		inputs
 	}
 
-	def private HashSet<Event> statementInputSet(Statement s) {
+	def HashSet<Event> statementInputSet(Statement s) {
 		var inputs = new HashSet<Event>()
 
 		if (s instanceof SendEvent) {
