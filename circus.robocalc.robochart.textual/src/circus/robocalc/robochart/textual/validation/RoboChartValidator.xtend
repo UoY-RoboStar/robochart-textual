@@ -1394,7 +1394,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	@Check
 	def wfcTE2_NoForeignClock(ClockExp ce) {
 		val stm = identifyContainingStateMachineBody(ce)
-		if (!stm.clocks.contains(ce.clock)) {
+		if (stm instanceof StateMachineDef && !stm.clocks.contains(ce.clock) && !stm.interfaces.exists[i|i.clocks.contains(ce.clock)]) {
 			error("TE2: The clock in " + print(ce) 
 				+ " is not declared within state machine " + stm.name,
 			 	RoboChartPackage.Literals.CLOCK_EXP__CLOCK,
@@ -2454,7 +2454,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	@Check
 	def wfcTS1_InvalidClockRef(ClockReset cr) {
 		var stm = identifyContainingStateMachineBody(cr)
-		if (stm !== null && !stm.clocks.contains(cr.clock)) {
+		if (stm instanceof StateMachineDef && !stm.clocks.contains(cr.clock) && !stm.interfaces.exists[i|i.clocks.contains(cr.clock)]) {
 			error("TS1: A clock reset #C may only reference a clock declared within the action's containing state-machine," 
 				+ "or in the case of a trigger, within the trigger's containing state-machine",
 				RoboChartPackage.Literals.CLOCK_RESET__CLOCK,
