@@ -45,6 +45,7 @@ import circus.robocalc.robochart.OperationSig
 import circus.robocalc.robochart.PrimitiveType
 import circus.robocalc.robochart.RCModule
 import circus.robocalc.robochart.RCPackage
+import circus.robocalc.robochart.RecordExp
 import circus.robocalc.robochart.RecordType
 import circus.robocalc.robochart.RefExp
 import circus.robocalc.robochart.RoboticPlatformDef
@@ -84,6 +85,7 @@ import org.eclipse.xtext.scoping.impl.MultimapBasedScope
 import org.eclipse.xtext.scoping.impl.SimpleScope
 
 import static circus.robocalc.robochart.RoboChartPackage.Literals.*
+import circus.robocalc.robochart.FieldDefinition
 
 /**
  * This class contains custom scoping description.
@@ -186,7 +188,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 		} else if (context instanceof Call) {
 			if (reference === CALL__OPERATION) {
 				//changed the parent scope to avoid accepting OperationDefs being in the scope for Calls
-				val s = IScope::NULLSCOPE//super.getScope(context, reference)
+				val s = delegateGetScope(context, reference) //IScope::NULLSCOPE
 				return context.operationsDeclared(s)
 			}
 		} else if (context instanceof CallExp) {
@@ -240,7 +242,16 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 					)
 				}
 			}
-		}	
+		}
+		else if (context instanceof FieldDefinition && reference == FIELD_DEFINITION__FIELD) {
+			val parent = delegateGetScope(context, reference)
+			val re = context.eContainer
+			if (re instanceof RecordExp) {
+				return Scopes::scopeFor(re.record.fields, parent)
+			} else {
+				return parent
+			}
+		}
 		else {
 			val s = delegateGetScope(context, reference)
 			return s
