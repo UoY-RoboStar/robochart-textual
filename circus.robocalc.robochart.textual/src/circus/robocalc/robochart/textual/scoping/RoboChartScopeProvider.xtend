@@ -788,17 +788,28 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	}
 
 	def dispatch IScope clocksDeclared(StateMachineDef cont) {
-		Scopes::scopeFor(cont.clocks)
+		var s = Scopes::scopeFor(cont.clocks)
+		for (i : cont.interfaces) {
+			s = Scopes::scopeFor(i.clocks, s)
+		}
+		return s
 	}
 
 	def dispatch IScope clocksDeclared(OperationDef cont) {
-		Scopes::scopeFor(cont.clocks)
+		var s = Scopes::scopeFor(cont.clocks)
+		for (i : cont.RInterfaces) {
+			s = Scopes::scopeFor(i.clocks, s)
+		}
+		for (i : cont.interfaces) {
+			s = Scopes::scopeFor(i.clocks, s)
+		}
+		return s
 	}
 
 	def dispatch IScope clocksDeclared(Trigger cont) {
 		cont.eContainer.clocksDeclared();
 	}
-
+	
 	def dispatch IScope statesDeclared(EObject cont, IScope p) {
 		if(cont.eContainer === null) return p else return cont.eContainer.statesDeclared(p);
 	}
