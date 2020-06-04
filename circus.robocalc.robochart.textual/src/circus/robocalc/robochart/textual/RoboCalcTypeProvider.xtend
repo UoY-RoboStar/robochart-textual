@@ -258,7 +258,12 @@ class RoboCalcTypeProvider {
 
 	def dispatch Type typeFor(Assignable e) {
 		switch (e) {
-			VarRef: normalise(e.name?.type)
+			VarRef: {
+				if (e.name instanceof Variable) {
+					val v = e.name as Variable
+					normalise(v.type)	
+				}
+			}
 			VarSelection: normalise(e.member?.type)
 		}
 	}
