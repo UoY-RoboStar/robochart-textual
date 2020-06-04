@@ -600,7 +600,7 @@ VariableSelection returns Assignable:
 ;
 
 VariableReference returns Assignable:
-	{VarRef} name=[Mutable|QualifiedName]
+	{VarRef} name=[Variable|QualifiedName]
 ;
 
 SendEvent:
