@@ -1396,7 +1396,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	@Check
 	def wfcTE2_NoForeignClock(ClockExp ce) {
 		val stm = identifyContainingStateMachineBody(ce)
-		if (!stm.clocks.contains(ce.clock)) {
+		if (stm instanceof StateMachineDef && !stm.clocks.contains(ce.clock) && !stm.interfaces.exists[i|i.clocks.contains(ce.clock)]) {
 			error("TE2: The clock in " + print(ce) 
 				+ " is not declared within state machine " + stm.name,
 			 	RoboChartPackage.Literals.CLOCK_EXP__CLOCK,
@@ -1999,7 +1999,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 	}
 
-	def private HashSet<Event> ncOutputSet(NodeContainer nc) {
+	def HashSet<Event> ncOutputSet(NodeContainer nc) {
 		var outputs = new HashSet<Event>()
 
 		for (t : nc.transitions) {
@@ -2027,7 +2027,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		outputs
 	}
 
-	def private HashSet<Event> statementOutputSet(Statement s) {
+	def HashSet<Event> statementOutputSet(Statement s) {
 		var outputs = new HashSet<Event>()
 
 		if (s instanceof SendEvent) {
@@ -2050,7 +2050,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		outputs
 	}
 
-	def private HashSet<Event> ncInputSet(NodeContainer nc) {
+	def HashSet<Event> ncInputSet(NodeContainer nc) {
 		var inputs = new HashSet<Event>()
 
 		for (t : nc.transitions) {
@@ -2079,7 +2079,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		inputs
 	}
 
-	def private HashSet<Event> statementInputSet(Statement s) {
+	def HashSet<Event> statementInputSet(Statement s) {
 		var inputs = new HashSet<Event>()
 
 		if (s instanceof SendEvent) {
@@ -2456,7 +2456,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	@Check
 	def wfcTS1_InvalidClockRef(ClockReset cr) {
 		var stm = identifyContainingStateMachineBody(cr)
-		if (stm !== null && !stm.clocks.contains(cr.clock)) {
+		if (stm instanceof StateMachineDef && !stm.clocks.contains(cr.clock) && !stm.interfaces.exists[i|i.clocks.contains(cr.clock)]) {
 			error("TS1: A clock reset #C may only reference a clock declared within the action's containing state-machine," 
 				+ "or in the case of a trigger, within the trigger's containing state-machine",
 				RoboChartPackage.Literals.CLOCK_RESET__CLOCK,
