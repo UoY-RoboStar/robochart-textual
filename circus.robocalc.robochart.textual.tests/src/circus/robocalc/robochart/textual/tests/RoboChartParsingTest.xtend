@@ -35,7 +35,7 @@ class RoboChartParsingTest {
 	def void loadModel() {
 		val result = parseHelper.parse('''
 			interface I {
-				var x: nat
+				var x: nat = 1
 			}
 		''')
 		Assertions.assertNotNull(result)

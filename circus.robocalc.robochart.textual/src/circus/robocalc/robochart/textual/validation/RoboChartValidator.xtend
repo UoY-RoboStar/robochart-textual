@@ -1475,6 +1475,17 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				RoboChartPackage.Literals.CONNECTION__EFROM, 
 				'FromEventFromForeignContext')
 		}
+		
+		/* Cn11 */
+		val from = c.from
+		val to = c.to
+		if (from instanceof StateMachine && to instanceof StateMachine) {
+			if (c.async) {
+				error('Cn11: A connection between state machines must be synchronous',
+				RoboChartPackage.Literals.CONNECTION__ASYNC, 
+				'Cn11')
+			}
+		}
 	}
 
 	@Check
