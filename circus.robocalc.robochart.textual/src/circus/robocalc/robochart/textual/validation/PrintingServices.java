@@ -5,28 +5,55 @@ import org.eclipse.xtext.naming.IQualifiedNameProvider;
 import com.google.inject.Inject;
 
 import circus.robocalc.robochart.AnyType;
+import circus.robocalc.robochart.Expression;
+import circus.robocalc.robochart.FloatExp;
 import circus.robocalc.robochart.FunctionType;
+import circus.robocalc.robochart.IntegerExp;
+import circus.robocalc.robochart.MatrixType;
+import circus.robocalc.robochart.NamedExpression;
 import circus.robocalc.robochart.ProductType;
+import circus.robocalc.robochart.RefExp;
 import circus.robocalc.robochart.RelationType;
 import circus.robocalc.robochart.SeqType;
 import circus.robocalc.robochart.SetType;
 import circus.robocalc.robochart.Type;
 import circus.robocalc.robochart.TypeRef;
+import circus.robocalc.robochart.Variable;
+import circus.robocalc.robochart.VariableModifier;
 import circus.robocalc.robochart.VectorType;
 
 public class PrintingServices {
 
 	@Inject
 	IQualifiedNameProvider qnp;
+	
+	public String printConstantExp(Expression e) {
+		if (e instanceof RefExp) {
+			NamedExpression ne = ((RefExp) e).getRef();
+			if (ne instanceof Variable && ((Variable)ne).getModifier() == VariableModifier.CONST) {
+				return ((Variable)ne).getName();
+			} else return null;
+		} else if (e instanceof IntegerExp) {
+			return String.valueOf(((IntegerExp)e).getValue());
+		} else if (e instanceof FloatExp) {
+			return String.valueOf(((FloatExp)e).getValue());
+		} else return null;
+	}
 
 	public String printType(Type t) {
 		if (t instanceof TypeRef) {
 			return ((TypeRef) t).getRef().getName();
 		} else if (t instanceof VectorType) {
 			VectorType vt = (VectorType) t;
-			int n = vt.getSize();
+			Expression n = vt.getSize();
 			String s = printType(vt.getBase());
-			return s+"^"+n;
+			return "vector("+s+","+printConstantExp(n)+")";
+		} else if (t instanceof MatrixType) {
+			MatrixType vt = (MatrixType) t;
+			Expression r = vt.getRows();
+			Expression c = vt.getColumns();
+			String s = printType(vt.getBase());
+			return "matrix("+s+","+printConstantExp(r)+","+printConstantExp(c)+")";
 		} else if (t instanceof ProductType) {
 			ProductType pt = (ProductType) t;
 			int i = 1;

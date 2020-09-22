@@ -72,8 +72,8 @@ ProductType returns Type:
 ;
 
 VectorType returns Type:
-	{VectorType} 'vector' '(' base=Type ',' size=INT ')' |
-	{MatrixType} 'matrix' '(' base=Type ',' rows=INT ',' columns=INT ')' |
+	{VectorType} 'vector' '(' base=Type ',' size=Atomic ')' |
+	{MatrixType} 'matrix' '(' base=Type ',' rows=Atomic ',' columns=Atomic ')' |
 	TypeRef
 ;
 
@@ -517,8 +517,19 @@ Atomic returns Expression:
 		) |
 		{SetExp}'}'
 	) |
+	VectorOrMatrixExp |
 	{SetComp}'{' variables+=VariableNoInit (',' variables+=VariableNoInit)* ('|' predicate=Expression)? ('@' expression=Expression)? '}' |
 	{TupleExp} '(|' (values+=Expression (',' values+=Expression)*)? '|)'
+;
+
+Column returns VectorExp:
+	{VectorExp} values += Expression (',' values += Expression)*
+;
+
+VectorOrMatrixExp returns Expression:
+	'[|' Column ({MatrixExp.values+=current} (';' values+=Column)+)? '|]' |
+	{InverseExp} 'inverse' '(' value=Expression ')' |
+	{TransposeExp} 'transpose' '(' value=Expression ')'
 ;
 
 

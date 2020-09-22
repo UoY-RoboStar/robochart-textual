@@ -31,12 +31,14 @@ import circus.robocalc.robochart.Iff
 import circus.robocalc.robochart.Implies
 import circus.robocalc.robochart.InExp
 import circus.robocalc.robochart.IntegerExp
+import circus.robocalc.robochart.InverseExp
 import circus.robocalc.robochart.IsExp
 import circus.robocalc.robochart.LambdaExp
 import circus.robocalc.robochart.LessOrEqual
 import circus.robocalc.robochart.LessThan
 import circus.robocalc.robochart.LetExpression
 import circus.robocalc.robochart.Literal
+import circus.robocalc.robochart.MatrixExp
 import circus.robocalc.robochart.MatrixType
 import circus.robocalc.robochart.Minus
 import circus.robocalc.robochart.Modulus
@@ -63,6 +65,7 @@ import circus.robocalc.robochart.SetRange
 import circus.robocalc.robochart.SetType
 import circus.robocalc.robochart.StateClockExp
 import circus.robocalc.robochart.StringExp
+import circus.robocalc.robochart.TransposeExp
 import circus.robocalc.robochart.TupleExp
 import circus.robocalc.robochart.Type
 import circus.robocalc.robochart.TypeDecl
@@ -72,6 +75,8 @@ import circus.robocalc.robochart.VarExp
 import circus.robocalc.robochart.VarRef
 import circus.robocalc.robochart.VarSelection
 import circus.robocalc.robochart.Variable
+import circus.robocalc.robochart.VariableModifier
+import circus.robocalc.robochart.VectorExp
 import circus.robocalc.robochart.VectorType
 import java.util.HashMap
 import java.util.Map
@@ -498,7 +503,84 @@ class RoboCalcTypeProvider {
 	def dispatch Type typeFor(ParExp e) {
 		return e.exp.typeFor
 	}
-
+	
+	def Type commonType(Type t1, Type t2) {
+		val nat = getNatType(t1)
+		val integer = getIntType(t1)
+		val real = getRealType(t1)
+		if (typeCompatible(t1, nat) && typeCompatible(t2, nat))
+			return nat
+		else if (typeCompatible(t1, integer) && typeCompatible(t2, integer))
+			return integer
+		else if(typeCompatible(t1, real) && typeCompatible(t2, real)) 
+			return real
+	}
+	
+	def boolean equalsConstExp(Expression e1, Expression e2) {
+		if (e1 instanceof RefExp && e2 instanceof RefExp) {
+			val r1 = (e1 as RefExp).ref
+			val r2 = (e2 as RefExp).ref
+			if (r1 instanceof Variable && r2 instanceof Variable) {
+				val v1 = (r1 as Variable)
+				val v2 = (r2 as Variable)
+				if (v1.modifier == VariableModifier.CONST && v2.modifier == VariableModifier.CONST) {
+					// I'm only equating constats with the same name. Otherwise, we need to have a way of evaluating expressions
+					// over constants even if they are undefined.
+					return v1.equals(v2)
+				} else return false
+			} else return false
+		} else if (e1 instanceof IntegerExp && e2 instanceof IntegerExp) {
+			return (e1 as IntegerExp).value == (e2 as IntegerExp).value
+		} else return false
+	}
+	
+	def dispatch Type typeFor(VectorExp e) {
+		var base = EcoreUtil2.copy(e.values.get(0).typeFor)
+		for (var i = 1; i < e.values.size; i++) {
+			val other = EcoreUtil2.copy(e.values.get(i).typeFor)
+			if (!typeCompatible(base,other)) {
+				return null
+			} else {
+				base = commonType(base,other)
+			}
+		}
+		val t = RoboChartFactory.eINSTANCE.createVectorType()
+		t.base = base
+		val n = RoboChartFactory.eINSTANCE.createIntegerExp()
+		n.value = e.values.size
+		t.size = n
+		return t
+	}
+	
+	def dispatch Type typeFor(MatrixExp e) {
+		var vt = EcoreUtil2.copy(e.values.get(0).typeFor)
+		var Type base = null
+		var Expression size
+		if (vt instanceof VectorType) {
+			base = vt.base
+			size = vt.size	
+		} else return null
+		for (var i = 1; i < e.values.size; i++) {
+			vt = EcoreUtil2.copy(e.values.get(i).typeFor)
+			if (vt instanceof VectorType) {
+				val obase = vt.base
+				val osize = vt.size
+				if (!typeCompatible(base,obase) || !equalsConstExp(size,osize)) {
+					return null
+				} else {
+					base = commonType(base,obase)
+				}
+			}
+		}
+		val t = RoboChartFactory.eINSTANCE.createMatrixType()
+		t.base = base
+		val n = RoboChartFactory.eINSTANCE.createIntegerExp()
+		n.value = e.values.size
+		t.rows = size
+		t.columns = n
+		return t
+	}
+	
 	def dispatch Type typeFor(Expression e) {
 		switch (e) {
 			IntegerExp: {
@@ -537,37 +619,30 @@ class RoboCalcTypeProvider {
 					return integer
 				else if(typeCompatible(t1, real) && typeCompatible(t2, real)) 
 					return real
-				else if (t1 instanceof ProductType && 
-						 t2 instanceof ProductType && 
-						 is_vector(t1 as ProductType) && 
-						 is_vector(t2 as ProductType)
-				) {
-					var r1 = -1
-					var c1 = -1
-					var r2 = -1
-					var c2 = -1
-					if (is_matrix(t1 as ProductType)) {
-						r1 = product_as_matrix_rows(t1 as ProductType)
-						c1 = product_as_matrix_columns(t1 as ProductType)
-					} else {
-						r1 = product_as_vector_size(t1 as ProductType)
-						c1 = 1
-					}
-					
-					if (is_matrix(t2 as ProductType)) {
-						r2 = product_as_matrix_rows(t2 as ProductType)
-						c2 = product_as_matrix_columns(t2 as ProductType)
-					} else {
-						r2 = product_as_vector_size(t2 as ProductType)
-						c2 = 1
-					}
-					
-					if (r1 === r2 && c1 === c2) {
-						val t = RoboChartFactory.eINSTANCE.createMatrixType()
-						t.base = getBase(t1 as ProductType)
-						t.rows = r1
-						t.columns = c1
-						return normalise(t)
+				else if(t1 instanceof MatrixType && t2 instanceof MatrixType) {
+					val m1 = t1 as MatrixType
+					val m2 = t2 as MatrixType
+					if (isNumeric(m1.base) && isNumeric(m2.base)) {
+						val base = commonType(m1.base,m2.base)
+						if (equalsConstExp(m1.rows,m2.rows) && equalsConstExp(m1.columns,m2.columns)) {
+							val mt = RoboChartFactory.eINSTANCE.createMatrixType()
+							mt.base = base
+							mt.rows = m1.rows
+							mt.columns = m1.columns
+							return normalise(mt)
+						} else return null
+					} else return null
+				} else if (t1 instanceof VectorType && t2 instanceof VectorType) {
+					val v1 = t1 as VectorType
+					val v2 = t2 as VectorType
+					if (isNumeric(v1.base) && isNumeric(v2.base)) {
+						val base = commonType(v1.base,v2.base)
+						if (equalsConstExp(v1.size, v2.size)) {
+							val vt = RoboChartFactory.eINSTANCE.createVectorType()
+							vt.base = base
+							vt.size = v1.size
+							return normalise(vt)
+						} else return null
 					} else return null
 				}
 				else 
@@ -582,37 +657,30 @@ class RoboCalcTypeProvider {
 					return integer
 				else if(typeCompatible(t1, real) && typeCompatible(t2, real))
 					return real
-				else if (t1 instanceof ProductType && 
-						 t2 instanceof ProductType && 
-						 is_vector(t1 as ProductType) && 
-						 is_vector(t2 as ProductType)
-				) {
-					var r1 = -1
-					var c1 = -1
-					var r2 = -1
-					var c2 = -1
-					if (is_matrix(t1 as ProductType)) {
-						r1 = product_as_matrix_rows(t1 as ProductType)
-						c1 = product_as_matrix_columns(t1 as ProductType)
-					} else {
-						r1 = product_as_vector_size(t1 as ProductType)
-						c1 = 1
-					}
-					
-					if (is_matrix(t2 as ProductType)) {
-						r2 = product_as_matrix_rows(t2 as ProductType)
-						c2 = product_as_matrix_columns(t2 as ProductType)
-					} else {
-						r2 = product_as_vector_size(t2 as ProductType)
-						c2 = 1
-					}
-					
-					if (r1 === r2 && c1 === c2) {
-						val t = RoboChartFactory.eINSTANCE.createMatrixType()
-						t.base = getBase(t1 as ProductType)
-						t.rows = r1
-						t.columns = c1
-						return normalise(t)
+				else if(t1 instanceof MatrixType && t2 instanceof MatrixType) {
+					val m1 = t1 as MatrixType
+					val m2 = t2 as MatrixType
+					if (isNumeric(m1.base) && isNumeric(m2.base)) {
+						val base = commonType(m1.base,m2.base)
+						if (equalsConstExp(m1.rows, m2.rows) && equalsConstExp(m1.columns, m2.columns)) {
+							val mt = RoboChartFactory.eINSTANCE.createMatrixType()
+							mt.base = base
+							mt.rows = m1.rows
+							mt.columns = m1.columns
+							return normalise(mt)
+						} else return null
+					} else return null
+				} else if (t1 instanceof VectorType && t2 instanceof VectorType) {
+					val v1 = t1 as VectorType
+					val v2 = t2 as VectorType
+					if (isNumeric(v1.base) && isNumeric(v2.base)) {
+						val base = commonType(v1.base,v2.base)
+						if (equalsConstExp(v1.size, v2.size)) {
+							val vt = RoboChartFactory.eINSTANCE.createVectorType()
+							vt.base = base
+							vt.size = v1.size
+							return normalise(vt)
+						} else return null
 					} else return null
 				}
 				else
@@ -630,45 +698,103 @@ class RoboCalcTypeProvider {
 					return integer
 				else if(typeCompatible(t1, real) && typeCompatible(t2, real)) return real 
 				
-				else if (t1 instanceof ProductType && 
-						 t2 instanceof ProductType && 
-						 is_vector(t1 as ProductType) && 
-						 is_vector(t2 as ProductType)
-				) {
-					var r1 = -1
-					var c1 = -1
-					var r2 = -1
-					var c2 = -1
-					if (is_matrix(t1 as ProductType)) {
-						r1 = product_as_matrix_rows(t1 as ProductType)
-						c1 = product_as_matrix_columns(t1 as ProductType)
-					} else {
-						r1 = product_as_vector_size(t1 as ProductType)
-						c1 = 1
-					}
-					
-					if (is_matrix(t2 as ProductType)) {
-						r2 = product_as_matrix_rows(t2 as ProductType)
-						c2 = product_as_matrix_columns(t2 as ProductType)
-					} else {
-						r2 = product_as_vector_size(t2 as ProductType)
-						c2 = 1
-					}
-					
-					if (c1 === r2) {
-						val t = RoboChartFactory.eINSTANCE.createMatrixType()
-						t.base = getBase(t1 as ProductType)
-						t.rows = r1
-						t.columns = c2
-						return normalise(t)
+				else if(t1 instanceof MatrixType && t2 instanceof MatrixType) {
+					val m1 = t1 as MatrixType
+					val m2 = t2 as MatrixType
+					if (isNumeric(m1.base) && isNumeric(m2.base)) {
+						val base = commonType(m1.base,m2.base)
+						if (equalsConstExp(m1.columns, m2.rows)) {
+							val mt = RoboChartFactory.eINSTANCE.createMatrixType()
+							mt.base = base
+							mt.rows = m1.rows
+							mt.columns = m2.columns
+							return normalise(mt)
+						} else return null
 					} else return null
-					
-				} else if ((t1 instanceof ProductType && isNumeric(t2))) {
-					return EcoreUtil2.copy(t1)
-				} else if ((t2 instanceof ProductType && isNumeric(t1))) {
-					return EcoreUtil2.copy(t2)
-				} else
-					return null
+				}
+				else if(t1 instanceof MatrixType && t2 instanceof VectorType) {
+					val m1 = t1 as MatrixType
+					val m2 = t2 as VectorType
+					if (isNumeric(m1.base) && isNumeric(m2.base)) {
+						val base = commonType(m1.base,m2.base)
+						if (equalsConstExp(m1.columns, m2.size)) {
+							val mt = RoboChartFactory.eINSTANCE.createVectorType()
+							mt.base = base
+							mt.size = m1.rows
+							return normalise(mt)
+						} else return null
+					} else return null
+				}
+				else if(t1 instanceof VectorType && t2 instanceof MatrixType) {
+					val m1 = t1 as VectorType
+					val m2 = t2 as MatrixType
+					if (isNumeric(m1.base) && isNumeric(m2.base)) {
+						val base = commonType(m1.base,m2.base)
+						val one = RoboChartFactory.eINSTANCE.createIntegerExp();
+						one.value = 1;
+						if (equalsConstExp(one, m2.rows)) {
+							val mt = RoboChartFactory.eINSTANCE.createMatrixType()
+							mt.base = base
+							mt.rows = m1.size
+							mt.columns = m2.columns
+							return normalise(mt)
+						} else return null
+					} else return null
+				}
+				else if (t1 instanceof VectorType && t2 instanceof VectorType) {
+					/* this case treats multiplication of vectors as dot product */
+					val v1 = t1 as VectorType
+					val v2 = t2 as VectorType
+					if (isNumeric(v1.base) && isNumeric(v2.base)) {
+						val base = commonType(v1.base,v2.base)
+						if (equalsConstExp(v1.size, v2.size)) {
+							return normalise(base)
+						} else return null
+					} else return null
+				}				
+				else if ((t1 instanceof MatrixType && isNumeric(t2))) {
+					val m1 = t1 as MatrixType
+					if (isNumeric(m1.base)) {
+						val base = commonType(m1.base,t2)
+						val mt = RoboChartFactory.eINSTANCE.createMatrixType()
+						mt.base = base
+						mt.rows = m1.rows
+						mt.columns = m1.columns
+						return normalise(mt)
+					} else return null
+				}
+				else if ((t1 instanceof VectorType && isNumeric(t2))) {
+					val m1 = t1 as VectorType
+					if (isNumeric(m1.base)) {
+						val base = commonType(m1.base,t2)
+						val mt = RoboChartFactory.eINSTANCE.createVectorType()
+						mt.base = base
+						mt.size = m1.size
+						return normalise(mt)
+					} else return null
+				}
+				else if ((t2 instanceof MatrixType && isNumeric(t1))) {
+					val m2 = t2 as MatrixType
+					if (isNumeric(m2.base)) {
+						val base = commonType(m2.base,t1)
+						val mt = RoboChartFactory.eINSTANCE.createMatrixType()
+						mt.base = base
+						mt.rows = m2.rows
+						mt.columns = m2.columns
+						return normalise(mt)
+					} else return null
+				}
+				else if ((t2 instanceof VectorType && isNumeric(t1))) {
+					val m2 = t2 as VectorType
+					if (isNumeric(m2.base)) {
+						val base = commonType(m2.base,t1)
+						val mt = RoboChartFactory.eINSTANCE.createVectorType()
+						mt.base = base
+						mt.size = m2.size
+						return normalise(mt)
+					} else return null
+				}
+				else return null
 			}
 			Modulus: {
 				val nat = getNatType(e)
@@ -871,6 +997,35 @@ class RoboCalcTypeProvider {
 				val f = getFunction(e)
 				if(f === null) return null else return normalise(f.type)
 			}
+			TransposeExp: {
+				val t = e.value.typeFor
+				if (t instanceof MatrixType) {
+					val mt = RoboChartFactory.eINSTANCE.createMatrixType()
+					mt.base = EcoreUtil2.copy(t.base)
+					mt.rows = EcoreUtil2.copy(t.columns)
+					mt.columns = EcoreUtil2.copy(t.rows)
+					return mt
+				} else if (t instanceof VectorType) {
+					val mt = RoboChartFactory.eINSTANCE.createMatrixType()
+					mt.base = EcoreUtil2.copy(t.base)
+					val one = RoboChartFactory.eINSTANCE.createIntegerExp()
+					one.value = 1
+					mt.rows = one
+					mt.columns = EcoreUtil2.copy(t.size)
+					mt
+				} else return null
+			}
+			InverseExp: {
+				val t = e.value.typeFor
+				if (t instanceof MatrixType) {
+					val rows = t.rows
+					val cols = t.columns
+					if (equalsConstExp(rows,cols)) {
+						// this condition (square matrix) is not enough for inverse to exist, but the type system cannot check that the matrix is invertible
+						return EcoreUtil2.copy(t)
+					} else return null
+				}
+			}
 			default: {
 				System.out.println("This case is not covered by the type checker: " + e.class.toString);
 				return null
@@ -887,33 +1042,22 @@ class RoboCalcTypeProvider {
 	def Type normalise(Type x) {
 		switch x {
 			VectorType: {
-				val pt = RoboChartFactory.eINSTANCE.createProductType();
+				val pt = RoboChartFactory.eINSTANCE.createVectorType();
 				val base = normalise(x.base)
 				val size = x.size
-				for (var i = 0; i < size; i++) {
-					val t = EcoreUtil2.copy(base)
-					pt.types.add(t)
-				}
+				pt.base = EcoreUtil2.copy(base)
+				pt.size = EcoreUtil2.copy(size)
 				return pt
 			}
 			MatrixType: {
-				val column = RoboChartFactory.eINSTANCE.createProductType();
+				val mt = RoboChartFactory.eINSTANCE.createMatrixType();
 				val base = normalise(x.base)
 				val rows = x.rows
-				for (var i = 0; i < rows; i++) {
-					val t = EcoreUtil2.copy(base)
-					column.types.add(t)
-				}
-				
-				val cols = x.columns
-				if (cols === 1) return column
-				val m = RoboChartFactory.eINSTANCE.createProductType();
-				for (var i = 0; i < cols; i++) {
-					val c = EcoreUtil2.copy(column)
-					m.types.add(c)
-				}
-				
-				return m
+				val columns = x.columns
+				mt.base = EcoreUtil2.copy(base)
+				mt.rows = EcoreUtil2.copy(rows)
+				mt.columns = EcoreUtil2.copy(columns)				
+				return mt
 			}
 			ProductType: {
 				val pt = RoboChartFactory.eINSTANCE.createProductType();
@@ -989,14 +1133,17 @@ class RoboCalcTypeProvider {
 		} else if (a.class === b.class) {
 			switch a {
 				VectorType: {
-					if (a.size !== (b as VectorType).size) return false
+					val sizeEq = equalsConstExp(a.size,(b as VectorType).size)
+					if (!sizeEq) return false
 					if (! typeCompatible(a.base, (b as VectorType).base))
 						return false
 					return true
 				}
 				MatrixType: {
-					if (a.columns !== (b as MatrixType).columns) return false
-					if (a.rows !== (b as MatrixType).rows) return false
+					val rowsEq = equalsConstExp(a.rows,(b as MatrixType).rows)
+					val colsEq = equalsConstExp(a.columns,(b as MatrixType).columns)
+					if (!colsEq) return false
+					if (!rowsEq) return false
 					if (! typeCompatible(a.base, (b as MatrixType).base))
 						return false
 					return true
@@ -1382,6 +1529,32 @@ class RoboCalcTypeProvider {
 				TypeRef: {
 					return EcoreUtil2.copy(a)
 				}
+				VectorType: {
+					val t = RoboChartFactory.eINSTANCE.createVectorType
+					val base = instantiate(a.base, map)
+					val size = EcoreUtil2.copy(a.size)
+					if (base === null)
+						return null
+					else {
+						t.base = base
+						t.size = size
+						return t
+					}
+				}
+				MatrixType: {
+					val t = RoboChartFactory.eINSTANCE.createMatrixType
+					val base = instantiate(a.base, map)
+					val rows = EcoreUtil2.copy(a.rows)
+					val columns = EcoreUtil2.copy(a.columns)
+					if (base === null)
+						return null
+					else {
+						t.base = base
+						t.rows = rows
+						t.columns = columns
+						return t
+					}
+				}
 				default:
 					null
 			}
@@ -1397,98 +1570,6 @@ class RoboCalcTypeProvider {
 			}
 			return true
 		}
-	}
-
-//	def String printType(Type a) {
-//		if (a === null) return null
-//		else {
-//			switch a {
-//				AnyType: {
-//					if (a.identifier !== null)
-//						return "?"+a.identifier
-//					else return "Unknown"
-//				}
-//				ProductType: {
-//					if (a.types.size < 2) {
-//						throw new RuntimeException("Product type with less than two base types")
-//					} else {
-//						var s = "(" + a.types.get(0).printType
-//						for (var i = 1; i < a.types.size; i++) {
-//							s += "*"+a.types.get(i).printType
-//						}
-//						s += ")"
-//						return s
-//					}
-//				}
-//				FunctionType: {
-//					var s = "(" + a.domain.printType + " -> " + a.range.printType + ")"
-//					return s
-//				}
-//				RelationType: {
-//					var s = "(" + a.domain.printType + " <-> " + a.range.printType + ")"
-//					return s
-//				}
-//				SetType: {
-//					return "Set("+a.domain.printType+")"
-//				}
-//				SeqType: {
-//					return "Seq("+a.domain.printType+")"
-//				}
-//				TypeRef: {
-//					return a.ref.name
-//				}
-//				default: null
-//			}
-//		}
-//	}
-
-	def boolean is_vector(ProductType p) {
-		val base = p.types.get(0)
-		val size = p.types.size
-		for (var i = 1; i < size; i++) {
-			if (!typeCompatible(p.types.get(i), base))
-				return false
-		}
-		return true
-	}
-	
-	def boolean is_matrix(ProductType p) {
-		val base = p.types.get(0)
-		if (!(base instanceof ProductType && is_vector(base as ProductType))) return false
-		val size = p.types.size
-		for (var i = 1; i < size; i++) {
-			if (!typeCompatible(p.types.get(i), base))
-				return false
-		}
-		return true
-	}	
-
-	def int product_as_vector_size(ProductType p) {
-		if (is_vector(p))
-			return p.types.size
-		else -1
-	}
-	
-	def int product_as_matrix_columns(ProductType p) {
-		if (is_matrix(p))
-			return p.types.size
-		else -1
-	}
-	def int product_as_matrix_rows(ProductType p) {
-		if (is_matrix(p))
-			return (p.types.get(0) as ProductType).types.size
-		else -1
-	}
-	def Type getBase(ProductType p) {
-		if (is_matrix(p)) {
-			val c = p.types.get(0)
-			val e = (c as ProductType).types.get(0)
-			return EcoreUtil2.copy(e)
-		} else if (is_vector(p)) {
-			val e = p.types.get(0)
-			return EcoreUtil2.copy(e)
-		} else
-			return null
 	}
 	
 	def boolean isNumeric(Type t) {

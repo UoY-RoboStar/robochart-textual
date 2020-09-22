@@ -1,12 +1,12 @@
 /********************************************************************************
  * Copyright (c) 2019 University of York and others
- *
+ * 
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
  * http://www.eclipse.org/legal/epl-2.0.
- *
+ * 
  * SPDX-License-Identifier: EPL-2.0
- *
+ * 
  * Contributors:
  *   Alvaro Miyazawa - initial definition
  ********************************************************************************/
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.^extension.ExtendWith
 class RoboChartParsingTest {
 	@Inject
 	ParseHelper<RCPackage> parseHelper
-	
+
 	@Test
 	def void loadModel() {
 		val result = parseHelper.parse('''
@@ -42,4 +42,109 @@ class RoboChartParsingTest {
 		val errors = result.eResource.errors
 		Assertions.assertTrue(errors.isEmpty, '''Unexpected errors: «errors.join(", ")»''')
 	}
+
+	@Test
+	def void matrix_vector_num_Test() {
+		val result = parseHelper.parse('''
+			stm S {
+				const H: nat, W: nat
+				var a: vector(real,3)
+				var b: matrix(real,3,4)
+				var c: matrix(real,3,4)
+				var d: matrix(real,4,3)
+				var e: matrix(real,3,4)
+				var f: matrix(real,3,3)
+				var g: vector(real,3)
+				var i: vector(real,4)
+				var h: real 
+				initial I
+				state S {
+					entry e = b + c; f = e*d; g = f*a; h = g*a
+				}
+				transition t {
+					from I to S
+				} 
+			} 
+		''')
+		Assertions.assertNotNull(result)
+		val errors = result.eResource.errors
+		Assertions.assertTrue(errors.isEmpty, '''Unexpected errors: «errors.join(", ")»''')
+	}
+
+	@Test
+	def void matrix_vector_const_Test() {
+		val result = parseHelper.parse('''
+			stm S1 {
+				const H: nat, W: nat
+				var a: vector(real,H)
+				var b: matrix(real,H,W)
+				var c: matrix(real,H,W)
+				var d: matrix(real,W,H)
+				var e: matrix(real,H,W)
+				var f: matrix(real,H,H)
+				var g: vector(real,H)
+				var i: vector(real,W)
+				var h: real 
+				initial I
+				state S {
+					entry e = b + c; f = e*d; g = f*a; h = g*a
+				}
+				transition t {
+					from I to S
+				} 
+			}
+		''')
+		Assertions.assertNotNull(result)
+		val errors = result.eResource.errors
+		Assertions.assertTrue(errors.isEmpty, '''Unexpected errors: «errors.join(", ")»''')
+	}
+
+	@Test
+	def void inverse_transpose_Test() {
+		val result = parseHelper.parse('''
+			stm S2 {
+				var a: matrix(real,3,4) 
+				var b: matrix(real,4,3) 
+				var c: matrix(real,3,3)
+				var d: matrix(real,3,3)
+				var e: vector(real,3)
+				var f: matrix(real,1,3)
+				 
+				initial I
+				state S { 
+					entry b = transpose(a); d = inverse(c); f = transpose(e)  
+				}
+				transition t {
+					from I to S
+				} 
+			}
+		''')
+		Assertions.assertNotNull(result)
+		val errors = result.eResource.errors
+		Assertions.assertTrue(errors.isEmpty, '''Unexpected errors: «errors.join(", ")»''')
+	}
+	
+	@Test
+	def void vector_matrix_exp_Test() {
+		val result = parseHelper.parse('''
+			stm S3 {
+				var a: matrix(real,3,4)
+				var b: matrix(real,3,3)
+				var c: vector(real,3)
+				var d: matrix(real,1,3)
+				 
+				initial I
+				state S { 
+					entry a = [|1,1,1;2,2,2;3,3,3;4,4,4|]; b = [|1,1,1;2,2,2;3,3,3|]; c = [|1,2,3|]; d = [|1;1;1|]
+				}
+				transition t {
+					from I to S
+				} 
+			}
+		''')
+		Assertions.assertNotNull(result)
+		val errors = result.eResource.errors
+		Assertions.assertTrue(errors.isEmpty, '''Unexpected errors: «errors.join(", ")»''')
+	}
+
 }

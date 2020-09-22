@@ -57,6 +57,7 @@ import circus.robocalc.robochart.LambdaExp
 import circus.robocalc.robochart.LessOrEqual
 import circus.robocalc.robochart.LessThan
 import circus.robocalc.robochart.Literal
+import circus.robocalc.robochart.MatrixType
 import circus.robocalc.robochart.Minus
 import circus.robocalc.robochart.Modulus
 import circus.robocalc.robochart.Mult
@@ -104,6 +105,7 @@ import circus.robocalc.robochart.TypeRef
 import circus.robocalc.robochart.VarRef
 import circus.robocalc.robochart.Variable
 import circus.robocalc.robochart.VariableModifier
+import circus.robocalc.robochart.VectorType
 import circus.robocalc.robochart.Wait
 import circus.robocalc.robochart.textual.RoboCalcTypeProvider
 import com.google.inject.Inject
@@ -2486,6 +2488,54 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				msg,
 				RoboChartPackage.Literals.FIELD_DEFINITION__VALUE,
 				'FieldDefinitionTypeError'
+			)
+		}
+	}
+	
+	@Check
+	def wfc_MatrixType(MatrixType t) {
+		val rowsIsIntExp = t.rows instanceof IntegerExp;
+		val rowsIsConst = if (t.rows instanceof RefExp) {
+			val ref = (t.rows as RefExp).ref 
+			if (ref instanceof Variable && (ref as Variable).modifier == VariableModifier.CONST) {
+				true
+			} else false
+		} else false
+		val colsIsIntExp = t.columns instanceof IntegerExp;
+		val colsIsConst = if (t.columns instanceof RefExp) {
+			val ref = (t.rows as RefExp).ref 
+			if (ref instanceof Variable && (ref as Variable).modifier == VariableModifier.CONST) {
+				true
+			} else false
+		} else false
+		if (!(rowsIsConst || rowsIsIntExp)) {
+			error('''The values for rows in a matrix type must be either an integer or an integer valued constant.''',
+				RoboChartPackage.Literals.MATRIX_TYPE__ROWS,
+				'MatrixTypeRowsError'
+			)
+		}
+		if (!(colsIsConst || colsIsIntExp)) {
+			error('''The values for columns in a matrix type must be either an integer or an integer valued constant.''',
+				RoboChartPackage.Literals.MATRIX_TYPE__COLUMNS,
+				'MatrixTypeColumnsError'
+			)
+		}
+	}
+	
+	@Check
+	def wfc_VectorType(VectorType t) {
+		val sizeIsIntExp = t.size instanceof IntegerExp;
+		val sizeIsConst = if (t.size instanceof RefExp) {
+			val ref = (t.size as RefExp).ref 
+			if (ref instanceof Variable && (ref as Variable).modifier == VariableModifier.CONST) {
+				true
+			} else false
+		} else false
+		
+		if (!(sizeIsConst || sizeIsIntExp)) {
+			error('''The size of a vector type must be either an integer or an integer valued constant.''',
+				RoboChartPackage.Literals.VECTOR_TYPE__SIZE,
+				'VectorTypeSizeError'
 			)
 		}
 	}
