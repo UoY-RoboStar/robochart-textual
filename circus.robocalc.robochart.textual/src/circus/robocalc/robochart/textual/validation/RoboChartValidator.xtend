@@ -1984,6 +1984,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 					conn,
 					RoboChartPackage.Literals.CONNECTION__EFROM
 				)
+			} else {
 				eventConn.put(from, conn)
 			}
 
