@@ -275,7 +275,7 @@ Transition:
 		'from' source=[Node]
 		'to' target=[Node]
 		(
-			'trigger' ('{' start=Expression '}>')? trigger=Trigger ('<{' end=Expression '}')? |
+			'trigger' trigger=Trigger ('<{' end=Expression '}')? |
 			'probability' probability=Expression
 		)?
 		('condition' condition=(Expression|Else))?
@@ -557,16 +557,16 @@ RangeAndParExp returns Expression:
 // Definition of statements and actions
 
 Statement:
-	StartStatement (
-		{SeqStatement.statements+=current} ';' statements+=StartStatement
-		(';' statements+=StartStatement)*
+	EndStatement (
+		{SeqStatement.statements+=current} ';' statements+=EndStatement
+		(';' statements+=EndStatement)*
 	)?
 ;
 
-StartStatement returns Statement:
-	{TimedStatement} '{' start=Expression '}>' stmt=BasicStatement ('<{' end=Expression '}')? |
-	EndStatement
-;
+//StartStatement returns Statement:
+//	{TimedStatement} stmt=BasicStatement ('<{' end=Expression '}')? |
+//	EndStatement
+//;
 
 EndStatement returns Statement:
 	BasicStatement ({TimedStatement.stmt=current} '<{' end=Expression '}')?
