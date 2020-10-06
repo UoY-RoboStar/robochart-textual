@@ -754,16 +754,16 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				)
 			}
 			
-
+			// Calculate events, variables and clocks available from stm
 			val events = new HashSet<Event>
-			events.addAll(c.events)
-			c.interfaces.forEach[i | events.addAll(i.events)]
+			events.addAll(stm.events)
+			stm.interfaces.forEach[i | events.addAll(i.events)]
 			 
 			val stmpVars = getPVars(stm)
 			
 			val clocks = new HashSet<Clock>
-			clocks.addAll(c.clocks)
-			c.interfaces.forEach[i | clocks.addAll(i.clocks)]	
+			clocks.addAll(stm.clocks)
+			stm.interfaces.forEach[i | clocks.addAll(i.clocks)]	
 						
 			/* STM8, STM9 and STM10 checked for opDef in relation to stm. */ 
 			for (op : rOps) {
