@@ -880,7 +880,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		if (revents !== null) {
 			for (v : revents) {
 				// If it doesn't exist, it's an error
-				if (!events.exists[x|x.name == v.name && typeCompatible(v.type,x.type)]) {
+				if (!events.exists[x|x.name == v.name && ((v.type === null && x.type === null) || typeCompatible(v.type,x.type))]) {
 					error(
 						'\'' + stm.name + '\' uses event \'' + v.name + '\' but \'' + c.name + '\' does not use or define \'' + v.name + '\'.',
 						c,
@@ -1004,7 +1004,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				if (levents !== null) {
 					for (v : revents) {
 						// If it doesn't exist, it's an error
-						if (!levents.exists[x|x.name == v.name && typeCompatible(v.type,x.type)]) {
+						if (!levents.exists[x|x.name == v.name && ((v.type === null && x.type === null) || typeCompatible(v.type,x.type))]) {
 							error(
 								'\'' + s.name + '\' uses event \'' + v.name + '\' but \'' + c.name + '\' does not use or define \'' + v.name + '\'.',
 								c,
