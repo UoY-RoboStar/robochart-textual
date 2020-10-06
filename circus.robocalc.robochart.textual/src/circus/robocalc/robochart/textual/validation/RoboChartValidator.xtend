@@ -770,7 +770,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			}
 		}
 		
-		/* C4 (extended)
+		/* C4 (weakened)
 		 *
 		 * All operations required by the controller's state machines, including the machines that define operations,
 		 * must be required or defined by the controller. 
@@ -797,7 +797,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			
 			val clocks = new HashSet<Clock>
 			clocks.addAll(opDef.clocks)
-			opDef.RInterfaces.forEach[i | clocks.addAll(i.clocks)]	
+			opDef.interfaces.forEach[i | clocks.addAll(i.clocks)]	
 			
 			for (op : rOps) {
 				val requiredOpDef = opDefs.findFirst[x|OpEqual(op,x)]
@@ -1015,7 +1015,9 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				val rclocks = new HashSet<Clock>
 				s.RInterfaces.forEach[i | rclocks.addAll(i.clocks)]
 				
-				val clocks = c.clocks
+				val clocks = new HashSet<Clock>
+				clocks.addAll(c.clocks)
+				c.interfaces.forEach[i | clocks.addAll(i.clocks)]
 				
 				if (rclocks !== null) {
 					for (v : rclocks) {
