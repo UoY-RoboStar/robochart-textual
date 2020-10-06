@@ -761,11 +761,15 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			 
 			val stmpVars = getPVars(stm)
 			
+			val clocks = new HashSet<Clock>
+			clocks.addAll(c.clocks)
+			c.interfaces.forEach[i | clocks.addAll(i.clocks)]	
+						
 			/* STM8, STM9 and STM10 checked for opDef in relation to stm. */ 
 			for (op : rOps) {
 				val opDef = opDefs.findFirst[x|OpEqual(op,x)]
 				if (opDef !== null) {
-					requiresProvides(stm,opDef,stmpVars.toSet,stm.clocks.toSet,events)		
+					requiresProvides(stm,opDef,stmpVars.toSet,clocks,events)		
 				}
 			}
 		}
