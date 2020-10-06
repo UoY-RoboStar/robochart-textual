@@ -125,6 +125,8 @@ import org.eclipse.xtext.resource.IResourceDescriptions
 import org.eclipse.xtext.serializer.ISerializer
 import org.eclipse.xtext.validation.Check
 import org.eclipse.xtext.validation.CheckType
+import java.util.ArrayList
+import circus.robocalc.robochart.Clock
 
 /**
  * This class contains custom validation rules. 
@@ -709,7 +711,20 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		val machines = new HashSet<EObject>();
 		machines.addAll(c.machines)
 		//machinesAndOperations.addAll(c.LOperations)
+		
+		var opDefs = new HashSet<OperationDef>()
+		for (o: c.LOperations) {
+			val def = if (o instanceof OperationRef) o.ref else o as OperationDef
+			opDefs.add(def)
+		}
+		
 		for (s : machines) {
+			
+			// We record the current context for tracking the depth of the check (STM8)
+			var clist = new ArrayList<Context>
+			clist.add(c)
+			val stm = if (s instanceof StateMachineRef) s.ref else (s as StateMachineDef)		
+				
 			/* C3 */
 			val rVars = getRVars(s)
 			if (!pVars.containsAll(rVars)) {
@@ -737,6 +752,58 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 					RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
 					'ControllerProvidesAllOps'
 				)
+			}
+			
+
+			val events = new HashSet<Event>
+			events.addAll(c.events)
+			c.interfaces.forEach[i | events.addAll(i.events)]
+			 
+			val stmpVars = getPVars(stm)
+			
+			/* STM8, STM9 and STM10 checked for opDef in relation to stm. */ 
+			for (op : rOps) {
+				val opDef = opDefs.findFirst[x|OpEqual(op,x)]
+				if (opDef !== null) {
+					requiresProvides(stm,opDef,stmpVars.toSet,stm.clocks.toSet,events)		
+				}
+			}
+		}
+		
+		/* C4 (extended)
+		 *
+		 * All operations required by the controller's state machines, including the machines that define operations,
+		 * must be required or defined by the controller. 
+		 */
+		for (opDef : opDefs) {
+			val rOps = getROps(opDef)
+			if (rOps !== null) {
+				for (op : rOps) {
+					if (!pOps.exists[x|OpSigEqual(op,x)]) {
+						error(
+							'\'' + opDef.name + '\' requires operation \'' + op.name + '\' but controller ' + c.name + ' does not define or require it.',
+							RoboChartPackage.Literals.CONTROLLER_DEF__LOPERATIONS,
+							'ControllerProvidesAllOps'
+						)
+					}
+				}
+			}
+			
+			val opDefPVars = getPVars(opDef)
+			
+			val events = new HashSet<Event>
+			events.addAll(opDef.events)
+			opDef.interfaces.forEach[i | events.addAll(i.events)]
+			
+			val clocks = new HashSet<Clock>
+			clocks.addAll(opDef.clocks)
+			opDef.RInterfaces.forEach[i | clocks.addAll(i.clocks)]	
+			
+			for (op : rOps) {
+				val requiredOpDef = opDefs.findFirst[x|OpEqual(op,x)]
+				if (requiredOpDef !== null) {
+					requiresProvides(opDef,requiredOpDef,opDefPVars.toSet,clocks,events)		
+				}
 			}
 		}
 		
@@ -769,6 +836,79 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				)
 		}
 	}
+
+	def void requiresProvides(Context c, 
+							  StateMachineBody stm,
+							  Set<Variable> vars, 
+							  Set<Clock> clocks,
+							  Set<Event> events
+	) {
+
+		/* STM8 *
+		 *
+		 * A state machine that requires an operation, including a machine that defines another operation,
+		 * must define, or require all variables required by that operation.
+		 */
+		var rvars = stm.getRVars
+		if (rvars !== null) {
+			for (v : rvars) {
+				// If it doesn't exist, it's an error
+				if (!vars.exists[x|x.name == v.name && typeCompatible(v.type,x.type)]) {
+					error(
+						'\'' + stm.name + '\' requires variable \'' + v.name + '\' but \'' + c.name + '\' does not provide it.',
+						c,
+						RoboChartPackage.Literals.CONTEXT__RINTERFACES,
+						'StateMachineRequiredVars'
+					)
+				}
+			}
+		}
+		
+		/* STM9
+		 * 
+		 * A state machine that calls an operation, including a machine that defines another
+		 * operation, must define all events defined in that operation.  
+		 */
+		val revents = new HashSet<Event>
+		revents.addAll(stm.events)
+		stm.interfaces.forEach[i | revents.addAll(i.events)]
+		
+		if (revents !== null) {
+			for (v : revents) {
+				// If it doesn't exist, it's an error
+				if (!events.exists[x|x.name == v.name && typeCompatible(v.type,x.type)]) {
+					error(
+						'\'' + stm.name + '\' uses event \'' + v.name + '\' but \'' + c.name + '\' does not use or define \'' + v.name + '\'.',
+						c,
+						RoboChartPackage.Literals.CONTEXT__RINTERFACES,
+						'StateMachineRequiredVars'
+					)
+				}
+			}
+		}
+
+		/* STM10
+		 * 
+		 * A state machine that calls an operation, including a machine that defines another
+		 * operation, must define or require all clocks required by that operation.
+		 */
+		val rclocks = new HashSet<Clock>
+		stm.RInterfaces.forEach[i | rclocks.addAll(i.clocks)]
+		
+		if (rclocks !== null) {
+			for (v : rclocks) {
+				// If it doesn't exist, it's an error
+				if (!clocks.exists[x|x.name == v.name]) {
+					error(
+						'\'' + stm.name + '\' requires clock \'' + v.name + '\' but \'' + c.name + '\' does not provide it.',
+						c,
+						RoboChartPackage.Literals.CONTEXT__RINTERFACES,
+						'StateMachineRequiredVars'
+					)
+				}
+			}
+		}
+	}
 	
 	def Boolean OpEqual(OperationSig sig, Operation op) {
 		val OperationDef def = if (op instanceof OperationRef) op.ref else op as OperationDef;
@@ -781,6 +921,17 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 		return true;
 	}
+	
+	def Boolean OpSigEqual(OperationSig sig, OperationSig op) {
+		if (!op.name.equals(sig.name)) return false;
+		if (sig.parameters.size != op.parameters.size) return false;
+		for (var i = 0; i < sig.parameters.size; i++) {
+			val par1 = sig.parameters.get(i);
+			val par2 = op.parameters.get(i);
+			if (!par1.equals(par2)) return false;
+		}
+		return true;
+	}	
 
 	/* STM1, together with I2 implies STM2 and (because OperationDef is a Context) O1:STM2 */
 	@Check
@@ -827,15 +978,58 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 					)
 				}
 				/* C4 */
-				val rOps = getROps(s)
-				if (!pOps.containsAll(rOps)) {
-					error(
-						c.name + ' does not provide all operations required by ' + getName(s),
-						RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
-						'ControllerProvidesAllOps'
-					)
+				// In the new compositional semantics this restriction is no longer required,
+				// as instead, C4 only applies at the level of a controller.
+//				val rOps = getROps(s)
+//				if (!pOps.containsAll(rOps)) {
+//					error(
+//						c.name + ' does not provide all operations required by ' + getName(s),
+//						RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+//						'ControllerProvidesAllOps'
+//					)
+//				}
+				/* STM9 */
+				val levents = new HashSet<Event>
+				levents.addAll(c.events)
+				c.interfaces.forEach[i | levents.addAll(i.events)]
+				
+				val revents = new HashSet<Event>
+				revents.addAll(s.events)
+				s.interfaces.forEach[i | revents.addAll(i.events)]
+							
+				if (levents !== null) {
+					for (v : revents) {
+						// If it doesn't exist, it's an error
+						if (!levents.exists[x|x.name == v.name && typeCompatible(v.type,x.type)]) {
+							error(
+								'\'' + s.name + '\' uses event \'' + v.name + '\' but \'' + c.name + '\' does not use or define \'' + v.name + '\'.',
+								c,
+								RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+								'StateMachineOperationUsesEvents'
+							)
+						}
+					}
 				}
-			
+				
+				/* STM10 */
+				val rclocks = new HashSet<Clock>
+				s.RInterfaces.forEach[i | rclocks.addAll(i.clocks)]
+				
+				val clocks = c.clocks
+				
+				if (rclocks !== null) {
+					for (v : rclocks) {
+						// If it doesn't exist, it's an error
+						if (!clocks.exists[x|x.name == v.name]) {
+							error(
+								'\'' + s.name + '\' requires clock \'' + v.name + '\' but \'' + c.name + '\' does not provide it.',
+								c,
+								RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+								'StateMachineRequiredClocks'
+							)
+						}
+					}
+				}			
 			}
 			
 		}
@@ -888,17 +1082,15 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 					)
 				}
 				/* C4 */
-				val rOps = getROps(s)
-				if (!pOps.containsAll(rOps)) {
-					error(
-						c.name + ' in the context of the controller ' + parent.name + ' does not provide all operations required by ' + getName(s),
-						RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
-						'ControllerProvidesAllOps'
-					)
-				}
-			
+//				val rOps = getROps(s)
+//				if (!pOps.containsAll(rOps)) {
+//					error(
+//						c.name + ' in the context of the controller ' + parent.name + ' does not provide all operations required by ' + getName(s),
+//						RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+//						'ControllerProvidesAllOps'
+//					)
+//				}			
 			}
-			
 		}
 	}
 
@@ -931,6 +1123,16 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		} else if (o instanceof ControllerRef) {
 			return getPVars(o.ref)
 		} else if (o instanceof StateMachineDef) {
+			val pVars = new LinkedList<Variable>()
+			o.variableList.forEach[l|pVars.addAll(l.vars)]
+			o.RInterfaces.forEach [ i |
+				i.variableList.forEach[l|pVars.addAll(l.vars)]
+			]
+			o.interfaces.forEach [ i |
+				i.variableList.forEach[l|pVars.addAll(l.vars)]
+			]
+			return pVars
+		} else if (o instanceof OperationDef) {
 			val pVars = new LinkedList<Variable>()
 			o.variableList.forEach[l|pVars.addAll(l.vars)]
 			o.RInterfaces.forEach [ i |
