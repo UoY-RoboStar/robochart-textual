@@ -2748,4 +2748,72 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			)
 		}
 	}
+
+	@Check
+	def junctionWFC_PJ1(ProbabilisticJunction j) {
+		val parent = j.eContainer as NodeContainer
+		for (t : parent.transitions.filter[t|t.source === j]) {
+			if(t.trigger !== null) {
+				error(
+					'Outgoing transitions of a ProbabilisticJunction in ' + parent.name + ' couldn\'t have a trigger',
+					RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+					'outgoingTransfromProbJuncWithTrigError'
+				)
+			}
+		}
+	}
+
+	@Check
+	def junctionWFC_PJ2(ProbabilisticJunction j) {
+		val parent = j.eContainer as NodeContainer
+		for (t : parent.transitions.filter[t|t.source === j]) {
+			if(t.probability === null) {
+				error(
+					'Outgoing transitions of a ProbabilisticJunction in ' + parent.name + ' should have one probability value',
+					RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+					'outgoingTransProbJuncWithoutProbValueError'
+				)
+			}
+		}
+	}
+
+	@Check
+	def junctionWFC_PJ3(ProbabilisticJunction j) {
+		val parent = j.eContainer as NodeContainer
+		val lstExpr = new ArrayList<Expression>()
+
+		for (t : parent.transitions.filter[t|t.source === j]) {
+			lstExpr.add(t.probability)
+		}
+
+		if(!sumExprEq1(lstExpr)) {
+			warning(
+				'Sum of probabilities of outgoing transitions from a ProbabilisticJunction in ' + parent.name + ' might not be equal to 1',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'probsfromProbJuncNotEqual1'
+			)
+		}
+	}
+
+	def private Boolean sumExprEq1(List<Expression> exprs) {
+		val num = exprs.filter[t|(t instanceof IntegerExp) || (t instanceof FloatExp)].size
+		if(exprs.size === num) {
+			var sum = 0.0
+			for(e: exprs) {
+				if(e instanceof IntegerExp) {
+					sum = sum + (e as IntegerExp).value
+				} else if(e instanceof FloatExp) {
+					sum = sum + (e as FloatExp).value
+				}
+			}
+
+			if(sum === 1.0) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		return false
+	}
 }
