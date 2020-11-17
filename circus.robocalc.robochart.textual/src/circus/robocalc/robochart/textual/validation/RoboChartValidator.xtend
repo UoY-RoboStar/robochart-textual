@@ -769,7 +769,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			for (op : rOps) {
 				val opDef = opDefs.findFirst[x|OpEqual(op,x)]
 				if (opDef !== null) {
-					requiresProvides(stm,opDef,stmpVars.toSet,clocks,events)		
+					requiresProvides(c,stm,opDef,stmpVars.toSet,clocks,events)		
 				}
 			}
 		}
@@ -806,7 +806,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			for (op : rOps) {
 				val requiredOpDef = opDefs.findFirst[x|OpEqual(op,x)]
 				if (requiredOpDef !== null) {
-					requiresProvides(opDef,requiredOpDef,opDefPVars.toSet,clocks,events)		
+					requiresProvides(c,opDef,requiredOpDef,opDefPVars.toSet,clocks,events)		
 				}
 			}
 		}
@@ -841,7 +841,8 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 	}
 
-	def void requiresProvides(Context c, 
+	def void requiresProvides(NamedElement c,
+							  StateMachineBody container, 
 							  StateMachineBody stm,
 							  Set<Variable> vars, 
 							  Set<Clock> clocks,
@@ -859,9 +860,9 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				// If it doesn't exist, it's an error
 				if (!vars.exists[x|x.name == v.name && typeCompatible(v.type,x.type)]) {
 					error(
-						'\'' + stm.name + '\' requires variable \'' + v.name + '\' but \'' + c.name + '\' does not provide it.',
+						'\'' + stm.name + '\' requires variable \'' + v.name + '\' but \'' + container.name + '\' does not provide it.',
 						c,
-						RoboChartPackage.Literals.CONTEXT__RINTERFACES,
+						RoboChartPackage.Literals.CONTROLLER_DEF__MACHINES,
 						'StateMachineRequiredVars'
 					)
 				}
@@ -882,9 +883,9 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				// If it doesn't exist, it's an error
 				if (!events.exists[x|x.name == v.name && ((v.type === null && x.type === null) || typeCompatible(v.type,x.type))]) {
 					error(
-						'\'' + stm.name + '\' uses event \'' + v.name + '\' but \'' + c.name + '\' does not use or define \'' + v.name + '\'.',
+						'\'' + stm.name + '\' uses event \'' + v.name + '\' but \'' + container.name + '\' does not use or define \'' + v.name + '\'.',
 						c,
-						RoboChartPackage.Literals.CONTEXT__RINTERFACES,
+						RoboChartPackage.Literals.CONTROLLER_DEF__MACHINES,
 						'StateMachineRequiredVars'
 					)
 				}
@@ -904,9 +905,9 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				// If it doesn't exist, it's an error
 				if (!clocks.exists[x|x.name == v.name]) {
 					error(
-						'\'' + stm.name + '\' requires clock \'' + v.name + '\' but \'' + c.name + '\' does not provide it.',
+						'\'' + stm.name + '\' requires clock \'' + v.name + '\' but \'' + container.name + '\' does not provide it.',
 						c,
-						RoboChartPackage.Literals.CONTEXT__RINTERFACES,
+						RoboChartPackage.Literals.CONTROLLER_DEF__MACHINES,
 						'StateMachineRequiredVars'
 					)
 				}
