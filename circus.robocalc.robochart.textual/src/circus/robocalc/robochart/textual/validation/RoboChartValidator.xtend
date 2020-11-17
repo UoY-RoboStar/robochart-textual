@@ -306,7 +306,17 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	def checkStateMachineHasInitialState(NodeContainer stm) {
 		if (stm.nodes.size > 0 && stm.nodes.filter(Initial).size !== 1)
 			warning(
-				'A state machine or composite state should have exactly one initial state',
+				'A composite state should have exactly one initial state',
+				RoboChartPackage.Literals.NODE_CONTAINER__NODES,
+				NO_INITIAL
+			)
+	}
+	
+	@Check
+	def checkStateMachineHasInitialState(StateMachineDef stm) {
+		if (stm.nodes.filter(Initial).size !== 1)
+			error(
+				'A state machine should have exactly one initial state',
 				RoboChartPackage.Literals.NODE_CONTAINER__NODES,
 				NO_INITIAL
 			)
