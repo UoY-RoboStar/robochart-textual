@@ -811,6 +811,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			
 			val clocks = new HashSet<Clock>
 			clocks.addAll(opDef.clocks)
+			opDef.RInterfaces.forEach[i | clocks.addAll(i.clocks)]
 			opDef.interfaces.forEach[i | clocks.addAll(i.clocks)]	
 			
 			for (op : rOps) {
