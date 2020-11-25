@@ -97,8 +97,7 @@ import circus.robocalc.robochart.StateMachineDef
 import circus.robocalc.robochart.StateMachineRef
 import circus.robocalc.robochart.Statement
 import circus.robocalc.robochart.Transition
-import circus.robocalc.robochart.Trigger
-import circus.robocalc.robochart.TriggerType
+import circus.robocalc.robochart.CommunicationType
 import circus.robocalc.robochart.TupleExp
 import circus.robocalc.robochart.Type
 import circus.robocalc.robochart.TypeRef
@@ -127,6 +126,7 @@ import org.eclipse.xtext.validation.Check
 import org.eclipse.xtext.validation.CheckType
 import java.util.ArrayList
 import circus.robocalc.robochart.Clock
+import circus.robocalc.robochart.Communication
 
 /**
  * This class contains custom validation rules. 
@@ -1885,121 +1885,117 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 	@Check
 	def sendEventWFC(SendEvent s) {
-		if (s.trigger.time !== null) {
-			error('A send action cannot have a time associated with it', RoboChartPackage.Literals.SEND_EVENT__TRIGGER,
-				'NoTimeInSendEvent');
-		}
-		if (s.trigger.reset !== null && s.trigger.reset.length > 0) {
-			error('A send action cannot have a reset associated with it', RoboChartPackage.Literals.SEND_EVENT__TRIGGER,
-				'NoResetInSendEvent');
-		}
-		if (s.trigger._type === TriggerType.EMPTY) {
-			error('A send action cannot have an empty trigger', RoboChartPackage.Literals.SEND_EVENT__TRIGGER,
-				'NoEmptyTriggerInSendEvent');
-		}
+//		if (s.trigger.reset !== null && s.trigger.reset.length > 0) {
+//			error('A send action cannot have a reset associated with it', RoboChartPackage.Literals.SEND_EVENT__TRIGGER,
+//				'NoResetInSendEvent');
+//		}
+//		if (s.trigger._type === CommunicationType.EMPTY) {
+//			error('A send action cannot have an empty trigger', RoboChartPackage.Literals.SEND_EVENT__TRIGGER,
+//				'NoEmptyTriggerInSendEvent');
+//		}
 	}
 
 	@Check
-	def triggerWellTyped(Trigger t) {
+	def communicationWellTyped(Communication t) {
 		/* Tg1 */
 		// Violation is currently not possible because the syntax (editors) doesn't allow the creation of such objects
-		if (t._type === TriggerType.SIMPLE) {
+		if (t._type === CommunicationType.SIMPLE) {
 			if (t.parameter !== null) {
 				error(
-					'A simple trigger should not specify a parameter attribute',
-					RoboChartPackage.Literals.TRIGGER__PARAMETER,
+					'A simple communication should not specify a parameter attribute',
+					RoboChartPackage.Literals.COMMUNICATION__PARAMETER,
 					'NoParametersForSimpleTriggers'
 				)							
 			}
 			if (t.value !== null) {
 				error(
-					'A simple trigger should not specify a value attribute',
-					RoboChartPackage.Literals.TRIGGER__VALUE,
+					'A simple communication should not specify a value attribute',
+					RoboChartPackage.Literals.COMMUNICATION__VALUE,
 					'NoValueForSimpleTriggers'
 				)							
 			}
 		}
 		/* Tg5 */
-		if ((t._type === TriggerType.INPUT || t._type === TriggerType.OUTPUT || t._type === TriggerType.SYNC) &&
+		if ((t._type === CommunicationType.INPUT || t._type === CommunicationType.OUTPUT || t._type === CommunicationType.SYNC) &&
 			t.event.type === null) {
 			error(
-				'An input, output or sync trigger must refer to a typed event. See ' + t.event.name,
-				RoboChartPackage.Literals.TRIGGER__EVENT,
+				'An input, output or sync communication must refer to a typed event. See ' + t.event.name,
+				RoboChartPackage.Literals.COMMUNICATION__EVENT,
 				'TypedEventRequired'
 			)
 		}
 		/* Tg2 */
-		if ((t._type === TriggerType.SIMPLE) && t.event.type !== null) {
+		if ((t._type === CommunicationType.SIMPLE) && t.event.type !== null) {
 			error(
-				'A simple trigger must refer to an untyped event. See ' + t.event.name,
-				RoboChartPackage.Literals.TRIGGER__EVENT,
+				'A simple communication must refer to an untyped event. See ' + t.event.name,
+				RoboChartPackage.Literals.COMMUNICATION__EVENT,
 				'UntypedEventRequired'
 			)
 		}
 		/* Tg3 */
-		if (t._type === TriggerType.INPUT && (t.parameter === null || t.value !== null)) {
+		if (t._type === CommunicationType.INPUT && (t.parameter === null || t.value !== null)) {
 			error(
-				'An input trigger must have a parameter, not a value',
-				RoboChartPackage.Literals.TRIGGER__EVENT,
+				'An input communication must have a parameter, not a value',
+				RoboChartPackage.Literals.COMMUNICATION__EVENT,
 				'InputParameterError'
 			)
 		}
 		/* Tg4 */
-		if (t._type === TriggerType.OUTPUT && (t.parameter !== null || t.value === null)) {
+		if (t._type === CommunicationType.OUTPUT && (t.parameter !== null || t.value === null)) {
 			error(
-				'An output trigger must have a value, not a parameter',
-				RoboChartPackage.Literals.TRIGGER__EVENT,
+				'An output communication must have a value, not a parameter',
+				RoboChartPackage.Literals.COMMUNICATION__EVENT,
 				'OutputParameterError'
 			)
 		}
 		/* Tg4 */
-		if (t._type === TriggerType.SYNC && (t.parameter !== null || t.value === null)) {
+		if (t._type === CommunicationType.SYNC && (t.parameter !== null || t.value === null)) {
 			error(
-				'An synchronisation trigger must have a value, not a parameter',
-				RoboChartPackage.Literals.TRIGGER__EVENT,
+				'An synchronisation communication must have a value, not a parameter',
+				RoboChartPackage.Literals.COMMUNICATION__EVENT,
 				'SyncParameterError'
 			)
 		}
 
-		if (t._type === TriggerType.INPUT) {
+		if (t._type === CommunicationType.INPUT) {
 			val t1 = t.parameter.type
 			val t2 = t.event.type
 			if (!typeCompatible(t1, t2)) {
 				error(
 					'Event ' + t.event.name + ' expects type ' + t2.printType + ', but input parameter has type ' +
 						t1.printType,
-					RoboChartPackage.Literals.TRIGGER__PARAMETER,
-					'InputTriggerTypeError'
+					RoboChartPackage.Literals.COMMUNICATION__PARAMETER,
+					'InputCommunicationTypeError'
 				)
 			}
-		} else if (t._type === TriggerType.OUTPUT) {
+		} else if (t._type === CommunicationType.OUTPUT) {
 			val t1 = t.value.typeFor
 			val t2 = t.event.type
 			if (!typeCompatible(t1, t2)) {
 				error(
 					'Event ' + t.event.name + ' expects type ' + t2.printType + ', but output value has type ' +
 						t1.printType,
-					RoboChartPackage.Literals.TRIGGER__VALUE,
-					'OutputTriggerTypeError'
+					RoboChartPackage.Literals.COMMUNICATION__VALUE,
+					'OutputCommunicationTypeError'
 				)
 			}
-		} else if (t._type === TriggerType.SYNC) {
+		} else if (t._type === CommunicationType.SYNC) {
 			val t1 = t.value.typeFor
 			val t2 = t.event.type
 			if (!typeCompatible(t1, t2)) {
 				error(
 					'Event ' + t.event.name + ' expects type ' + t2.printType +
 						', but synchronisation value has type ' + t1.printType,
-					RoboChartPackage.Literals.TRIGGER__VALUE,
-					'SyncTriggerTypeError'
+					RoboChartPackage.Literals.COMMUNICATION__VALUE,
+					'SyncCommunicationTypeError'
 				)
 			}
-		} else if (t._type === TriggerType.SIMPLE) {
+		} else if (t._type === CommunicationType.SIMPLE) {
 			if (t.event.type !== null) {
 				error(
 					'Event ' + t.event.name + ' expects a value of type ' + t.event.type.printType,
-					RoboChartPackage.Literals.TRIGGER__EVENT,
-					'SimpleTriggerTypeError'
+					RoboChartPackage.Literals.COMMUNICATION__EVENT,
+					'SimpleCommunicationTypeError'
 				)
 			}
 		}
@@ -2238,9 +2234,9 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 		for (t : nc.transitions) {
 			// need to check trigger and action of each transition, as both may contain a communication
-			if (t.trigger !== null && t.trigger.get_type === TriggerType.OUTPUT)
+			if (t.trigger !== null && t.trigger.get_type === CommunicationType.OUTPUT)
 				outputs.add(t.trigger.event)
-			if (t.trigger !== null && t.trigger.get_type === TriggerType.SYNC)
+			if (t.trigger !== null && t.trigger.get_type === CommunicationType.SYNC)
 				outputs.add(t.trigger.event) // c.x is an output
 				// simple event in trigger is always an input
 			if(t.action !== null) outputs.addAll(statementOutputSet(t.action))
@@ -2265,12 +2261,12 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		var outputs = new HashSet<Event>()
 
 		if (s instanceof SendEvent) {
-			if (s.trigger !== null && s.trigger.get_type === TriggerType.OUTPUT)
+			if (s.trigger !== null && s.trigger.get_type === CommunicationType.OUTPUT)
 				outputs.add(s.trigger.event)
-			if (s.trigger !== null && s.trigger.get_type === TriggerType.SYNC)
+			if (s.trigger !== null && s.trigger.get_type === CommunicationType.SYNC)
 				outputs.add(s.trigger.event) // c.x is an output
 				// simple event in statement is always an output
-			if (s.trigger !== null && s.trigger.get_type === TriggerType.SIMPLE)
+			if (s.trigger !== null && s.trigger.get_type === CommunicationType.SIMPLE)
 				outputs.add(s.trigger.event)
 		} else if (s instanceof SeqStatement) {
 			for (s2 : s.statements) {
@@ -2289,10 +2285,10 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 		for (t : nc.transitions) {
 			// need to check trigger and action of each transition, as both may contain a communication
-			if (t.trigger !== null && t.trigger.get_type === TriggerType.INPUT)
+			if (t.trigger !== null && t.trigger.get_type === CommunicationType.INPUT)
 				inputs.add(t.trigger.event)
 			// simple event in trigger is always an input
-			if (t.trigger !== null && t.trigger.get_type === TriggerType.SIMPLE)
+			if (t.trigger !== null && t.trigger.get_type === CommunicationType.SIMPLE)
 				inputs.add(t.trigger.event)
 			if(t.action !== null) inputs.addAll(statementInputSet(t.action))
 		}
@@ -2317,7 +2313,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		var inputs = new HashSet<Event>()
 
 		if (s instanceof SendEvent) {
-			if (s.trigger !== null && s.trigger.get_type === TriggerType.INPUT)
+			if (s.trigger !== null && s.trigger.get_type === CommunicationType.INPUT)
 				inputs.add(s.trigger.event)
 		} else if (s instanceof SeqStatement) {
 			for (s2 : s.statements) {
@@ -2470,7 +2466,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	@Check
 	def checkTriggersAreInputs(Transition t) {
 		if (t.trigger !== null) {
-			if (t.trigger.get_type === TriggerType.OUTPUT || t.trigger.get_type === TriggerType.SYNC) {
+			if (t.trigger.get_type === CommunicationType.OUTPUT || t.trigger.get_type === CommunicationType.SYNC) {
 				error(
 					"Only simple or input communications can be used as transition triggers",
 					RoboChartPackage.Literals.TRANSITION__TRIGGER
