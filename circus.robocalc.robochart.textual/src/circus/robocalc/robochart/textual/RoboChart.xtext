@@ -275,9 +275,10 @@ Transition:
 		'from' source=[Node]
 		'to' target=[Node]
 		(
-			'trigger' trigger=Trigger ('<{' end=Expression '}')? |
+			'trigger' trigger=Communication |
 			'probability' probability=Expression
 		)?
+		(reset+=ClockReset)* ('<{' deadline=Expression '}')?
 		('condition' condition=(Expression|Else))?
 		('action' action=Statement)?
 	'}'
@@ -291,12 +292,7 @@ Clock:
 	'clock' name=ID 
 ;
 
-Trigger: (ActualTrigger | EmptyTrigger) 
-	('@' time=[Variable])?
-	( reset+=ClockReset)*
-;
-
-ActualTrigger returns Trigger:
+Communication returns Communication:
 	event=[Event] 
 	(
 		'[|' 
@@ -316,20 +312,16 @@ ActualTrigger returns Trigger:
 	)?
 ;
 
-enum InputType returns TriggerType:
+enum InputType returns CommunicationType:
 	INPUT = '?'
 ;
 
-enum OutputType returns TriggerType:
+enum OutputType returns CommunicationType:
 	OUTPUT = '!'
 ;
 
-enum SyncType returns TriggerType:
+enum SyncType returns CommunicationType:
 	SYNC = '.'
-;
-
-EmptyTrigger returns Trigger:
-	{Trigger}
 ;
 
 Action:
@@ -569,12 +561,12 @@ Statement:
 //;
 
 EndStatement returns Statement:
-	BasicStatement ({TimedStatement.stmt=current} '<{' end=Expression '}')?
+	BasicStatement ({TimedStatement.stmt=current} '<{' deadline=Expression '}')?
 ;
 
 BasicStatement returns Statement:
 	IfStmt |
-	SendEvent |
+	CommunicationStmt |
 	Skip |
 	Call |
 	Assignment |
@@ -614,8 +606,8 @@ VariableReference returns Assignable:
 	{VarRef} name=[Variable|QualifiedName]
 ;
 
-SendEvent:
-	('send')? trigger=ActualTrigger
+CommunicationStmt:
+	('send')? communication=Communication
 ;
 
 RCModule:

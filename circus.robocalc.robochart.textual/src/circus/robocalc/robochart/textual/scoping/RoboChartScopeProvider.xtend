@@ -51,14 +51,14 @@ import circus.robocalc.robochart.RefExp
 import circus.robocalc.robochart.RoboticPlatformDef
 import circus.robocalc.robochart.RoboticPlatformRef
 import circus.robocalc.robochart.Selection
-import circus.robocalc.robochart.SendEvent
+import circus.robocalc.robochart.CommunicationStmt
 import circus.robocalc.robochart.SetComp
 import circus.robocalc.robochart.State
 import circus.robocalc.robochart.StateClockExp
 import circus.robocalc.robochart.StateMachineDef
 import circus.robocalc.robochart.StateMachineRef
 import circus.robocalc.robochart.Transition
-import circus.robocalc.robochart.Trigger
+import circus.robocalc.robochart.Communication
 import circus.robocalc.robochart.Type
 import circus.robocalc.robochart.TypeDecl
 import circus.robocalc.robochart.TypeRef
@@ -100,10 +100,10 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	override getScope(EObject context, EReference reference) {
 		if (context instanceof Connection) {
 			return context.getScopeForConnection(reference)
-		} else if (context instanceof Trigger) {
-			return context.getTriggerScope(reference)
-		} else if (context instanceof SendEvent) {
-			return context.getSendEventScope(reference)
+		} else if (context instanceof Communication) {
+			return context.getCommunicationScope(reference)
+		} else if (context instanceof CommunicationStmt) {
+			return context.getCommunicationStmtScope(reference)
 		} else if (context instanceof Selection) {
 			if (reference === SELECTION__MEMBER) {
 				val s = getSelectionScope(context.receiver.typeFor)
@@ -405,8 +405,8 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 			return parentScope
 	}
 
-	def getTriggerScope(Trigger context, EReference reference) {
-		if (reference === TRIGGER__EVENT) {
+	def getCommunicationScope(Communication context, EReference reference) {
+		if (reference === COMMUNICATION__EVENT) {
 			var o = context.eContainer
 			val result = delegateGetScope(context, reference)
 			// while (!(o instanceof StateMachineDef || o === null)) {
@@ -414,13 +414,13 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 			// }
 			// (o as StateMachineDef).eventsDeclared
 			return o.eventsDeclared(result)
-		} else if (reference === TRIGGER__TIME) {
-			val result = delegateGetScope(context, reference)
-			return context.eContainer.variablesDeclared(result)
-		} else if (context instanceof Trigger && reference === TRIGGER__PARAMETER) {
+//		} else if (reference === TRIGGER__TIME) {
+//			val result = delegateGetScope(context, reference)
+//			return context.eContainer.variablesDeclared(result)
+		} else if (context instanceof Communication && reference === COMMUNICATION__PARAMETER) {
 			val result = delegateGetScope(context, reference)
 			return context.variablesDeclared(result)
-		} else if (context instanceof Trigger && reference === TRIGGER__FROM) {
+		} else if (context instanceof Communication && reference === COMMUNICATION__FROM) {
 			val result = delegateGetScope(context, reference)
 			return context.variablesDeclared(result)
 		} else {
@@ -429,8 +429,8 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	}
 
 	// don't think I need this
-	def getSendEventScope(SendEvent context, EReference reference) {
-		if (reference === SEND_EVENT__TRIGGER) {
+	def getCommunicationStmtScope(CommunicationStmt context, EReference reference) {
+		if (reference === COMMUNICATION_STMT__COMMUNICATION) {
 			var o = context.eContainer
 			val result = delegateGetScope(context, reference)
 			/*while (!(o instanceof StateMachineDef || o === null)) {
@@ -806,7 +806,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 		return s
 	}
 
-	def dispatch IScope clocksDeclared(Trigger cont) {
+	def dispatch IScope clocksDeclared(Communication cont) {
 		cont.eContainer.clocksDeclared();
 	}
 	
