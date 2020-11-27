@@ -85,7 +85,6 @@ import circus.robocalc.robochart.RoboChartPackage
 import circus.robocalc.robochart.RoboticPlatform
 import circus.robocalc.robochart.RoboticPlatformDef
 import circus.robocalc.robochart.RoboticPlatformRef
-import circus.robocalc.robochart.SendEvent
 import circus.robocalc.robochart.SeqExp
 import circus.robocalc.robochart.SeqStatement
 import circus.robocalc.robochart.SetComp
@@ -127,6 +126,7 @@ import org.eclipse.xtext.validation.CheckType
 import java.util.ArrayList
 import circus.robocalc.robochart.Clock
 import circus.robocalc.robochart.Communication
+import circus.robocalc.robochart.CommunicationStmt
 
 /**
  * This class contains custom validation rules. 
@@ -504,7 +504,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 	def outputEvents(StateMachineBody stm) {
 		val output = new HashSet<Event>()
-		stm.eAllContents.filter(SendEvent).forEach[s|output.add(s.trigger?.event)]
+		stm.eAllContents.filter(CommunicationStmt).forEach[s|output.add(s.communication?.event)]
 		output
 	}
 
@@ -1883,17 +1883,17 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 	}
 
-	@Check
-	def sendEventWFC(SendEvent s) {
-//		if (s.trigger.reset !== null && s.trigger.reset.length > 0) {
-//			error('A send action cannot have a reset associated with it', RoboChartPackage.Literals.SEND_EVENT__TRIGGER,
-//				'NoResetInSendEvent');
-//		}
-//		if (s.trigger._type === CommunicationType.EMPTY) {
-//			error('A send action cannot have an empty trigger', RoboChartPackage.Literals.SEND_EVENT__TRIGGER,
-//				'NoEmptyTriggerInSendEvent');
-//		}
-	}
+//	@Check
+//	def sendEventWFC(SendEvent s) {
+////		if (s.trigger.reset !== null && s.trigger.reset.length > 0) {
+////			error('A send action cannot have a reset associated with it', RoboChartPackage.Literals.SEND_EVENT__TRIGGER,
+////				'NoResetInSendEvent');
+////		}
+////		if (s.trigger._type === CommunicationType.EMPTY) {
+////			error('A send action cannot have an empty trigger', RoboChartPackage.Literals.SEND_EVENT__TRIGGER,
+////				'NoEmptyTriggerInSendEvent');
+////		}
+//	}
 
 	@Check
 	def communicationWellTyped(Communication t) {
@@ -2260,14 +2260,14 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	def HashSet<Event> statementOutputSet(Statement s) {
 		var outputs = new HashSet<Event>()
 
-		if (s instanceof SendEvent) {
-			if (s.trigger !== null && s.trigger.get_type === CommunicationType.OUTPUT)
-				outputs.add(s.trigger.event)
-			if (s.trigger !== null && s.trigger.get_type === CommunicationType.SYNC)
-				outputs.add(s.trigger.event) // c.x is an output
+		if (s instanceof CommunicationStmt) {
+			if (s.communication !== null && s.communication.get_type === CommunicationType.OUTPUT)
+				outputs.add(s.communication.event)
+			if (s.communication !== null && s.communication.get_type === CommunicationType.SYNC)
+				outputs.add(s.communication.event) // c.x is an output
 				// simple event in statement is always an output
-			if (s.trigger !== null && s.trigger.get_type === CommunicationType.SIMPLE)
-				outputs.add(s.trigger.event)
+			if (s.communication !== null && s.communication.get_type === CommunicationType.SIMPLE)
+				outputs.add(s.communication.event)
 		} else if (s instanceof SeqStatement) {
 			for (s2 : s.statements) {
 				outputs.addAll(statementOutputSet(s2))
@@ -2312,9 +2312,9 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	def HashSet<Event> statementInputSet(Statement s) {
 		var inputs = new HashSet<Event>()
 
-		if (s instanceof SendEvent) {
-			if (s.trigger !== null && s.trigger.get_type === CommunicationType.INPUT)
-				inputs.add(s.trigger.event)
+		if (s instanceof CommunicationStmt) {
+			if (s.communication !== null && s.communication.get_type === CommunicationType.INPUT)
+				inputs.add(s.communication.event)
 		} else if (s instanceof SeqStatement) {
 			for (s2 : s.statements) {
 				inputs.addAll(statementInputSet(s2))
