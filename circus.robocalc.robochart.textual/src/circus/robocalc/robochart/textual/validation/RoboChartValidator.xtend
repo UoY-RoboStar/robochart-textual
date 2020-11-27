@@ -261,6 +261,51 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				'noInterlevelTransition'
 			)
 		}
+		
+		if (t.source instanceof circus.robocalc.robochart.ProbabilisticJunction) {
+			/* PJ1 */
+			if (t.probability === null) {
+				error(
+					'A transition from a probabilistic junction must have a probability value',
+					RoboChartPackage.Literals.TRANSITION__PROBABILITY,
+					'transitionWithoutProbabilityFromProbabilisticJunction'
+				)
+			}
+			/* PJ2 */
+			if (t.condition !== null) {
+				error(
+					'A transition from a probabilistic junction must not have a guard condition',
+					RoboChartPackage.Literals.TRANSITION__CONDITION,
+					'transitionWithConditionFromProbabilisticJunction'
+				)
+			}
+		}
+		
+		if (t.probability !== null) {
+			/* PT1 */
+			if (!(t.source instanceof circus.robocalc.robochart.ProbabilisticJunction)) {
+				error(
+					'A transition with a probability value must start from a probabilistic junction',
+					RoboChartPackage.Literals.TRANSITION__PROBABILITY,
+					'transitionWithProbabilityFromNonProbabilisticJunction'
+				)
+			}
+			/* PT2 */
+			val r = probExprBetween0_1(t.probability);
+			if (r === 2) {
+				warning(
+					'The probability value might not be between 0 to 1',
+					RoboChartPackage.Literals.TRANSITION__PROBABILITY,
+					'probabilityNotWithin0_1'
+				)
+			} else if (r === 1) {
+				error(
+					'The probability value must be between 0 to 1',
+					RoboChartPackage.Literals.TRANSITION__PROBABILITY,
+					'probabilityNotWithin0_1'
+				)
+			}
+		}
 	}
 
 	
@@ -2755,5 +2800,65 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				'VectorTypeSizeError'
 			)
 		}
+	}
+
+	@Check
+	def junctionWFC_PJ3(circus.robocalc.robochart.ProbabilisticJunction j) {
+		val parent = j.eContainer as NodeContainer
+		val lstExpr = new ArrayList<Expression>()
+
+		for (t : parent.transitions.filter[t|t.source === j]) {
+			lstExpr.add(t.probability)
+		}
+
+		if(!sumExprEq1(lstExpr)) {
+			warning(
+				'Sum of probabilities of outgoing transitions from a ProbabilisticJunction in ' + parent.name + ' might not be equal to 1',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'probsfromProbJuncNotEqual1'
+			)
+		}
+	}
+
+	def private Boolean sumExprEq1(List<Expression> exprs) {
+		val num = exprs.filter[t|(t instanceof IntegerExp) || 
+			(t instanceof circus.robocalc.robochart.FloatExp)
+		].size
+		if(exprs.size === num) {
+			var sum = 0.0
+			for(e: exprs) {
+				if(e instanceof IntegerExp) {
+					sum = sum + (e as IntegerExp).value
+				} else if(e instanceof circus.robocalc.robochart.FloatExp) {
+					sum = sum + (e as circus.robocalc.robochart.FloatExp).value
+				}
+			}
+
+			if(sum === 1.0) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		return false
+	}
+	
+	// return 0 - OK, 1 - violate, 2 - might violate 
+	def private Integer probExprBetween0_1(Expression e) {
+		if(e instanceof IntegerExp) {
+			if((e as IntegerExp).value > 1 || (e as IntegerExp).value < 0) {
+				return 1;
+			}
+		} else if(e instanceof circus.robocalc.robochart.FloatExp) {
+			if((e as circus.robocalc.robochart.FloatExp).value > 1.0 || 
+				(e as circus.robocalc.robochart.FloatExp).value < 0.0) {
+				return 1;
+			}
+		} else {
+			return 2;
+		}
+
+		return 0;
 	}
 }
