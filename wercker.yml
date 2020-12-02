@@ -30,3 +30,4 @@ deploy:
         name: uploading update site
         code: |-
           ./upload.sh
+
