@@ -1041,14 +1041,14 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				/* C4 */
 				// In the new compositional semantics this restriction is no longer required,
 				// as instead, C4 only applies at the level of a controller.
-				val rOps = getROps(s)
-				if (!pOps.containsAll(rOps)) {
-					error(
-						c.name + ' does not provide all operations required by ' + getName(s),
-						RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
-						'ControllerProvidesAllOps'
-					)
-				}
+//				val rOps = getROps(s)
+//				if (!pOps.containsAll(rOps)) {
+//					error(
+//						c.name + ' does not provide all operations required by ' + getName(s),
+//						RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+//						'ControllerProvidesAllOps'
+//					)
+//				}
 				/* STM9 */
 				val levents = new HashSet<Event>
 				levents.addAll(c.events)
@@ -1145,14 +1145,14 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 					)
 				}
 				/* C4 */
-				val rOps = getROps(s)
-				if (!pOps.containsAll(rOps)) {
-					error(
-						c.name + ' in the context of the controller ' + parent.name + ' does not provide all operations required by ' + getName(s),
-						RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
-						'ControllerProvidesAllOps'
-					)
-				}			
+//				val rOps = getROps(s)
+//				if (!pOps.containsAll(rOps)) {
+//					error(
+//						c.name + ' in the context of the controller ' + parent.name + ' does not provide all operations required by ' + getName(s),
+//						RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+//						'ControllerProvidesAllOps'
+//					)
+//				}			
 			}
 		}
 	}
