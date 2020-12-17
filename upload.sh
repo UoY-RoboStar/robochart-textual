@@ -25,8 +25,13 @@ then
   mkdir tmp && cd tmp
   mkdir $dest
   cp -r ../$dir/* $dest
+
+  # In the new host, it is not possible to generate a symlink that points to
+  # a non-existent target, such as 'update', before it is actually created.
+  # So here we first transfer the update folder, then create the symlink and
+  # finally transfer that too.
+  rsync -a -e "ssh" -rtzh . $url:$remote
   ln -s $dest ${update}
-  ls -lash
   rsync -a -e "ssh" -rtzh . $url:$remote
   exit $?;
 else
