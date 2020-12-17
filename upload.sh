@@ -25,7 +25,8 @@ then
   mkdir tmp && cd tmp
   mkdir $dest
   cp -r ../$dir/* $dest
-  ln -s $dest $update
+  ln -s $dest ${update}
+  ls -lash
   rsync -a -e "ssh" -rtzh . $url:$remote
   exit $?;
 else
