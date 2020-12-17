@@ -1,7 +1,7 @@
 echo "Get current version"
 dir=circus.robocalc.robochart.textual.repository/target/repository/
-remote=/shared/storage/cs/www/robostar/robotool/textual/
-url=ahm504@sftp.york.ac.uk
+remote=${ROBOSTAR_WEB_ROOT}/robotool/textual/
+url=${ROBOSTAR_WEB_USER}@${ROBOSTAR_WEB_HOST}
 file=$(ls $dir/features | grep -m 1 jar)
 version=${file#*_}
 version=${version%.jar}

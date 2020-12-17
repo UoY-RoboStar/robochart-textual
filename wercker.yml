@@ -23,9 +23,9 @@ deploy:
     - add-ssh-key:
         keyname: deployment
     - add-to-known_hosts:
-        hostname: sftp.york.ac.uk
-        fingerprint: 1ksayLs+AwXM/7ljQ4uIgCqHq7Z8U8tPG+iZDAsm51M
-        type: rsa
+        hostname: $ROBOSTAR_WEB_HOST
+        fingerprint: $ROBOSTAR_WEB_SSH_FINGERPRINT
+        type: $ROBOSTAR_WEB_SSH_FINGERPRINT_TYPE
     - script:
         name: uploading update site
         code: |-
