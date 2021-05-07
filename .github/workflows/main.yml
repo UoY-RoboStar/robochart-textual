@@ -45,12 +45,13 @@ jobs:
           ROBOSTAR_WEB_SSH_FINGERPRINT: ${{ secrets.ROBOSTAR_WEB_SSH_FINGERPRINT }}
           ROBOSTAR_WEB_SSH_FINGERPRINT_TYPE: ${{ secrets.ROBOSTAR_WEB_SSH_FINGERPRINT_TYPE }}
         
-      # This should now be whitelisted?
       - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.5.1
+        uses: kielabokkie/ssh-key-and-known-hosts-action@v1
         with:
           # Private key required to access the host
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_NEW }}
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # Hostname or IP to add to the known hosts file
+          ssh-host: ${{ secrets.ROBOSTAR_WEB_HOST }}
         
       - name: Making upload.sh executable
         run: chmod +x upload.sh
