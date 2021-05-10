@@ -37,13 +37,14 @@ jobs:
         
       - name: Build with Maven
         run: mvn clean install
-      
-      - name: Add SSH known hosts
-        run: echo "${ROBOSTAR_WEB_HOST} ${ROBOSTAR_WEB_SSH_FINGERPRINT_TYPE} ${ROBOSTAR_WEB_SSH_FINGERPRINT}" >> ~/.ssh/known_hosts
-        env:
-          ROBOSTAR_WEB_HOST: ${{ secrets.ROBOSTAR_WEB_HOST }}
-          ROBOSTAR_WEB_SSH_FINGERPRINT: ${{ secrets.ROBOSTAR_WEB_SSH_FINGERPRINT }}
-          ROBOSTAR_WEB_SSH_FINGERPRINT_TYPE: ${{ secrets.ROBOSTAR_WEB_SSH_FINGERPRINT_TYPE }}
+    
+      - name: Setup SSH
+        uses: kielabokkie/ssh-key-and-known-hosts-action@v1
+        with:
+          # Private key required to access the host
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # Hostname or IP to add to the known hosts file
+          ssh-host: ${{ secrets.ROBOSTAR_WEB_HOST }}
         
       - name: Setup SSH
         uses: kielabokkie/ssh-key-and-known-hosts-action@v1
