@@ -37,14 +37,6 @@ jobs:
         
       - name: Build with Maven
         run: mvn clean install
-    
-      - name: Setup SSH
-        uses: kielabokkie/ssh-key-and-known-hosts-action@v1
-        with:
-          # Private key required to access the host
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # Hostname or IP to add to the known hosts file
-          ssh-host: ${{ secrets.ROBOSTAR_WEB_HOST }}
         
       - name: Setup SSH
         uses: kielabokkie/ssh-key-and-known-hosts-action@v1
