@@ -57,13 +57,13 @@ jobs:
         run: chmod +x upload.sh
 
       # If branch is 'master' and not a pull request, then upload.
-      - if: (github.ref == 'refs/heads/master') && github.event_name != 'pull_request'
-        name: Uploading update site
-        run: ./upload.sh
-        env:
-          ROBOSTAR_WEB_ROOT: ${{ secrets.ROBOSTAR_WEB_ROOT }}
-          ROBOSTAR_WEB_USER: ${{ secrets.ROBOSTAR_WEB_USER }}
-          ROBOSTAR_WEB_HOST: ${{ secrets.ROBOSTAR_WEB_HOST }} 
+      #- if: (github.ref == 'refs/heads/master') && github.event_name != 'pull_request'
+      #  name: Uploading update site
+      #  run: ./upload.sh
+      #  env:
+      #    ROBOSTAR_WEB_ROOT: ${{ secrets.ROBOSTAR_WEB_ROOT }}
+      #    ROBOSTAR_WEB_USER: ${{ secrets.ROBOSTAR_WEB_USER }}
+      #    ROBOSTAR_WEB_HOST: ${{ secrets.ROBOSTAR_WEB_HOST }} 
       
       # For commits to master other than pull requests, send RoboTool email updates.
       #- if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
