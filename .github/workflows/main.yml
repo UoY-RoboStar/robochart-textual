@@ -15,7 +15,7 @@ on:
   
   # Allows us to run this workflow through an API call
   repository_dispatch:
-    types: [recompile]
+    types: [rebuild]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -72,6 +72,21 @@ jobs:
       #  env: 
       #    MAILCHIMPKEY: ${{ secrets.MAILCHIMPKEY }}
       #    MAILCHIMPUSR: ${{ secrets.MAILCHIMPUSR }}
+      
+      - name: Rebuild Assertions Plugins
+        run: |
+          # Propagate recompilation if global flag is active
+          if [[ -z ${ROBOSTAR_RECOMPILE_ALL} || ${ROBOSTAR_RECOMPILE_ALL} = false ]]; then
+            echo "Recompilation is disabled or not set."
+          else
+            curl -H "Authorization: token ${ROBOSTAR_GITHUB_ACTIONS_TOKEN}" \
+                 -X POST \
+                 -d '{"event_type":"rebuild"}' \
+                 https://api.github.com/repos/UoY-RoboStar/robochart-assertions/dispatches
+          fi
+        env:
+          ROBOSTAR_RECOMPILE_ALL: ${{ secrets.ROBOSTAR_RECOMPILE_ALL }}
+          ROBOSTAR_GITHUB_ACTIONS_TOKEN: ${{ secrets.ROBOSTAR_GITHUB_ACTIONS_TOKEN }}
 
       #- name: The job has failed
       #  if: failure()
