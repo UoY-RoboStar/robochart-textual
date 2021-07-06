@@ -24,8 +24,12 @@ import circus.robocalc.robochart.BooleanExp
 import circus.robocalc.robochart.Call
 import circus.robocalc.robochart.CallExp
 import circus.robocalc.robochart.Cat
+import circus.robocalc.robochart.Clock
 import circus.robocalc.robochart.ClockExp
 import circus.robocalc.robochart.ClockReset
+import circus.robocalc.robochart.Communication
+import circus.robocalc.robochart.CommunicationStmt
+import circus.robocalc.robochart.CommunicationType
 import circus.robocalc.robochart.Connection
 import circus.robocalc.robochart.ConnectionNode
 import circus.robocalc.robochart.Context
@@ -43,6 +47,7 @@ import circus.robocalc.robochart.ExitAction
 import circus.robocalc.robochart.Expression
 import circus.robocalc.robochart.FieldDefinition
 import circus.robocalc.robochart.Final
+import circus.robocalc.robochart.FloatExp
 import circus.robocalc.robochart.FunctionType
 import circus.robocalc.robochart.GreaterOrEqual
 import circus.robocalc.robochart.GreaterThan
@@ -74,6 +79,7 @@ import circus.robocalc.robochart.ParExp
 import circus.robocalc.robochart.Parameter
 import circus.robocalc.robochart.Plus
 import circus.robocalc.robochart.PrimitiveType
+import circus.robocalc.robochart.ProbabilisticJunction
 import circus.robocalc.robochart.ProductType
 import circus.robocalc.robochart.QuantifierExpression
 import circus.robocalc.robochart.RCModule
@@ -96,7 +102,6 @@ import circus.robocalc.robochart.StateMachineDef
 import circus.robocalc.robochart.StateMachineRef
 import circus.robocalc.robochart.Statement
 import circus.robocalc.robochart.Transition
-import circus.robocalc.robochart.CommunicationType
 import circus.robocalc.robochart.TupleExp
 import circus.robocalc.robochart.Type
 import circus.robocalc.robochart.TypeRef
@@ -107,6 +112,7 @@ import circus.robocalc.robochart.VectorType
 import circus.robocalc.robochart.Wait
 import circus.robocalc.robochart.textual.RoboCalcTypeProvider
 import com.google.inject.Inject
+import java.util.ArrayList
 import java.util.HashMap
 import java.util.HashSet
 import java.util.LinkedList
@@ -123,10 +129,6 @@ import org.eclipse.xtext.resource.IResourceDescriptions
 import org.eclipse.xtext.serializer.ISerializer
 import org.eclipse.xtext.validation.Check
 import org.eclipse.xtext.validation.CheckType
-import java.util.ArrayList
-import circus.robocalc.robochart.Clock
-import circus.robocalc.robochart.Communication
-import circus.robocalc.robochart.CommunicationStmt
 
 /**
  * This class contains custom validation rules. 
@@ -276,7 +278,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			)
 		}
 		
-		if (t.source instanceof circus.robocalc.robochart.ProbabilisticJunction) {
+		if (t.source instanceof ProbabilisticJunction) {
 			/* PJ1 */
 			if (t.probability === null) {
 				error(
@@ -297,7 +299,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		
 		if (t.probability !== null) {
 			/* PT1 */
-			if (!(t.source instanceof circus.robocalc.robochart.ProbabilisticJunction)) {
+			if (!(t.source instanceof ProbabilisticJunction)) {
 				error(
 					'A transition with a probability value must start from a probabilistic junction',
 					RoboChartPackage.Literals.TRANSITION__PROBABILITY,
@@ -2567,47 +2569,6 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 	}
 
-	def dispatch Set<String> constantsRequired(StateMachineDef m) {
-		var set = new HashSet<String>();
-		for (i : m.RInterfaces) {
-			for (l : i.variableList) {
-				if (l.modifier == VariableModifier.CONST) {
-					for (v : l.vars)
-						set.add(v.name)
-				}
-			}
-		}
-		return set
-
-	}
-	
-	def dispatch Set<String> constantsRequired(OperationDef m) {
-		var set = new HashSet<String>();
-		for (i : m.RInterfaces) {
-			for (l : i.variableList) {
-				if (l.modifier == VariableModifier.CONST) {
-					for (v : l.vars)
-						set.add(v.name)
-				}
-			}
-		}
-		return set
-
-	}
-
-	def dispatch Set<String> constantsRequired(ControllerDef m) {
-		var set = new HashSet<String>();
-		for (i : m.RInterfaces) {
-			for (l : i.variableList) {
-				if (l.modifier == VariableModifier.CONST) {
-					for (v : l.vars)
-						set.add(v.name)
-				}
-			}
-		}
-		return set
-	}
-
 	def rewriteType(Type t, Map<String, Type> map) {
 		if (t instanceof TypeRef) {
 			val ref = t.ref
@@ -2825,7 +2786,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	}
 
 	@Check
-	def junctionWFC_PJ3(circus.robocalc.robochart.ProbabilisticJunction j) {
+	def junctionWFC_PJ3(ProbabilisticJunction j) {
 		val parent = j.eContainer as NodeContainer
 		val lstExpr = new ArrayList<Expression>()
 
@@ -2844,15 +2805,15 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 	def private Boolean sumExprEq1(List<Expression> exprs) {
 		val num = exprs.filter[t|(t instanceof IntegerExp) || 
-			(t instanceof circus.robocalc.robochart.FloatExp)
+			(t instanceof FloatExp)
 		].size
 		if(exprs.size === num) {
 			var sum = 0.0
 			for(e: exprs) {
 				if(e instanceof IntegerExp) {
 					sum = sum + (e as IntegerExp).value
-				} else if(e instanceof circus.robocalc.robochart.FloatExp) {
-					sum = sum + (e as circus.robocalc.robochart.FloatExp).value
+				} else if(e instanceof FloatExp) {
+					sum = sum + (e as FloatExp).value
 				}
 			}
 
@@ -2872,9 +2833,9 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			if((e as IntegerExp).value > 1 || (e as IntegerExp).value < 0) {
 				return 1;
 			}
-		} else if(e instanceof circus.robocalc.robochart.FloatExp) {
-			if((e as circus.robocalc.robochart.FloatExp).value > 1.0 || 
-				(e as circus.robocalc.robochart.FloatExp).value < 0.0) {
+		} else if(e instanceof FloatExp) {
+			if((e as FloatExp).value > 1.0 || 
+				(e as FloatExp).value < 0.0) {
 				return 1;
 			}
 		} else {
@@ -2882,5 +2843,23 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 
 		return 0;
+	}
+	
+	/* WFCs for Expressions */
+	
+	@Check
+	def wfc_Equals(Equals e) {
+		val t1 = e.left.typeFor
+		val t2 = e.right.typeFor
+		
+		if (!typeCompatible(t1, t2)) {
+			val msg = '''Equality expressions
+			The type «t1.printType» of the left expression «e.left.print» is different than the type «t2.printType» of the right expression «e.right.print».'''
+			error(
+				msg,
+				RoboChartPackage.Literals.BINARY_EXPRESSION__LEFT,
+				'TypeError'
+			)
+		}
 	}
 }
