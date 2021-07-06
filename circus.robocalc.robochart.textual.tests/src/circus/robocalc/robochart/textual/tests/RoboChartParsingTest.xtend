@@ -170,6 +170,7 @@ class RoboChartParsingTest {
 	
 	@Test
 	def void filter_seq_is_not_set() {
+		System.out.println("Testing seq_is_not_set");
 		val rs = createResourceSet()
 		val result = '''
 			import sequence_toolkit::*
@@ -191,6 +192,7 @@ class RoboChartParsingTest {
 				}
 			}
 		'''.parse(rs)
+		System.out.println("Parsed seq_is_not_set");
 		Assertions.assertNotNull(result)
 		val errors = result.eResource.errors
 		Assertions.assertTrue(errors.isEmpty, '''Unexpected errors: «errors.join(", ")»''')
@@ -220,6 +222,7 @@ class SmartParseHelper<T extends EObject> extends ParseHelper<T> {
 		val cleanPath = if (libpath.endsWith("/")) libpath.substring(0,libpath.length-1)
 		
 		if (plugin.isFile()) {
+			System.out.println(">>>> it is jar file");
 			// treating case where the resource files are in a plugin
 			val jar = new JarFile(plugin)
 			val Enumeration<JarEntry> entries = jar.entries(); //gives ALL entries in jar
@@ -227,33 +230,45 @@ class SmartParseHelper<T extends EObject> extends ParseHelper<T> {
         		val name = entries.nextElement().getName();
         		if (name.startsWith(cleanPath+"/") && name.endsWith(ext)) { //filter according to the path
             		val url = classLoader.getResource(name)
+            		System.out.println(">>>> found url for "+name+"("+url+")");
 					val input = url.toURI.toURL.openStream
+					System.out.println(">>>> opened stream");
 					val uri = URI.createFileURI(url.path)
+					System.out.println(">>>> created file");
 					try {
 						val res = rs.createResource(uri)
+						System.out.println(">>>> created resource");
 						res.load(input, rs.loadOptions)
+						System.out.println(">>>> loaded file");
 					} catch (IllegalStateException e) {
-						System.out.println("Caught exception: "+e.toString)
+						System.out.println(">>>> Caught exception: "+e.toString)
 					}
         		}
     		}
     		jar.close();
 		} else {
+			System.out.println(">>>> not a jar file");
 			// treating case where the resource files are a project in the workspace			
 			var url = classLoader.getResource(cleanPath);
 			if (url === null) {
 				val pathInLib = if (cleanPath.startsWith("lib/")) cleanPath.replaceFirst("lib/","") else cleanPath
 				url = classLoader.getResource(pathInLib);
 			}
+			System.out.println(">>>> found url "+url);
 			val path = Paths.get(url.toURI)
 			var Stream<Path> walk = Files.list(path);
 			for (var Iterator<Path> it = walk.iterator(); it.hasNext();) {
 				val p = it.next()
 				if (p.toString.endsWith(ext)) {
+					System.out.println(">>>> found url for "+p.toString());
 					val is = p.toUri().toURL.openStream;
+					System.out.println(">>>> opened stream");
 					val furi = URI.createFileURI(p.toString)
+					System.out.println(">>>> created file");
 					val r = rs.createResource(furi)
+					System.out.println(">>>> created resource");
 					r.load(is, rs.loadOptions)
+					System.out.println(">>>> loaded file");
 				}
 			}
 			walk.close();
@@ -262,11 +277,13 @@ class SmartParseHelper<T extends EObject> extends ParseHelper<T> {
 	
 	def addRoboChartLibrary(ResourceSet rs) {
 		val jarFile = new File(RoboChartStandaloneSetup.protectionDomain.codeSource.location.path)
+		System.out.println(">>>> found jarFile "+jarFile);
 		addLibrary(rs,"lib/robochart/",".rct", jarFile, RoboChartStandaloneSetup.classLoader)
 	}
 	
 	def createResourceSet() {
 		val rs = rsp.get();
+		System.out.println(">>>> got resource set provider");
 		addRoboChartLibrary(rs);
 		return rs;
 	}

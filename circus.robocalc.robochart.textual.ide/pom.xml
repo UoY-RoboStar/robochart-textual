@@ -21,27 +21,22 @@ SPDX-License-Identifier: EPL-2.0
 		<dependency>
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
-			<version>1.2.16</version>
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.lsp4j</groupId>
 			<artifactId>org.eclipse.lsp4j</artifactId>
-			<version>0.7.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.ow2.asm</groupId>
 			<artifactId>asm</artifactId>
-			<version>7.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.ow2.asm</groupId>
 			<artifactId>asm-commons</artifactId>
-			<version>7.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.ow2.asm</groupId>
 			<artifactId>asm-tree</artifactId>
-			<version>7.0</version>
 		</dependency>
 	</dependencies>
 	<build>
@@ -60,7 +55,7 @@ SPDX-License-Identifier: EPL-2.0
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
-				<version>3.0.1</version>
+				<version>3.1.1</version>
 				<executions>
 					<execution>
 						<id>copy-dependencies</id>
@@ -69,6 +64,7 @@ SPDX-License-Identifier: EPL-2.0
 							<goal>copy-dependencies</goal>
 						</goals>
 						<configuration>
+							<excludeGroupIds>p2.eclipse-feature</excludeGroupIds>
 							<outputDirectory>${project.build.directory}/libs</outputDirectory>
 							<overWriteReleases>false</overWriteReleases>
 							<overWriteSnapshots>false</overWriteSnapshots>
@@ -101,8 +97,6 @@ SPDX-License-Identifier: EPL-2.0
 								org.eclipse.jdt.debug,
 								org.eclipse.jdt.launching,
 								org.eclipse.text,
-								org.eclipse.xtend.typesystem.emf,
-								org.eclipse.xtend,
 							</excludeArtifactIds>
 						</configuration>
 					</execution>
@@ -131,7 +125,7 @@ SPDX-License-Identifier: EPL-2.0
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
-				<version>3.0.0</version>
+				<version>3.2.1</version>
 				<configuration>
 					<transformers>
 						<transformer
