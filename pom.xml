@@ -15,8 +15,8 @@ SPDX-License-Identifier: EPL-2.0
 	<packaging>pom</packaging>
 
 	<properties>
-		<xtextVersion>2.24.0</xtextVersion>
-		<mwe2Version>2.12.0</mwe2Version>
+		<xtextVersion>2.25.0</xtextVersion>
+		<mwe2Version>2.12.1</mwe2Version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>11</maven.compiler.source>
 		<maven.compiler.target>11</maven.compiler.target>
@@ -289,7 +289,7 @@ SPDX-License-Identifier: EPL-2.0
 		</pluginManagement>
 	</build>
 	<repositories>
-		<repository>
+	<repository>
             <id>robochart-metamodel</id>
             <url>https://www.cs.york.ac.uk/robostar/robotool/metamodel/update/</url>
             <layout>p2</layout>
