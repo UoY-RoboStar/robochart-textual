@@ -2,7 +2,7 @@
 <feature
       id="circus.robocalc.robochart.textual.feature"
       label="RoboChart Textual Editor"
-      version="2.0.0.qualifier"
+      version="3.0.0.qualifier"
       provider-name="RoboCalc Project">
 
    <description url="https://www.cs.york.ac.uk/robostar/robotool/">
