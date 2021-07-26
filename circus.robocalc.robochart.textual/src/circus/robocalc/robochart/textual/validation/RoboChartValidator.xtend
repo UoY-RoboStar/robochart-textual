@@ -1479,14 +1479,16 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	@Check
 	def clockExpOnlySupportedComparator(StateClockExp e) {
 		checkClockExpWellTyped(e)
-		clockExpOnlySupported(e)
+		//clockExpOnlySupported(e)
+		// No longer needed in revised form of TE4
 	}
 
 	/* CE2, covers TE4 for since(clock) */
 	@Check
 	def clockExpOnlySupportedComparator(ClockExp e) {
 		checkClockExpWellTyped(e)
-		clockExpOnlySupported(e)
+		//clockExpOnlySupported(e)
+		// No longer needed in revised form of TE4 
 	}
 
 	/* TE4 (helper) */
