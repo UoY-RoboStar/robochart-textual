@@ -79,7 +79,8 @@ jobs:
       #    MAILCHIMPKEY: ${{ secrets.MAILCHIMPKEY }}
       #    MAILCHIMPUSR: ${{ secrets.MAILCHIMPUSR }}
 
-      - name: Rebuild Assertions Plugins
+      - if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/comp') && github.event_name == 'push'
+        name: Rebuild Assertions Plugins
         run: |
           # Propagate recompilation if global flag is active
           if [[ -z ${ROBOSTAR_RECOMPILE_ALL} || ${ROBOSTAR_RECOMPILE_ALL} = false ]]; then
