@@ -63,7 +63,7 @@ jobs:
           remote-root: ${{ secrets.ROBOSTAR_WEB_ROOT }}
           remote-baseurl: 'https://robostar.cs.york.ac.uk'
           remote-relative-path: 'robotool/textual/'
-          maven-target: 'circus.robocalc.robochart.generator.textual.repository/target/repository/'
+          maven-target: 'circus.robocalc.robochart.textual.repository/target/repository/'
           
       - if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/comp') && github.event_name == 'push'
         name: Create commit comment
