@@ -3,7 +3,7 @@ Automatic-Module-Name: circus.robocalc.robochart.textual.tests
 Bundle-ManifestVersion: 2
 Bundle-Name: %pluginName
 Bundle-Vendor: %providerName
-Bundle-Version: 2.0.0.qualifier
+Bundle-Version: 3.0.0.qualifier
 Bundle-SymbolicName: circus.robocalc.robochart.textual.tests; singleton:=true
 Bundle-ActivationPolicy: lazy
 Require-Bundle: circus.robocalc.robochart.textual,
