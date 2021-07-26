@@ -37,14 +37,6 @@ jobs:
       - name: Build with Maven
         run: mvn clean install
         
-      - if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/comp') && github.event_name == 'push'
-        name: Add SSH known hosts
-        run: echo "${ROBOSTAR_WEB_HOST} ${ROBOSTAR_WEB_SSH_FINGERPRINT_TYPE} ${ROBOSTAR_WEB_SSH_FINGERPRINT}" >> ~/.ssh/known_hosts
-        env:
-          ROBOSTAR_WEB_HOST: ${{ secrets.ROBOSTAR_WEB_HOST }}
-          ROBOSTAR_WEB_SSH_FINGERPRINT: ${{ secrets.ROBOSTAR_WEB_SSH_FINGERPRINT }}
-          ROBOSTAR_WEB_SSH_FINGERPRINT_TYPE: ${{ secrets.ROBOSTAR_WEB_SSH_FINGERPRINT_TYPE }}
-        
       # SSH Setup
       - if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/comp') && github.event_name == 'push'
         name: Setup SSH
@@ -52,6 +44,14 @@ jobs:
         with:
           # Private key required to access the host
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          
+      - if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/comp') && github.event_name == 'push'
+        name: Add SSH known hosts
+        run: echo "${ROBOSTAR_WEB_HOST} ${ROBOSTAR_WEB_SSH_FINGERPRINT_TYPE} ${ROBOSTAR_WEB_SSH_FINGERPRINT}" >> ~/.ssh/known_hosts
+        env:
+          ROBOSTAR_WEB_HOST: ${{ secrets.ROBOSTAR_WEB_HOST }}
+          ROBOSTAR_WEB_SSH_FINGERPRINT: ${{ secrets.ROBOSTAR_WEB_SSH_FINGERPRINT }}
+          ROBOSTAR_WEB_SSH_FINGERPRINT_TYPE: ${{ secrets.ROBOSTAR_WEB_SSH_FINGERPRINT_TYPE }}
 
       - if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/comp') && github.event_name == 'push'
         id: deploy
