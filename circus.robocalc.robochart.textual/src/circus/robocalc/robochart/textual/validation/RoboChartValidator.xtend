@@ -1432,6 +1432,21 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 //	def dispatch boolean isParentComparisonWithClock(EObject e) {
 //		return false
 //	}
+
+	/* TT1 */
+	@Check
+	def checkTransitionDeadline(Transition e) {
+		if (e.deadline !== null) {
+			if (e.trigger === null) {
+				error(
+					'Transition '+e.name+' has a deadline but no trigger.',
+					RoboChartPackage.Literals.TRANSITION__DEADLINE,
+					'TransitionDeadlineError', 'timed'
+				)
+			}
+		}
+	}
+
 	/* Helper for TE4 */
 	def boolean isConstantExp(Expression e) {
 		switch e {
@@ -1489,6 +1504,32 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		checkClockExpWellTyped(e)
 		//clockExpOnlySupported(e)
 		// No longer needed in revised form of TE4 
+	}
+	
+	/* TE5 (helper) */
+	def Transition identifyContainingTransition(EObject obj) {
+		if (obj.eContainer instanceof Expression) {
+			identifyContainingTransition(obj.eContainer)
+		} else if (obj.eContainer instanceof Transition) {
+			return obj.eContainer as Transition
+		} else {
+			return null
+		}
+	}
+	
+	/* TE5 */
+	@Check
+	def checkSinceEntryLevel(StateClockExp e) {
+		val transition = identifyContainingTransition(e)
+		if (transition !== null && e.state !== null) {
+			if (transition.eContainer != e.state.eContainer) {
+				error('sinceEntry('+e.state.name+') refers to a state not contained by the same NodeContainer',
+					RoboChartPackage.Literals.STATE_CLOCK_EXP__STATE,
+					'StateClockExpError',
+					'timed'
+				)
+			}
+		}
 	}
 
 	/* TE4 (helper) */
