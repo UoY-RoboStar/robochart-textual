@@ -2,6 +2,7 @@ package circus.robocalc.robochart.textual.generator;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -34,24 +35,24 @@ import org.eclipse.xtext.resource.XtextResourceSet;
 
 public class ProjectUtilities {
 	
-	public static boolean includeResourceOfExtension(String extension) {
-		return "rct".equals(extension) || "assertions".equals(extension);
-	}
+//	public static boolean includeResourceOfExtension(String extension) {
+//		return "rct".equals(extension) || "assertions".equals(extension);
+//	}
 	
-	public static List<IFile> getAllResourceFiles(IContainer project) throws CoreException {
+	public static List<IFile> getAllResourceFiles(Function<String,Boolean> filetype, IContainer project) throws CoreException {
 		IResource[] members = project.members();
 		ArrayList<IFile> list = new ArrayList<IFile>();
 		for (IResource member : members) {
 			if (member instanceof IContainer) {
-				list.addAll(getAllResourceFiles((IContainer) member));
-			} else if (member instanceof IFile && includeResourceOfExtension(member.getFileExtension())) {
+				list.addAll(getAllResourceFiles(filetype,(IContainer) member));
+			} else if (member instanceof IFile && filetype.apply(member.getFileExtension())) {
 				list.add((IFile) member);
 			}
 		}
 		return list;
 	}
 
-	public static void resolveDependencies(Resource resource) {
+	public static void resolveDependencies(Function<String,Boolean> filetype, Resource resource) {
 		
 		// Resolve all dependencies beforehand
 		ISafeRunnable resolver = new ISafeRunnable() {
@@ -64,7 +65,7 @@ public class ProjectUtilities {
 				
 				IProject project = ProjectUtilities.getProject(resource);
 				if (project != null) {
-					List<IFile> files = getAllResourceFiles(project);
+					List<IFile> files = getAllResourceFiles(filetype,project);
 					ResourceSet rs = resource.getResourceSet();
 					List<Resource> rlist = new ArrayList<Resource>();
 					for (IFile f : files) {

@@ -60,7 +60,7 @@ class RoboChartGenerator extends AbstractGenerator {
 			// anonymously, will be the context of the ResourceSet. Thus, we call a method that
 			// figures this out in a safe manner, when run from Eclipse.
 			
-			ProjectUtilities.resolveDependencies(resource);
+			ProjectUtilities.resolveDependencies([t|t.equals("rct")],resource);
 			
 			for (e : config) {
 				val o = e.createExecutableExtension("class")
