@@ -51,21 +51,6 @@ class RoboChartGenerator extends AbstractGenerator {
 
 	static val GEN_ID = "robochart.generator"
 	
-	def protected List<IFile> getAllRoboChartFiles(IContainer project) {
-		var members = project.members();
-		var list = new ArrayList<IFile>();
-		for (member : members) {
-			if (member instanceof IContainer) {
-				list.addAll(getAllRoboChartFiles(member));
-			} else if (member instanceof IFile && "rct".equals(member.getFileExtension())) {
-				list.add(member as IFile);
-			} else if (member instanceof IFile && "assertions".equals(member.getFileExtension())) {
-				list.add(member as IFile);
-			}
-		}
-		return list;
-	}
-
 	override void doGenerate(Resource resource, IFileSystemAccess2 fsa, IGeneratorContext context) {
 		val config = Platform.extensionRegistry.getConfigurationElementsFor(GEN_ID);
 		try {

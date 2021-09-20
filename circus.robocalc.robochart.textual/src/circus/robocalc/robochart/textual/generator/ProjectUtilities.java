@@ -39,15 +39,11 @@ public class ProjectUtilities {
 	}
 	
 	public static List<IFile> getAllResourceFiles(IContainer project) throws CoreException {
-		return getAllRoboChartFiles(project);
-	}
-	
-	public static List<IFile> getAllRoboChartFiles(IContainer project) throws CoreException {
 		IResource[] members = project.members();
 		ArrayList<IFile> list = new ArrayList<IFile>();
 		for (IResource member : members) {
 			if (member instanceof IContainer) {
-				list.addAll(getAllRoboChartFiles((IContainer) member));
+				list.addAll(getAllResourceFiles((IContainer) member));
 			} else if (member instanceof IFile && includeResourceOfExtension(member.getFileExtension())) {
 				list.add((IFile) member);
 			}
