@@ -1826,7 +1826,12 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	/* RP3, I3, C5, STM5, O1:STM5 */
 	@Check(CheckType.FAST)
 	def checkUniqueness(NamedElement o) {
-		val project = o.eResource.URI.segment(1)
+		val uri = o.eResource.URI;
+		if (uri.segmentCount <= 1) {
+			// This case is necessary for dealing with junit tests where the resource's uris have a single segment
+			return
+		}
+		val project = uri.segment(1)
 		val c = new LinkedList<IEObjectDescription>()
 		val qn = qnp.getFullyQualifiedName(o)
 		rds.allResourceDescriptions.filter[rd|rd.URI.segment(1) === project].forEach [ rd |
