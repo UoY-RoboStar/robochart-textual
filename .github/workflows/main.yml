@@ -34,6 +34,7 @@ jobs:
       - name: Checkout ${{ github.ref }}
         uses: actions/checkout@master
         with:
+          ssh-key: ${{ secrets.SUBMODULE_CONTENT_PULL_KEY }}
           submodules: 'recursive'
 
       - name: Build with Maven
