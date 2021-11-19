@@ -2333,8 +2333,22 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		opDefSet
 	}
 	
+	// recursively collects outputs of a node container, avoiding operations already checked
+	// it is required by WFC O2 that operations not be recursive, but we can't know that has been checked beforehand
+	private def HashSet<Event> ncOutputSetInContextRecursive(NodeContainer nc, Controller context, HashSet<OperationSig> alreadyChecked) {
+		var outputs = ncOutputSet(nc)
+		for (opDef : ncRequiredOpDefs(nc, context)) {
+			if (!alreadyChecked.contains(opDef)) {
+				alreadyChecked.add(opDef)
+				outputs.addAll(ncOutputSetInContextRecursive(opDef, context, alreadyChecked))
+			}
+			
+		}
+		outputs
+	}
+	
 	def HashSet<Event> ncOutputSetInContext(NodeContainer nc, Controller context) {
-		var outputs = ncOutputSet()
+		ncOutputSetInContextRecursive(nc, context, new HashSet<OperationSig>())
 	}	
 
 	def HashSet<Event> ncOutputSet(NodeContainer nc) {
@@ -2387,6 +2401,24 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 		outputs
 	}
+
+	// recursively collects inputs of a node container, avoiding operations already checked
+	// it is required by WFC O2 that operations not be recursive, but we can't know that has been checked beforehand
+	private def HashSet<Event> ncInputSetInContextRecursive(NodeContainer nc, Controller context, HashSet<OperationSig> alreadyChecked) {
+		var outputs = ncInputSet(nc)
+		for (opDef : ncRequiredOpDefs(nc, context)) {
+			if (!alreadyChecked.contains(opDef)) {
+				alreadyChecked.add(opDef)
+				outputs.addAll(ncInputSetInContextRecursive(opDef, context, alreadyChecked))
+			}
+			
+		}
+		outputs
+	}
+	
+	def HashSet<Event> ncInputSetInContext(NodeContainer nc, Controller context) {
+		ncInputSetInContextRecursive(nc, context, new HashSet<OperationSig>())
+	}	
 
 	def HashSet<Event> ncInputSet(NodeContainer nc) {
 		var inputs = new HashSet<Event>()
@@ -2442,29 +2474,64 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			if(c.isBidirec) return; // if the connection is bidirectional, then there are no restrictions
 			/* Cn9 */
 			if (c.from !== ctrl && c.from instanceof StateMachine) {
-				if (ncInputSet(stmDef(c.from as StateMachine)).contains(c.efrom)) {
-					error(
-						c.efrom.name + " on " + c.from.name +
-							" is used as the start of a unidirectional connection, but " + c.from.name +
-							" receives input on " + c.efrom.name,
-						c,
-						RoboChartPackage.Literals.CONNECTION__FROM,
-						index
-					)
+				if (ncInputSetInContext(stmDef(c.from as StateMachine), ctrl).contains(c.efrom)) {
+					// determine the source of the error more exactly
+					if (ncInputSet(stmDef(c.from as StateMachine)).contains(c.efrom)) {
+						error(
+							c.efrom.name + " on " + c.from.name +
+								" is used as the start of a unidirectional connection, but " + c.from.name +
+								" receives input on " + c.efrom.name,
+							c,
+							RoboChartPackage.Literals.CONNECTION__FROM,
+							index
+						)
+					} else {
+						// event is used in an operation, determine which one (only check one level for simplicity of error reporting)
+						for (op : ncRequiredOpDefs(stmDef(c.from as StateMachine), ctrl)) {
+							if (ncInputSetInContext(op, ctrl).contains(c.efrom)) {
+								error(
+									c.efrom.name + " on " + c.from.name +
+										" is used as the start of a unidirectional connection, but " + c.from.name +
+										" receives input on " + c.efrom.name +
+										" via the operation " + op.name,
+									c,
+									RoboChartPackage.Literals.CONNECTION__FROM,
+									index
+								)
+							}
+						}
+					}
 
 				}
 			}
 
 			/* Cn8 */
 			if (c.to !== ctrl && c.to instanceof StateMachine) {
-				if (ncOutputSet(stmDef(c.to as StateMachine)).contains(c.eto)) {
-					error(
-						c.eto.name + " on " + c.to.name + " is used as the end of a unidirectional connection, but " +
-							c.to.name + " outputs on " + c.eto.name,
-						c,
-						RoboChartPackage.Literals.CONNECTION__TO,
-						index
-					)
+				if (ncOutputSetInContext(stmDef(c.to as StateMachine), ctrl).contains(c.eto)) {
+					// determine the source of the error more exactly
+					if (ncOutputSet(stmDef(c.to as StateMachine)).contains(c.eto)) {
+						error(
+							c.eto.name + " on " + c.to.name + " is used as the end of a unidirectional connection, but " +
+								c.to.name + " outputs on " + c.eto.name,
+							c,
+							RoboChartPackage.Literals.CONNECTION__TO,
+							index
+						)
+					} else {
+						// event is used in an operation, determine which one (only check one level for simplicity of error reporting)
+						for (op : ncRequiredOpDefs(stmDef(c.from as StateMachine), ctrl)) {
+							if (ncOutputSetInContext(op, ctrl).contains(c.eto)) {
+								error(
+									c.eto.name + " on " + c.to.name + " is used as the end of a unidirectional connection, but " +
+										c.to.name + " outputs on " + c.eto.name +
+										" via the operation " + op.name,
+									c,
+									RoboChartPackage.Literals.CONNECTION__TO,
+									index
+								)
+							}
+						}
+					}
 				}
 			}
 
