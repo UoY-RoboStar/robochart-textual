@@ -2316,6 +2316,26 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			)
 		}
 	}
+	
+	def HashSet<OperationDef> ncRequiredOpDefs(NodeContainer nc, Controller context) {
+		val ncOps = getROps(nc)
+		val ctrlOps = ctrlDef(context).LOperations
+		
+		var opDefSet = new HashSet()
+		for (ncOp : ncOps) {
+			for (ctrlOp : ctrlOps) {
+				if (OpEqual(ncOp, ctrlOp)) {
+					val opDef = if (ctrlOp instanceof OperationRef) ctrlOp.ref else ctrlOp as OperationDef
+					opDefSet.add(opDef)
+				}
+			}
+		}
+		opDefSet
+	}
+	
+	def HashSet<Event> ncOutputSetInContext(NodeContainer nc, Controller context) {
+		var outputs = ncOutputSet()
+	}	
 
 	def HashSet<Event> ncOutputSet(NodeContainer nc) {
 		var outputs = new HashSet<Event>()
