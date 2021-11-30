@@ -24,8 +24,12 @@ import circus.robocalc.robochart.BooleanExp
 import circus.robocalc.robochart.Call
 import circus.robocalc.robochart.CallExp
 import circus.robocalc.robochart.Cat
+import circus.robocalc.robochart.Clock
 import circus.robocalc.robochart.ClockExp
 import circus.robocalc.robochart.ClockReset
+import circus.robocalc.robochart.Communication
+import circus.robocalc.robochart.CommunicationStmt
+import circus.robocalc.robochart.CommunicationType
 import circus.robocalc.robochart.Connection
 import circus.robocalc.robochart.ConnectionNode
 import circus.robocalc.robochart.Context
@@ -43,6 +47,7 @@ import circus.robocalc.robochart.ExitAction
 import circus.robocalc.robochart.Expression
 import circus.robocalc.robochart.FieldDefinition
 import circus.robocalc.robochart.Final
+import circus.robocalc.robochart.FloatExp
 import circus.robocalc.robochart.FunctionType
 import circus.robocalc.robochart.GreaterOrEqual
 import circus.robocalc.robochart.GreaterThan
@@ -74,6 +79,7 @@ import circus.robocalc.robochart.ParExp
 import circus.robocalc.robochart.Parameter
 import circus.robocalc.robochart.Plus
 import circus.robocalc.robochart.PrimitiveType
+import circus.robocalc.robochart.ProbabilisticJunction
 import circus.robocalc.robochart.ProductType
 import circus.robocalc.robochart.QuantifierExpression
 import circus.robocalc.robochart.RCModule
@@ -96,7 +102,6 @@ import circus.robocalc.robochart.StateMachineDef
 import circus.robocalc.robochart.StateMachineRef
 import circus.robocalc.robochart.Statement
 import circus.robocalc.robochart.Transition
-import circus.robocalc.robochart.CommunicationType
 import circus.robocalc.robochart.TupleExp
 import circus.robocalc.robochart.Type
 import circus.robocalc.robochart.TypeRef
@@ -107,6 +112,7 @@ import circus.robocalc.robochart.VectorType
 import circus.robocalc.robochart.Wait
 import circus.robocalc.robochart.textual.RoboCalcTypeProvider
 import com.google.inject.Inject
+import java.util.ArrayList
 import java.util.HashMap
 import java.util.HashSet
 import java.util.LinkedList
@@ -123,10 +129,6 @@ import org.eclipse.xtext.resource.IResourceDescriptions
 import org.eclipse.xtext.serializer.ISerializer
 import org.eclipse.xtext.validation.Check
 import org.eclipse.xtext.validation.CheckType
-import java.util.ArrayList
-import circus.robocalc.robochart.Clock
-import circus.robocalc.robochart.Communication
-import circus.robocalc.robochart.CommunicationStmt
 
 /**
  * This class contains custom validation rules. 
@@ -227,14 +229,28 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				'noTransitionFromFinal'
 			)
 		}
-		/* @TODO: (FS2/S3) currently missing in RefMan, should FS2 be 
-		 * generalised to all states?
-		 */
-		if (parent.transitions.filter[t|t.target === f].size === 0) {
+		/* FS2 */
+		if (f.actions.size > 0) {
 			error(
-				'The final state in ' + parent.name + ' should have at least one incoming transition',
+				'A final state cannot have actions',
 				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
-				'transitionToJunction'
+				'noActionsInFinalState'
+			)
+		}
+		/* FS3 (nodes) */
+		if (f.nodes.size > 0) {
+			error(
+				'A final state cannot have sub-nodes',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'noSubNodesInFinalState'
+			)
+		}
+		/* FS3 (transitions) */
+		if (f.transitions.size > 0) {
+			error(
+				'A final state cannot have transitions',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'noTransitionsInFinalState'
 			)
 		}
 	}
@@ -262,7 +278,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			)
 		}
 		
-		if (t.source instanceof circus.robocalc.robochart.ProbabilisticJunction) {
+		if (t.source instanceof ProbabilisticJunction) {
 			/* PJ1 */
 			if (t.probability === null) {
 				error(
@@ -283,7 +299,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		
 		if (t.probability !== null) {
 			/* PT1 */
-			if (!(t.source instanceof circus.robocalc.robochart.ProbabilisticJunction)) {
+			if (!(t.source instanceof ProbabilisticJunction)) {
 				error(
 					'A transition with a probability value must start from a probabilistic junction',
 					RoboChartPackage.Literals.TRANSITION__PROBABILITY,
@@ -1732,6 +1748,14 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	def wfcTE3_NoForeignState(StateClockExp sce) {
 		val stm =  identifyContainingStateMachineBody(sce)
 		val nestedStates = identifyNestedStates(stm)
+		if (sce.state instanceof Final) {
+			error("TE3: The state in " + print(sce) 
+				+ " cannot be a final state",
+			 	RoboChartPackage.Literals.STATE_CLOCK_EXP__STATE,
+			 	"NoFinalStateInStateClockExp"
+			)
+		}
+		
 		if (sce.state !== null && !nestedStates.contains(sce.state)) {
 			error("TE3: The state in " + print(sce) 
 				+ " is not declared within state machine " + stm.name,
@@ -1845,7 +1869,12 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	/* RP3, I3, C5, STM5, O1:STM5 */
 	@Check(CheckType.FAST)
 	def checkUniqueness(NamedElement o) {
-		val project = o.eResource.URI.segment(1)
+		val uri = o.eResource.URI;
+		if (uri.segmentCount <= 1) {
+			// This case is necessary for dealing with junit tests where the resource's uris have a single segment
+			return
+		}
+		val project = uri.segment(1)
 		val c = new LinkedList<IEObjectDescription>()
 		val qn = qnp.getFullyQualifiedName(o)
 		rds.allResourceDescriptions.filter[rd|rd.URI.segment(1) === project].forEach [ rd |
@@ -2588,47 +2617,6 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 	}
 
-	def dispatch Set<String> constantsRequired(StateMachineDef m) {
-		var set = new HashSet<String>();
-		for (i : m.RInterfaces) {
-			for (l : i.variableList) {
-				if (l.modifier == VariableModifier.CONST) {
-					for (v : l.vars)
-						set.add(v.name)
-				}
-			}
-		}
-		return set
-
-	}
-	
-	def dispatch Set<String> constantsRequired(OperationDef m) {
-		var set = new HashSet<String>();
-		for (i : m.RInterfaces) {
-			for (l : i.variableList) {
-				if (l.modifier == VariableModifier.CONST) {
-					for (v : l.vars)
-						set.add(v.name)
-				}
-			}
-		}
-		return set
-
-	}
-
-	def dispatch Set<String> constantsRequired(ControllerDef m) {
-		var set = new HashSet<String>();
-		for (i : m.RInterfaces) {
-			for (l : i.variableList) {
-				if (l.modifier == VariableModifier.CONST) {
-					for (v : l.vars)
-						set.add(v.name)
-				}
-			}
-		}
-		return set
-	}
-
 	def rewriteType(Type t, Map<String, Type> map) {
 		if (t instanceof TypeRef) {
 			val ref = t.ref
@@ -2846,7 +2834,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	}
 
 	@Check
-	def junctionWFC_PJ3(circus.robocalc.robochart.ProbabilisticJunction j) {
+	def junctionWFC_PJ3(ProbabilisticJunction j) {
 		val parent = j.eContainer as NodeContainer
 		val lstExpr = new ArrayList<Expression>()
 
@@ -2865,15 +2853,15 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 	def private Boolean sumExprEq1(List<Expression> exprs) {
 		val num = exprs.filter[t|(t instanceof IntegerExp) || 
-			(t instanceof circus.robocalc.robochart.FloatExp)
+			(t instanceof FloatExp)
 		].size
 		if(exprs.size === num) {
 			var sum = 0.0
 			for(e: exprs) {
 				if(e instanceof IntegerExp) {
 					sum = sum + (e as IntegerExp).value
-				} else if(e instanceof circus.robocalc.robochart.FloatExp) {
-					sum = sum + (e as circus.robocalc.robochart.FloatExp).value
+				} else if(e instanceof FloatExp) {
+					sum = sum + (e as FloatExp).value
 				}
 			}
 
@@ -2893,9 +2881,9 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			if((e as IntegerExp).value > 1 || (e as IntegerExp).value < 0) {
 				return 1;
 			}
-		} else if(e instanceof circus.robocalc.robochart.FloatExp) {
-			if((e as circus.robocalc.robochart.FloatExp).value > 1.0 || 
-				(e as circus.robocalc.robochart.FloatExp).value < 0.0) {
+		} else if(e instanceof FloatExp) {
+			if((e as FloatExp).value > 1.0 || 
+				(e as FloatExp).value < 0.0) {
 				return 1;
 			}
 		} else {
@@ -2903,5 +2891,23 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 
 		return 0;
+	}
+	
+	/* WFCs for Expressions */
+	
+	@Check
+	def wfc_Equals(Equals e) {
+		val t1 = e.left.typeFor
+		val t2 = e.right.typeFor
+		
+		if (!typeCompatible(t1, t2)) {
+			val msg = '''Equality expressions
+			The type «t1.printType» of the left expression «e.left.print» is different than the type «t2.printType» of the right expression «e.right.print».'''
+			error(
+				msg,
+				RoboChartPackage.Literals.BINARY_EXPRESSION__LEFT,
+				'TypeError'
+			)
+		}
 	}
 }

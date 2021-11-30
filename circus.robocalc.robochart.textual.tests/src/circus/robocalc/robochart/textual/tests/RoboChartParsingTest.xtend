@@ -17,10 +17,31 @@
 package circus.robocalc.robochart.textual.tests
 
 import circus.robocalc.robochart.RCPackage
+import circus.robocalc.robochart.textual.RoboChartStandaloneSetup
 import com.google.inject.Inject
+import com.google.inject.Provider
+import java.io.File
+import java.io.IOException
+import java.io.InputStream
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.util.Enumeration
+import java.util.Iterator
+import java.util.Map
+import java.util.jar.JarEntry
+import java.util.jar.JarFile
+import java.util.stream.Stream
+import org.eclipse.emf.common.util.URI
+import org.eclipse.emf.common.util.WrappedException
+import org.eclipse.emf.ecore.EObject
+import org.eclipse.emf.ecore.resource.Resource
+import org.eclipse.emf.ecore.resource.ResourceSet
+import org.eclipse.xtext.resource.XtextResourceSet
 import org.eclipse.xtext.testing.InjectWith
 import org.eclipse.xtext.testing.extensions.InjectionExtension
 import org.eclipse.xtext.testing.util.ParseHelper
+import org.eclipse.xtext.testing.validation.ValidationTestHelper
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.^extension.ExtendWith
@@ -28,16 +49,16 @@ import org.junit.jupiter.api.^extension.ExtendWith
 @ExtendWith(InjectionExtension)
 @InjectWith(RoboChartInjectorProvider)
 class RoboChartParsingTest {
-	@Inject
-	ParseHelper<RCPackage> parseHelper
+	@Inject extension SmartParseHelper<RCPackage>
+	@Inject extension ValidationTestHelper
 
 	@Test
 	def void loadModel() {
-		val result = parseHelper.parse('''
+		val result = '''
 			interface I {
 				var x: nat = 1
 			}
-		''')
+		'''.parse
 		Assertions.assertNotNull(result)
 		val errors = result.eResource.errors
 		Assertions.assertTrue(errors.isEmpty, '''Unexpected errors: «errors.join(", ")»''')
@@ -45,7 +66,7 @@ class RoboChartParsingTest {
 
 	@Test
 	def void matrix_vector_num_Test() {
-		val result = parseHelper.parse('''
+		val result = '''
 			stm S {
 				const H: nat, W: nat
 				var a: vector(real,3)
@@ -65,7 +86,7 @@ class RoboChartParsingTest {
 					from I to S
 				} 
 			} 
-		''')
+		'''.parse
 		Assertions.assertNotNull(result)
 		val errors = result.eResource.errors
 		Assertions.assertTrue(errors.isEmpty, '''Unexpected errors: «errors.join(", ")»''')
@@ -73,7 +94,7 @@ class RoboChartParsingTest {
 
 	@Test
 	def void matrix_vector_const_Test() {
-		val result = parseHelper.parse('''
+		val result = '''
 			stm S1 {
 				const H: nat, W: nat
 				var a: vector(real,H)
@@ -93,7 +114,7 @@ class RoboChartParsingTest {
 					from I to S
 				} 
 			}
-		''')
+		'''.parse
 		Assertions.assertNotNull(result)
 		val errors = result.eResource.errors
 		Assertions.assertTrue(errors.isEmpty, '''Unexpected errors: «errors.join(", ")»''')
@@ -101,7 +122,7 @@ class RoboChartParsingTest {
 
 	@Test
 	def void inverse_transpose_Test() {
-		val result = parseHelper.parse('''
+		val result = '''
 			stm S2 {
 				var a: matrix(real,3,4) 
 				var b: matrix(real,4,3) 
@@ -118,7 +139,7 @@ class RoboChartParsingTest {
 					from I to S
 				} 
 			}
-		''')
+		'''.parse
 		Assertions.assertNotNull(result)
 		val errors = result.eResource.errors
 		Assertions.assertTrue(errors.isEmpty, '''Unexpected errors: «errors.join(", ")»''')
@@ -126,7 +147,7 @@ class RoboChartParsingTest {
 	
 	@Test
 	def void vector_matrix_exp_Test() {
-		val result = parseHelper.parse('''
+		val result = '''
 			stm S3 {
 				var a: matrix(real,3,4)
 				var b: matrix(real,3,3)
@@ -141,10 +162,159 @@ class RoboChartParsingTest {
 					from I to S
 				} 
 			}
-		''')
+		'''.parse
 		Assertions.assertNotNull(result)
 		val errors = result.eResource.errors
 		Assertions.assertTrue(errors.isEmpty, '''Unexpected errors: «errors.join(", ")»''')
 	}
+	
+	@Test
+	def void filter_seq_is_not_set() {
+		System.out.println("Testing seq_is_not_set");
+		val rs = createResourceSet()
+		val result = '''
+			import sequence_toolkit::*
+			stm stm2 {
+				var x : Seq( int ) = < 0 , 1 >
+				event alive
+				initial i0
+				state s0 {
+				}
+				transition t0 {
+					from i0
+					to s0
+				}
+				transition t1 {
+					from s0
+					to s0
+					condition filter ( x , { 1 } ) == {}
+					action alive
+				}
+			}
+		'''.parse(rs)
+		System.out.println("Parsed seq_is_not_set");
+		Assertions.assertNotNull(result)
+		val errors = result.eResource.errors
+		Assertions.assertTrue(errors.isEmpty, '''Unexpected errors: «errors.join(", ")»''')
+		result.assertNoErrors
+		result.assertNoIssues
+		
+	}
 
+}
+
+
+/*
+ * code based on answer by Christian Dietrich in https://www.eclipse.org/forums/index.php/t/1068376/
+ */
+
+class SmartParseHelper<T extends EObject> extends ParseHelper<T> {
+	
+//	@Inject
+//	IResourceFactory resourceFactory;
+	
+	@Inject Provider<XtextResourceSet> rsp;
+	
+//	@Inject
+//	private ResourceHelper resourceHelper;
+	
+	def addLibrary(ResourceSet rs, String libpath, String ext, File plugin, ClassLoader classLoader) {
+		val cleanPath = if (libpath.endsWith("/")) libpath.substring(0,libpath.length-1)
+		
+		if (plugin.isFile()) {
+			System.out.println(">>>> it is jar file");
+			// treating case where the resource files are in a plugin
+			val jar = new JarFile(plugin)
+			val Enumeration<JarEntry> entries = jar.entries(); //gives ALL entries in jar
+    		while(entries.hasMoreElements()) {
+        		val name = entries.nextElement().getName();
+        		if (name.startsWith(cleanPath+"/") && name.endsWith(ext)) { //filter according to the path
+            		val url = classLoader.getResource(name)
+            		System.out.println(">>>> found url for "+name+"("+url+")");
+					val input = url.toURI.toURL.openStream
+					System.out.println(">>>> opened stream");
+					val uri = URI.createFileURI(url.path)
+					System.out.println(">>>> created file");
+					try {
+						val res = rs.createResource(uri)
+						System.out.println(">>>> created resource");
+						res.load(input, rs.loadOptions)
+						System.out.println(">>>> loaded file");
+					} catch (IllegalStateException e) {
+						System.out.println(">>>> Caught exception: "+e.toString)
+					}
+        		}
+    		}
+    		jar.close();
+		} else {
+			System.out.println(">>>> not a jar file");
+			// treating case where the resource files are a project in the workspace			
+			var url = classLoader.getResource(cleanPath);
+			if (url === null) {
+				val pathInLib = if (cleanPath.startsWith("lib/")) cleanPath.replaceFirst("lib/","") else cleanPath
+				url = classLoader.getResource(pathInLib);
+			}
+			System.out.println(">>>> found url "+url);
+			val path = Paths.get(url.toURI)
+			var Stream<Path> walk = Files.list(path);
+			for (var Iterator<Path> it = walk.iterator(); it.hasNext();) {
+				val p = it.next()
+				if (p.toString.endsWith(ext)) {
+					System.out.println(">>>> found url for "+p.toString());
+					val is = p.toUri().toURL.openStream;
+					System.out.println(">>>> opened stream");
+					val furi = URI.createFileURI(p.toString)
+					System.out.println(">>>> created file");
+					val r = rs.createResource(furi)
+					System.out.println(">>>> created resource");
+					r.load(is, rs.loadOptions)
+					System.out.println(">>>> loaded file");
+				}
+			}
+			walk.close();
+		}
+	}
+	
+	def addRoboChartLibrary(ResourceSet rs) {
+		val jarFile = new File(RoboChartStandaloneSetup.protectionDomain.codeSource.location.path)
+		System.out.println(">>>> found jarFile "+jarFile);
+		addLibrary(rs,"lib/robochart/",".rct", jarFile, RoboChartStandaloneSetup.classLoader)
+	}
+	
+	def createResourceSet() {
+		val rs = rsp.get();
+		System.out.println(">>>> got resource set provider");
+		addRoboChartLibrary(rs);
+		return rs;
+	}
+	
+	def T parse(CharSequence text, ResourceSet resourceSetToUse, String fileExtension) throws Exception {
+		return parse(getAsStream(text), computeUnusedUri(resourceSetToUse, fileExtension), null, resourceSetToUse, fileExtension) as T
+	}
+	
+	def URI computeUnusedUri(ResourceSet resourceSet, String fileExtension) {
+		val String name = "__synthetic";
+		for (i : 0..Integer.MAX_VALUE) {
+			val URI syntheticUri = URI.createURI(name + i + "." + fileExtension);
+			if (resourceSet.getResource(syntheticUri, false) === null)
+				return syntheticUri;
+		}
+		throw new IllegalStateException();
+	}
+	
+	override T parse(CharSequence text) throws Exception {
+		val rs = createResourceSet()
+		parse(getAsStream(text), computeUnusedUri(rs, fileExtension), null, rs, fileExtension) as T
+	}
+	
+	def T parse(InputStream in, URI uriToUse, Map<?, ?> options, ResourceSet resourceSet, String fileExtension) {
+		val Resource resource = resourceSet.createResource(uriToUse);
+		try {
+			resource.load(in, options);
+			val T root = if (resource.getContents().isEmpty()) null else resource.getContents().get(0) as T;
+			return root;
+		} catch (IOException e) {
+			throw new WrappedException(e);
+		}
+	}
 }

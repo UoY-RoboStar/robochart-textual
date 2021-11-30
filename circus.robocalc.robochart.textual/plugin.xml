@@ -2,5 +2,4 @@
 <?eclipse version="3.4"?>
 <plugin>
    <extension-point id="robochart.generator" name="robochart.generator" schema="schema/robochart.generator.exsd"/>
-
 </plugin>
