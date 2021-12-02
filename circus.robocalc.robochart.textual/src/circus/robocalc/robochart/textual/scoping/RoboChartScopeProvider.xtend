@@ -181,7 +181,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 		 }*/
 		else if (context instanceof VarRef) {
 			if (reference === VAR_REF__NAME) {
-				val result = delegateGetScope(context, reference)
+				val result = IScope::NULLSCOPE //delegateGetScope(context, reference) // Similar change to avoid linking variables from non-local scopes. TODO: double-check this is ok.
 				val r = context.variablesDeclared(result)
 				r
 			}
@@ -407,21 +407,14 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 
 	def getCommunicationScope(Communication context, EReference reference) {
 		if (reference === COMMUNICATION__EVENT) {
-			var o = context.eContainer
-			val result = delegateGetScope(context, reference)
-			// while (!(o instanceof StateMachineDef || o === null)) {
-			// o = o.eContainer
-			// }
-			// (o as StateMachineDef).eventsDeclared
+			var o = context.eContainer 
+			val result = IScope::NULLSCOPE // delegateGetScope(context, reference) // Removing this to avoid the standard scope rules to allow use of non-local events
 			return o.eventsDeclared(result)
-//		} else if (reference === TRIGGER__TIME) {
-//			val result = delegateGetScope(context, reference)
-//			return context.eContainer.variablesDeclared(result)
 		} else if (context instanceof Communication && reference === COMMUNICATION__PARAMETER) {
-			val result = delegateGetScope(context, reference)
+			val result = IScope::NULLSCOPE //delegateGetScope(context, reference)
 			return context.variablesDeclared(result)
 		} else if (context instanceof Communication && reference === COMMUNICATION__FROM) {
-			val result = delegateGetScope(context, reference)
+			val result = IScope::NULLSCOPE //delegateGetScope(context, reference)
 			return context.variablesDeclared(result)
 		} else {
 			return delegateGetScope(context, reference)
@@ -432,10 +425,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	def getCommunicationStmtScope(CommunicationStmt context, EReference reference) {
 		if (reference === COMMUNICATION_STMT__COMMUNICATION) {
 			var o = context.eContainer
-			val result = delegateGetScope(context, reference)
-			/*while (!(o instanceof StateMachineDef || o === null)) {
-			 * 	o = o.eContainer
-			 }*/
+			val result = IScope::NULLSCOPE //delegateGetScope(context, reference)
 			return o.eventsDeclared(result)
 		} else {
 			return delegateGetScope(context, reference)
@@ -444,10 +434,10 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 
 	def getScopeForConnection(Connection context, EReference reference) {
 		if (reference === CONNECTION__EFROM) {
-			val result = delegateGetScope(context, reference)
+			val result = IScope::NULLSCOPE //delegateGetScope(context, reference)
 			return context.from.eventsDeclared(result)
 		} else if (reference === CONNECTION__ETO) {
-			val result = delegateGetScope(context, reference)
+			val result = IScope::NULLSCOPE //delegateGetScope(context, reference)
 			return context.to.eventsDeclared(result)
 		} else if (reference === CONNECTION__FROM) {
 			val result = delegateGetScope(context, reference)
