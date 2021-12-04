@@ -2317,14 +2317,14 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 	}
 	
-	def HashSet<OperationDef> ncRequiredOpDefs(NodeContainer nc, Controller context) {
-		val ncOps = getROps(nc)
+	def HashSet<OperationDef> stmRequiredOpDefs(StateMachineBody stm, Controller context) {
+		val stmOps = getROps(stm)
 		val ctrlOps = ctrlDef(context).LOperations
 		
 		var opDefSet = new HashSet()
-		for (ncOp : ncOps) {
+		for (stmOp : stmOps) {
 			for (ctrlOp : ctrlOps) {
-				if (OpEqual(ncOp, ctrlOp)) {
+				if (OpEqual(stmOp, ctrlOp)) {
 					val opDef = if (ctrlOp instanceof OperationRef) ctrlOp.ref else ctrlOp as OperationDef
 					opDefSet.add(opDef)
 				}
@@ -2335,20 +2335,42 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	
 	// recursively collects outputs of a node container, avoiding operations already checked
 	// it is required by WFC O2 that operations not be recursive, but we can't know that has been checked beforehand
-	private def HashSet<Event> ncOutputSetInContextRecursive(NodeContainer nc, Controller context, HashSet<OperationSig> alreadyChecked) {
-		var outputs = ncOutputSet(nc)
-		for (opDef : ncRequiredOpDefs(nc, context)) {
+	private def HashSet<Event> stmOutputSetInContextRecursive(StateMachineBody stm, Controller context, HashSet<OperationSig> alreadyChecked, StateMachineBody outerstm) {
+		var innerOutputs = ncOutputSet(stm)
+		// unify the stmOutputs with the events of outerstm
+		var outputs = new HashSet<Event>(innerOutputs.size())
+		var outerEvents = getAllEvents(outerstm)
+		for (innerevent : innerOutputs) {
+			for (outerevent : outerEvents) {
+				if (outerevent.name == innerevent.name
+					&& ((innerevent.type === null && outerevent.type === null)
+						|| typeCompatible(innerevent.type,outerevent.type))) {
+					// outer state machine event is compatible, add it to the outputs
+					outputs.add(outerevent)
+				}
+			}
+		}
+		// add outputs coming from required operations
+		for (opDef : stmRequiredOpDefs(stm, context)) {
 			if (!alreadyChecked.contains(opDef)) {
 				alreadyChecked.add(opDef)
-				outputs.addAll(ncOutputSetInContextRecursive(opDef, context, alreadyChecked))
+				outputs.addAll(stmOutputSetInContextRecursive(opDef, context, alreadyChecked, outerstm))
 			}
 			
 		}
 		outputs
 	}
+		
+	def getAllEvents(StateMachineBody stm) {
+		var events = stm.events
+		for (iface : stm.interfaces) {
+			events.addAll(iface.events)
+		}
+		events
+	}
 	
-	def HashSet<Event> ncOutputSetInContext(NodeContainer nc, Controller context) {
-		ncOutputSetInContextRecursive(nc, context, new HashSet<OperationSig>())
+	def HashSet<Event> stmOutputSetInContext(StateMachineBody stm, Controller context) {
+		stmOutputSetInContextRecursive(stm, context, new HashSet<OperationSig>(), stm)
 	}	
 
 	def HashSet<Event> ncOutputSet(NodeContainer nc) {
@@ -2404,20 +2426,34 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 	// recursively collects inputs of a node container, avoiding operations already checked
 	// it is required by WFC O2 that operations not be recursive, but we can't know that has been checked beforehand
-	private def HashSet<Event> ncInputSetInContextRecursive(NodeContainer nc, Controller context, HashSet<OperationSig> alreadyChecked) {
-		var outputs = ncInputSet(nc)
-		for (opDef : ncRequiredOpDefs(nc, context)) {
+	private def HashSet<Event> stmInputSetInContextRecursive(StateMachineBody stm, Controller context, HashSet<OperationSig> alreadyChecked, StateMachineBody outerstm) {
+		var innerInputs = ncInputSet(stm)
+		// unify the innerInputs with the events of outerstm
+		var inputs = new HashSet<Event>(innerInputs.size())
+		var outerEvents = getAllEvents(outerstm)
+		for (innerevent : innerInputs) {
+			for (outerevent : outerEvents) {
+				if (outerevent.name == innerevent.name
+					&& ((innerevent.type === null && outerevent.type === null)
+						|| typeCompatible(innerevent.type,outerevent.type))) {
+					// outer state machine event is compatible, add it to the inputs
+					inputs.add(outerevent)
+				}
+			}
+		}
+		// add inputs coming from required operations
+		for (opDef : stmRequiredOpDefs(stm, context)) {
 			if (!alreadyChecked.contains(opDef)) {
 				alreadyChecked.add(opDef)
-				outputs.addAll(ncInputSetInContextRecursive(opDef, context, alreadyChecked))
+				inputs.addAll(stmInputSetInContextRecursive(opDef, context, alreadyChecked, outerstm))
 			}
 			
 		}
-		outputs
+		inputs
 	}
 	
-	def HashSet<Event> ncInputSetInContext(NodeContainer nc, Controller context) {
-		ncInputSetInContextRecursive(nc, context, new HashSet<OperationSig>())
+	def HashSet<Event> ncInputSetInContext(StateMachineBody stm, Controller context) {
+		stmInputSetInContextRecursive(stm, context, new HashSet<OperationSig>(), stm)
 	}	
 
 	def HashSet<Event> ncInputSet(NodeContainer nc) {
@@ -2471,9 +2507,13 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	def checkControllerConnections(ControllerDef ctrl) {
 		var index = 0
 		for (c : ctrl.connections) {
+			System.out.println("Checking connection " + c);
 			if(c.isBidirec) return; // if the connection is bidirectional, then there are no restrictions
 			/* Cn9 */
 			if (c.from !== ctrl && c.from instanceof StateMachine) {
+				System.out.println(c + ": from connection on " + c.efrom.name + " is state machine " + c.from.name);
+				System.out.println(c.from.name + " input set: " + ncInputSetInContext(stmDef(c.from as StateMachine), ctrl));
+				System.out.println("looking for " + c.efrom);
 				if (ncInputSetInContext(stmDef(c.from as StateMachine), ctrl).contains(c.efrom)) {
 					// determine the source of the error more exactly
 					if (ncInputSet(stmDef(c.from as StateMachine)).contains(c.efrom)) {
@@ -2487,7 +2527,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 						)
 					} else {
 						// event is used in an operation, determine which one (only check one level for simplicity of error reporting)
-						for (op : ncRequiredOpDefs(stmDef(c.from as StateMachine), ctrl)) {
+						for (op : stmRequiredOpDefs(stmDef(c.from as StateMachine), ctrl)) {
 							if (ncInputSetInContext(op, ctrl).contains(c.efrom)) {
 								error(
 									c.efrom.name + " on " + c.from.name +
@@ -2507,7 +2547,10 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 			/* Cn8 */
 			if (c.to !== ctrl && c.to instanceof StateMachine) {
-				if (ncOutputSetInContext(stmDef(c.to as StateMachine), ctrl).contains(c.eto)) {
+				System.out.println(c + ": to connection on " + c.eto.name + " is state machine " + c.to.name);
+				System.out.println(c.to.name + " output set: " + stmOutputSetInContext(stmDef(c.to as StateMachine), ctrl));
+				System.out.println("looking for " + c.eto);
+				if (stmOutputSetInContext(stmDef(c.to as StateMachine), ctrl).contains(c.eto)) {
 					// determine the source of the error more exactly
 					if (ncOutputSet(stmDef(c.to as StateMachine)).contains(c.eto)) {
 						error(
@@ -2519,8 +2562,8 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 						)
 					} else {
 						// event is used in an operation, determine which one (only check one level for simplicity of error reporting)
-						for (op : ncRequiredOpDefs(stmDef(c.from as StateMachine), ctrl)) {
-							if (ncOutputSetInContext(op, ctrl).contains(c.eto)) {
+						for (op : stmRequiredOpDefs(stmDef(c.from as StateMachine), ctrl)) {
+							if (stmOutputSetInContext(op, ctrl).contains(c.eto)) {
 								error(
 									c.eto.name + " on " + c.to.name + " is used as the end of a unidirectional connection, but " +
 										c.to.name + " outputs on " + c.eto.name +
