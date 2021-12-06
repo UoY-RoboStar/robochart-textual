@@ -2452,7 +2452,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		inputs
 	}
 	
-	def HashSet<Event> ncInputSetInContext(StateMachineBody stm, Controller context) {
+	def HashSet<Event> stmInputSetInContext(StateMachineBody stm, Controller context) {
 		stmInputSetInContextRecursive(stm, context, new HashSet<OperationSig>(), stm)
 	}	
 
@@ -2512,9 +2512,9 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			/* Cn9 */
 			if (c.from !== ctrl && c.from instanceof StateMachine) {
 				System.out.println(c + ": from connection on " + c.efrom.name + " is state machine " + c.from.name);
-				System.out.println(c.from.name + " input set: " + ncInputSetInContext(stmDef(c.from as StateMachine), ctrl));
+				System.out.println(c.from.name + " input set: " + stmInputSetInContext(stmDef(c.from as StateMachine), ctrl));
 				System.out.println("looking for " + c.efrom);
-				if (ncInputSetInContext(stmDef(c.from as StateMachine), ctrl).contains(c.efrom)) {
+				if (stmInputSetInContext(stmDef(c.from as StateMachine), ctrl).contains(c.efrom)) {
 					// determine the source of the error more exactly
 					if (ncInputSet(stmDef(c.from as StateMachine)).contains(c.efrom)) {
 						error(
@@ -2526,22 +2526,28 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 							index
 						)
 					} else {
-						// event is used in an operation, determine which one (only check one level for simplicity of error reporting)
+						// event is used in an operation, determine which one
 						for (op : stmRequiredOpDefs(stmDef(c.from as StateMachine), ctrl)) {
-							if (ncInputSetInContext(op, ctrl).contains(c.efrom)) {
-								error(
-									c.efrom.name + " on " + c.from.name +
-										" is used as the start of a unidirectional connection, but " + c.from.name +
-										" receives input on " + c.efrom.name +
-										" via the operation " + op.name,
-									c,
-									RoboChartPackage.Literals.CONNECTION__FROM,
-									index
-								)
+							var opInputs = ncInputSet(op)
+							for (opEvent : opInputs) {
+								// attempt to unify the operation event with the connection event
+								if (c.efrom.name == opEvent.name
+									&& ((opEvent.type === null && c.efrom.type === null)
+										|| typeCompatible(opEvent.type,c.efrom.type))) {
+									// the event does occur as an input in this operation, signal an error
+									error(
+										c.efrom.name + " on " + c.from.name +
+											" is used as the start of a unidirectional connection, but " + c.from.name +
+											" receives input on " + c.efrom.name +
+											" via the operation " + op.name,
+										c,
+										RoboChartPackage.Literals.CONNECTION__FROM,
+										index
+									)
+								}
 							}
 						}
 					}
-
 				}
 			}
 
@@ -2562,16 +2568,24 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 						)
 					} else {
 						// event is used in an operation, determine which one (only check one level for simplicity of error reporting)
-						for (op : stmRequiredOpDefs(stmDef(c.from as StateMachine), ctrl)) {
-							if (stmOutputSetInContext(op, ctrl).contains(c.eto)) {
-								error(
-									c.eto.name + " on " + c.to.name + " is used as the end of a unidirectional connection, but " +
-										c.to.name + " outputs on " + c.eto.name +
-										" via the operation " + op.name,
-									c,
-									RoboChartPackage.Literals.CONNECTION__TO,
-									index
-								)
+						for (op : stmRequiredOpDefs(stmDef(c.to as StateMachine), ctrl)) {
+							var opOutputs = ncOutputSet(op)
+							for (opEvent : opOutputs) {
+								// attempt to unify the operation event with the connection event
+								if (c.eto.name == opEvent.name
+									&& ((opEvent.type === null && c.eto.type === null)
+										|| typeCompatible(opEvent.type,c.eto.type))) {
+									// the event does occur as an output in this operation, signal an error
+									error(
+										c.eto.name + " on " + c.to.name +
+											" is used as the end of a unidirectional connection, but " + c.to.name +
+											" outputs on " + c.eto.name +
+											" via the operation " + op.name,
+										c,
+										RoboChartPackage.Literals.CONNECTION__TO,
+										index
+									)
+								}
 							}
 						}
 					}
