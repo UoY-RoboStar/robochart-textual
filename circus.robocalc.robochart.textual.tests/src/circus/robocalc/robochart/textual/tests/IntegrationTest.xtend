@@ -34,6 +34,8 @@ import org.eclipse.xtext.testing.extensions.InjectionExtension
 import org.eclipse.xtext.testing.validation.ValidationTestHelper
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.^extension.ExtendWith
+import circus.robocalc.robochart.RCPackage
+import circus.robocalc.robochart.RoboChartPackage.Literals
 
 @ExtendWith(InjectionExtension)
 @InjectWith(RoboChartInjectorProvider)
@@ -305,6 +307,22 @@ class IntegrationTest {
 		val dir = "robochart-tests/test14"
 		TestRoboChartModel(dir)
 	}
+	
+	@Test
+	def void operationInputTest() {
+		val dir = "robochart-tests/operationInput"
+		val file = "operationInput.rct"
+		val errorMessage = "inputEvent on OperationInputSTM is used as the end of a unidirectional connection, but OperationInputSTM outputs on inputEvent via the operation Op"
+		TestRoboChartModelError(dir, file, errorMessage)
+	}
+
+	@Test
+	def void operationOutputTest() {
+		val dir = "robochart-tests/operationInput"
+		val file = "operationInput.rct"
+		val errorMessage = "inputEvent on OperationInputSTM is used as the end of a unidirectional connection, but OperationInputSTM outputs on inputEvent via the operation Op"
+		TestRoboChartModelError(dir, file, errorMessage)
+	}
 
 	// This is not ideal as the errors trace back to this function instead of the test that failed.
 	// TODO: check why resolveAll is needed here and why it duplicates the library files (We add them as file:/ and the resolver adds them as platform:/
@@ -349,5 +367,18 @@ class IntegrationTest {
 			}
 		}
 		return rs
+	}
+	
+	def void TestRoboChartModelError(String dir, String filename, String errorDescription) {
+		val rs = loadTestFiles(dir)
+		EcoreUtil.resolveAll(rs)
+		System.out.println("")
+		for (r: rs.resources) {
+			val rname = r.URI
+			if (rname.lastSegment !== null && rname.lastSegment.equals(filename)) {
+				r.assertError(Literals.RC_PACKAGE, null, errorDescription)
+			}
+		}
+		System.out.println("\n")
 	}
 }
