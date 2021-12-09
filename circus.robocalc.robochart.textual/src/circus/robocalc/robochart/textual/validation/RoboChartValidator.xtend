@@ -2362,7 +2362,8 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	}
 		
 	def getAllEvents(StateMachineBody stm) {
-		var events = stm.events
+		var events = new HashSet<Event>()
+		events.addAll(stm.events)
 		for (iface : stm.interfaces) {
 			events.addAll(iface.events)
 		}
