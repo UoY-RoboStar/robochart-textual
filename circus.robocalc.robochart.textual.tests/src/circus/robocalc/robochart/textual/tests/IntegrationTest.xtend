@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.^extension.ExtendWith
 import circus.robocalc.robochart.RCPackage
 import circus.robocalc.robochart.RoboChartPackage.Literals
+import org.eclipse.emf.ecore.EClass
 
 @ExtendWith(InjectionExtension)
 @InjectWith(RoboChartInjectorProvider)
@@ -313,7 +314,7 @@ class IntegrationTest {
 		val dir = "robochart-tests/operationInput"
 		val file = "operationInput.rct"
 		val errorMessage = "inputEvent on OperationInputSTM is used as the end of a unidirectional connection, but OperationInputSTM outputs on inputEvent via the operation Op"
-		TestRoboChartModelError(dir, file, errorMessage)
+		TestRoboChartModelError(dir, file, Literals.CONNECTION, errorMessage)
 	}
 
 	@Test
@@ -321,7 +322,7 @@ class IntegrationTest {
 		val dir = "robochart-tests/operationInput"
 		val file = "operationInput.rct"
 		val errorMessage = "inputEvent on OperationInputSTM is used as the end of a unidirectional connection, but OperationInputSTM outputs on inputEvent via the operation Op"
-		TestRoboChartModelError(dir, file, errorMessage)
+		TestRoboChartModelError(dir, file, Literals.CONNECTION, errorMessage)
 	}
 
 	// This is not ideal as the errors trace back to this function instead of the test that failed.
@@ -369,14 +370,14 @@ class IntegrationTest {
 		return rs
 	}
 	
-	def void TestRoboChartModelError(String dir, String filename, String errorDescription) {
+	def void TestRoboChartModelError(String dir, String filename, EClass element, String errorDescription) {
 		val rs = loadTestFiles(dir)
 		EcoreUtil.resolveAll(rs)
 		System.out.println("")
 		for (r: rs.resources) {
 			val rname = r.URI
 			if (rname.lastSegment !== null && rname.lastSegment.equals(filename)) {
-				r.assertError(Literals.RC_PACKAGE, null, errorDescription)
+				r.assertError(element, null, errorDescription)
 			}
 		}
 		System.out.println("\n")
