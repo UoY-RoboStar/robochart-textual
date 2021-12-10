@@ -316,12 +316,44 @@ class IntegrationTest {
 		val errorMessage = "inputEvent on OperationInputSTM is used as the end of a unidirectional connection, but OperationInputSTM outputs on inputEvent via the operation Op"
 		TestRoboChartModelError(dir, file, Literals.CONNECTION, errorMessage)
 	}
+	
+	@Test
+	def void operationInputOpRefTest() {
+		val dir = "robochart-tests/operationInputOpRef"
+		val file = "operationInputOpRef.rct"
+		val errorMessage = "inputEvent on OperationInputSTM is used as the end of a unidirectional connection, but OperationInputSTM outputs on inputEvent via the operation Op"
+		TestRoboChartModelError(dir, file, Literals.CONNECTION, errorMessage)
+	}
+	
+	@Test
+	def void operationInputStmRefTest() {
+		val dir = "robochart-tests/operationInputStmRef"
+		val file = "operationInputStmRef.rct"
+		val errorMessage = "inputEvent on OperationInputSTM is used as the end of a unidirectional connection, but OperationInputSTM outputs on inputEvent via the operation Op"
+		TestRoboChartModelError(dir, file, Literals.CONNECTION, errorMessage)
+	}
 
 	@Test
 	def void operationOutputTest() {
-		val dir = "robochart-tests/operationInput"
-		val file = "operationInput.rct"
-		val errorMessage = "inputEvent on OperationInputSTM is used as the end of a unidirectional connection, but OperationInputSTM outputs on inputEvent via the operation Op"
+		val dir = "robochart-tests/operationOutput"
+		val file = "operationOutput.rct"
+		val errorMessage = "outputEvent on OperationOutputSTM is used as the start of a unidirectional connection, but OperationOutputSTM receives input on outputEvent via the operation Op"
+		TestRoboChartModelError(dir, file, Literals.CONNECTION, errorMessage)
+	}
+	
+	@Test
+	def void operationOutputOpRefTest() {
+		val dir = "robochart-tests/operationOutputOpRef"
+		val file = "operationOutputOpRef.rct"
+		val errorMessage = "outputEvent on OperationOutputSTM is used as the start of a unidirectional connection, but OperationOutputSTM receives input on outputEvent via the operation Op"
+		TestRoboChartModelError(dir, file, Literals.CONNECTION, errorMessage)
+	}
+	
+	@Test
+	def void operationOutputStmRefTest() {
+		val dir = "robochart-tests/operationOutputStmRef"
+		val file = "operationOutputStmRef.rct"
+		val errorMessage = "outputEvent on OperationOutputSTM is used as the start of a unidirectional connection, but OperationOutputSTM receives input on outputEvent via the operation Op"
 		TestRoboChartModelError(dir, file, Literals.CONNECTION, errorMessage)
 	}
 
