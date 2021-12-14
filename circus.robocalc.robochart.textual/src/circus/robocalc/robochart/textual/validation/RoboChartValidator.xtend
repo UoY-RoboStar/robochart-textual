@@ -2316,6 +2316,63 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			)
 		}
 	}
+	
+	def HashSet<OperationDef> stmRequiredOpDefs(StateMachineBody stm, Controller context) {
+		val stmOps = getROps(stm)
+		val ctrlOps = ctrlDef(context).LOperations
+		
+		var opDefSet = new HashSet()
+		for (stmOp : stmOps) {
+			for (ctrlOp : ctrlOps) {
+				if (OpEqual(stmOp, ctrlOp)) {
+					val opDef = if (ctrlOp instanceof OperationRef) ctrlOp.ref else ctrlOp as OperationDef
+					opDefSet.add(opDef)
+				}
+			}
+		}
+		opDefSet
+	}
+	
+	// recursively collects outputs of a node container, avoiding operations already checked
+	// it is required by WFC O2 that operations not be recursive, but we can't know that has been checked beforehand
+	private def HashSet<Event> stmOutputSetInContextRecursive(StateMachineBody stm, Controller context, HashSet<OperationSig> alreadyChecked, StateMachineBody outerstm) {
+		var innerOutputs = ncOutputSet(stm)
+		// unify the stmOutputs with the events of outerstm
+		var outputs = new HashSet<Event>(innerOutputs.size())
+		var outerEvents = getAllEvents(outerstm)
+		for (innerevent : innerOutputs) {
+			for (outerevent : outerEvents) {
+				if (outerevent.name == innerevent.name
+					&& ((innerevent.type === null && outerevent.type === null)
+						|| typeCompatible(innerevent.type,outerevent.type))) {
+					// outer state machine event is compatible, add it to the outputs
+					outputs.add(outerevent)
+				}
+			}
+		}
+		// add outputs coming from required operations
+		for (opDef : stmRequiredOpDefs(stm, context)) {
+			if (!alreadyChecked.contains(opDef)) {
+				alreadyChecked.add(opDef)
+				outputs.addAll(stmOutputSetInContextRecursive(opDef, context, alreadyChecked, outerstm))
+			}
+			
+		}
+		outputs
+	}
+		
+	def getAllEvents(StateMachineBody stm) {
+		var events = new HashSet<Event>()
+		events.addAll(stm.events)
+		for (iface : stm.interfaces) {
+			events.addAll(iface.events)
+		}
+		events
+	}
+	
+	def HashSet<Event> stmOutputSetInContext(StateMachineBody stm, Controller context) {
+		stmOutputSetInContextRecursive(stm, context, new HashSet<OperationSig>(), stm)
+	}	
 
 	def HashSet<Event> ncOutputSet(NodeContainer nc) {
 		var outputs = new HashSet<Event>()
@@ -2367,6 +2424,38 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 		outputs
 	}
+
+	// recursively collects inputs of a node container, avoiding operations already checked
+	// it is required by WFC O2 that operations not be recursive, but we can't know that has been checked beforehand
+	private def HashSet<Event> stmInputSetInContextRecursive(StateMachineBody stm, Controller context, HashSet<OperationSig> alreadyChecked, StateMachineBody outerstm) {
+		var innerInputs = ncInputSet(stm)
+		// unify the innerInputs with the events of outerstm
+		var inputs = new HashSet<Event>(innerInputs.size())
+		var outerEvents = getAllEvents(outerstm)
+		for (innerevent : innerInputs) {
+			for (outerevent : outerEvents) {
+				if (outerevent.name == innerevent.name
+					&& ((innerevent.type === null && outerevent.type === null)
+						|| typeCompatible(innerevent.type,outerevent.type))) {
+					// outer state machine event is compatible, add it to the inputs
+					inputs.add(outerevent)
+				}
+			}
+		}
+		// add inputs coming from required operations
+		for (opDef : stmRequiredOpDefs(stm, context)) {
+			if (!alreadyChecked.contains(opDef)) {
+				alreadyChecked.add(opDef)
+				inputs.addAll(stmInputSetInContextRecursive(opDef, context, alreadyChecked, outerstm))
+			}
+			
+		}
+		inputs
+	}
+	
+	def HashSet<Event> stmInputSetInContext(StateMachineBody stm, Controller context) {
+		stmInputSetInContextRecursive(stm, context, new HashSet<OperationSig>(), stm)
+	}	
 
 	def HashSet<Event> ncInputSet(NodeContainer nc) {
 		var inputs = new HashSet<Event>()
@@ -2422,29 +2511,78 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			if(c.isBidirec) return; // if the connection is bidirectional, then there are no restrictions
 			/* Cn9 */
 			if (c.from !== ctrl && c.from instanceof StateMachine) {
-				if (ncInputSet(stmDef(c.from as StateMachine)).contains(c.efrom)) {
-					error(
-						c.efrom.name + " on " + c.from.name +
-							" is used as the start of a unidirectional connection, but " + c.from.name +
-							" receives input on " + c.efrom.name,
-						c,
-						RoboChartPackage.Literals.CONNECTION__FROM,
-						index
-					)
-
+				if (stmInputSetInContext(stmDef(c.from as StateMachine), ctrl).contains(c.efrom)) {
+					// determine the source of the error more exactly
+					if (ncInputSet(stmDef(c.from as StateMachine)).contains(c.efrom)) {
+						error(
+							c.efrom.name + " on " + c.from.name +
+								" is used as the start of a unidirectional connection, but " + c.from.name +
+								" receives input on " + c.efrom.name,
+							c,
+							RoboChartPackage.Literals.CONNECTION__FROM,
+							index
+						)
+					} else {
+						// event is used in an operation, determine which one
+						for (op : stmRequiredOpDefs(stmDef(c.from as StateMachine), ctrl)) {
+							var opInputs = ncInputSet(op)
+							for (opEvent : opInputs) {
+								// attempt to unify the operation event with the connection event
+								if (c.efrom.name == opEvent.name
+									&& ((opEvent.type === null && c.efrom.type === null)
+										|| typeCompatible(opEvent.type,c.efrom.type))) {
+									// the event does occur as an input in this operation, signal an error
+									error(
+										c.efrom.name + " on " + c.from.name +
+											" is used as the start of a unidirectional connection, but " + c.from.name +
+											" receives input on " + c.efrom.name +
+											" via the operation " + op.name,
+										c,
+										RoboChartPackage.Literals.CONNECTION__FROM,
+										index
+									)
+								}
+							}
+						}
+					}
 				}
 			}
 
 			/* Cn8 */
 			if (c.to !== ctrl && c.to instanceof StateMachine) {
-				if (ncOutputSet(stmDef(c.to as StateMachine)).contains(c.eto)) {
-					error(
-						c.eto.name + " on " + c.to.name + " is used as the end of a unidirectional connection, but " +
-							c.to.name + " outputs on " + c.eto.name,
-						c,
-						RoboChartPackage.Literals.CONNECTION__TO,
-						index
-					)
+				if (stmOutputSetInContext(stmDef(c.to as StateMachine), ctrl).contains(c.eto)) {
+					// determine the source of the error more exactly
+					if (ncOutputSet(stmDef(c.to as StateMachine)).contains(c.eto)) {
+						error(
+							c.eto.name + " on " + c.to.name + " is used as the end of a unidirectional connection, but " +
+								c.to.name + " outputs on " + c.eto.name,
+							c,
+							RoboChartPackage.Literals.CONNECTION__TO,
+							index
+						)
+					} else {
+						// event is used in an operation, determine which one (only check one level for simplicity of error reporting)
+						for (op : stmRequiredOpDefs(stmDef(c.to as StateMachine), ctrl)) {
+							var opOutputs = ncOutputSet(op)
+							for (opEvent : opOutputs) {
+								// attempt to unify the operation event with the connection event
+								if (c.eto.name == opEvent.name
+									&& ((opEvent.type === null && c.eto.type === null)
+										|| typeCompatible(opEvent.type,c.eto.type))) {
+									// the event does occur as an output in this operation, signal an error
+									error(
+										c.eto.name + " on " + c.to.name +
+											" is used as the end of a unidirectional connection, but " + c.to.name +
+											" outputs on " + c.eto.name +
+											" via the operation " + op.name,
+										c,
+										RoboChartPackage.Literals.CONNECTION__TO,
+										index
+									)
+								}
+							}
+						}
+					}
 				}
 			}
 
