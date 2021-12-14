@@ -2508,13 +2508,9 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	def checkControllerConnections(ControllerDef ctrl) {
 		var index = 0
 		for (c : ctrl.connections) {
-			System.out.println("Checking connection " + c);
 			if(c.isBidirec) return; // if the connection is bidirectional, then there are no restrictions
 			/* Cn9 */
 			if (c.from !== ctrl && c.from instanceof StateMachine) {
-				System.out.println(c + ": from connection on " + c.efrom.name + " is state machine " + c.from.name);
-				System.out.println(c.from.name + " input set: " + stmInputSetInContext(stmDef(c.from as StateMachine), ctrl));
-				System.out.println("looking for " + c.efrom);
 				if (stmInputSetInContext(stmDef(c.from as StateMachine), ctrl).contains(c.efrom)) {
 					// determine the source of the error more exactly
 					if (ncInputSet(stmDef(c.from as StateMachine)).contains(c.efrom)) {
@@ -2554,9 +2550,6 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 
 			/* Cn8 */
 			if (c.to !== ctrl && c.to instanceof StateMachine) {
-				System.out.println(c + ": to connection on " + c.eto.name + " is state machine " + c.to.name);
-				System.out.println(c.to.name + " output set: " + stmOutputSetInContext(stmDef(c.to as StateMachine), ctrl));
-				System.out.println("looking for " + c.eto);
 				if (stmOutputSetInContext(stmDef(c.to as StateMachine), ctrl).contains(c.eto)) {
 					// determine the source of the error more exactly
 					if (ncOutputSet(stmDef(c.to as StateMachine)).contains(c.eto)) {
