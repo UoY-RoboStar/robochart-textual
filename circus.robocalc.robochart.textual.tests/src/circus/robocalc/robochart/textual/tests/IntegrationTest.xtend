@@ -34,6 +34,9 @@ import org.eclipse.xtext.testing.extensions.InjectionExtension
 import org.eclipse.xtext.testing.validation.ValidationTestHelper
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.^extension.ExtendWith
+import circus.robocalc.robochart.RCPackage
+import circus.robocalc.robochart.RoboChartPackage.Literals
+import org.eclipse.emf.ecore.EClass
 
 @ExtendWith(InjectionExtension)
 @InjectWith(RoboChartInjectorProvider)
@@ -305,6 +308,54 @@ class IntegrationTest {
 		val dir = "robochart-tests/test14"
 		TestRoboChartModel(dir)
 	}
+	
+	@Test
+	def void operationInputTest() {
+		val dir = "robochart-tests/robochart-fail/operationInput"
+		val file = "operationInput.rct"
+		val errorMessage = "inputEvent on OperationInputSTM is used as the end of a unidirectional connection, but OperationInputSTM outputs on inputEvent via the operation Op"
+		TestRoboChartModelError(dir, file, Literals.CONNECTION, errorMessage)
+	}
+	
+	@Test
+	def void operationInputOpRefTest() {
+		val dir = "robochart-tests/robochart-fail/operationInputOpRef"
+		val file = "operationInputOpRef.rct"
+		val errorMessage = "inputEvent on OperationInputSTM is used as the end of a unidirectional connection, but OperationInputSTM outputs on inputEvent via the operation Op"
+		TestRoboChartModelError(dir, file, Literals.CONNECTION, errorMessage)
+	}
+	
+	@Test
+	def void operationInputStmRefTest() {
+		val dir = "robochart-tests/robochart-fail/operationInputStmRef"
+		val file = "operationInputStmRef.rct"
+		val errorMessage = "inputEvent on OperationInputSTM is used as the end of a unidirectional connection, but OperationInputSTM outputs on inputEvent via the operation Op"
+		TestRoboChartModelError(dir, file, Literals.CONNECTION, errorMessage)
+	}
+
+	@Test
+	def void operationOutputTest() {
+		val dir = "robochart-tests/robochart-fail/operationOutput"
+		val file = "operationOutput.rct"
+		val errorMessage = "outputEvent on OperationOutputSTM is used as the start of a unidirectional connection, but OperationOutputSTM receives input on outputEvent via the operation Op"
+		TestRoboChartModelError(dir, file, Literals.CONNECTION, errorMessage)
+	}
+	
+	@Test
+	def void operationOutputOpRefTest() {
+		val dir = "robochart-tests/robochart-fail/operationOutputOpRef"
+		val file = "operationOutputOpRef.rct"
+		val errorMessage = "outputEvent on OperationOutputSTM is used as the start of a unidirectional connection, but OperationOutputSTM receives input on outputEvent via the operation Op"
+		TestRoboChartModelError(dir, file, Literals.CONNECTION, errorMessage)
+	}
+	
+	@Test
+	def void operationOutputStmRefTest() {
+		val dir = "robochart-tests/robochart-fail/operationOutputStmRef"
+		val file = "operationOutputStmRef.rct"
+		val errorMessage = "outputEvent on OperationOutputSTM is used as the start of a unidirectional connection, but OperationOutputSTM receives input on outputEvent via the operation Op"
+		TestRoboChartModelError(dir, file, Literals.CONNECTION, errorMessage)
+	}
 
 	// This is not ideal as the errors trace back to this function instead of the test that failed.
 	// TODO: check why resolveAll is needed here and why it duplicates the library files (We add them as file:/ and the resolver adds them as platform:/
@@ -349,5 +400,18 @@ class IntegrationTest {
 			}
 		}
 		return rs
+	}
+	
+	def void TestRoboChartModelError(String dir, String filename, EClass element, String errorDescription) {
+		val rs = loadTestFiles(dir)
+		EcoreUtil.resolveAll(rs)
+		System.out.println("")
+		for (r: rs.resources) {
+			val rname = r.URI
+			if (rname.lastSegment !== null && rname.lastSegment.equals(filename)) {
+				r.assertError(element, null, errorDescription)
+			}
+		}
+		System.out.println("\n")
 	}
 }
