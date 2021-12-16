@@ -24,6 +24,12 @@ import org.eclipse.core.runtime.Platform
 import org.eclipse.xtext.generator.AbstractGenerator
 import org.eclipse.xtext.generator.IFileSystemAccess2
 import org.eclipse.xtext.generator.IGeneratorContext
+import org.eclipse.xtext.EcoreUtil2
+import org.eclipse.core.resources.IFile
+import org.eclipse.core.resources.IContainer
+import java.util.List
+import java.util.ArrayList
+import org.eclipse.emf.common.util.URI
 
 /**
  * This class searches for all robochart generators provided by plugins,
@@ -44,10 +50,18 @@ import org.eclipse.xtext.generator.IGeneratorContext
 class RoboChartGenerator extends AbstractGenerator {
 
 	static val GEN_ID = "robochart.generator"
-
+	
 	override void doGenerate(Resource resource, IFileSystemAccess2 fsa, IGeneratorContext context) {
 		val config = Platform.extensionRegistry.getConfigurationElementsFor(GEN_ID);
 		try {
+			
+			// When called in response to a build from Eclipse, instead of via a Clean>Build,
+			// or via the CompileHandler class, not all resources, particularly those referenced
+			// anonymously, will be the context of the ResourceSet. Thus, we call a method that
+			// figures this out in a safe manner, when run from Eclipse.
+			
+			ProjectUtilities.resolveDependencies([t|t.equals("rct")],resource);
+			
 			for (e : config) {
 				val o = e.createExecutableExtension("class")
 				if (o instanceof AbstractGenerator) {

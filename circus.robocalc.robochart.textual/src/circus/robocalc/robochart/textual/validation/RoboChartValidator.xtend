@@ -914,7 +914,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		if (rvars !== null) {
 			for (v : rvars) {
 				// If it doesn't exist, it's an error
-				if (!vars.exists[x|x.name == v.name && typeCompatible(v.type,x.type)]) {
+				if (!vars.exists[x|x.name == v.name && typeCompatible(v.type,x.type) && x.modifier == v.modifier]) {
 					error(
 						'\'' + stm.name + '\' requires variable \'' + v.name + '\' but \'' + container.name + '\' does not provide it.',
 						c,
