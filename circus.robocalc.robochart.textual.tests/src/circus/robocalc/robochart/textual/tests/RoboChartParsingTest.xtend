@@ -150,9 +150,8 @@ class RoboChartParsingTest {
 	@Test
 	def void sinceEntry_Test() {
 		val result = parseHelper.parse('''
-			operation opA {
+			operation opA() {
 				initial I
-				final F
 				state S { }
 				
 				transition t {
@@ -169,9 +168,8 @@ class RoboChartParsingTest {
 	@Test
 	def void sinceEntry_differentNodeContainer_Test() {
 		val result = parseHelper.parse('''
-			operation opA {
+			operation opA() {
 				initial I
-				final F
 				state S {
 					state S0 {
 					}
