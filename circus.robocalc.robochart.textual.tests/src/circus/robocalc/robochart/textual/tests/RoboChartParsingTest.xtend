@@ -146,5 +146,44 @@ class RoboChartParsingTest {
 		val errors = result.eResource.errors
 		Assertions.assertTrue(errors.isEmpty, '''Unexpected errors: «errors.join(", ")»''')
 	}
+	
+	@Test
+	def void sinceEntry_Test() {
+		val result = parseHelper.parse('''
+			operation opA() {
+				initial I
+				state S { }
+				
+				transition t {
+					from I to S
+					condition sinceEntry(S) > 0
+				} 
+			}
+		''')
+		Assertions.assertNotNull(result)
+		val errors = result.eResource.errors
+		Assertions.assertTrue(errors.isEmpty)
+	}
+	
+	@Test
+	def void sinceEntry_differentNodeContainer_Test() {
+		val result = parseHelper.parse('''
+			operation opA() {
+				initial I
+				state S {
+					state S0 {
+					}
+				}
+				
+				transition t {
+					from I to S
+					condition sinceEntry(S0) > 0
+				} 
+			}
+		''')
+		Assertions.assertNotNull(result)
+		val errors = result.eResource.errors
+		Assertions.assertTrue(errors.isEmpty, '''Unexpected errors: «errors.join(", ")»''')
+	}		
 
 }
