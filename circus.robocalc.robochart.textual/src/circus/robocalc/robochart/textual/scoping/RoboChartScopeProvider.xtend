@@ -86,6 +86,7 @@ import org.eclipse.xtext.scoping.impl.SimpleScope
 
 import static circus.robocalc.robochart.RoboChartPackage.Literals.*
 import circus.robocalc.robochart.FieldDefinition
+import circus.robocalc.robochart.StateMachineBody
 
 /**
  * This class contains custom scoping description.
@@ -815,7 +816,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 		return QualifiedName.create(s);
 	}
 
-	def dispatch IScope statesDeclared(StateMachineDef cont, IScope p) {
+	def dispatch IScope statesDeclared(StateMachineBody cont, IScope p) {
 		val l = order(cont).reverse
 		var s = p
 		for (x : l) {
@@ -846,12 +847,12 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	}
 
 	// I have removed the cases for labelwithcontext, they will be treated in the labels plugins
-	def StateMachineDef contextOfSinceEntry(StateClockExp e) {
+	def StateMachineBody contextOfSinceEntry(StateClockExp e) {
 		var EObject container = e
-		while (container !== null && !(container instanceof StateMachineDef)) {
+		while (container !== null && !(container instanceof StateMachineBody)) {
 			container = container.eContainer
 		}
-		if (container instanceof StateMachineDef) {
+		if (container instanceof StateMachineBody) {
 			return container
 		} else {
 			return null
