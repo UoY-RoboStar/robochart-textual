@@ -205,7 +205,38 @@ class RoboChartParsingTest {
 		Assertions.assertNotNull(result)
 		val errors = result.eResource.errors
 		Assertions.assertTrue(errors.isEmpty, '''Unexpected errors: «errors.join(", ")»''')
-	}		
+	}
+	
+	@Test
+	def void filter_seq_is_not_set() {
+		val rs = createResourceSet()
+		val result = '''
+			import sequence_toolkit::*
+			stm stm2 {
+				var x : Seq( int ) = < 0 , 1 >
+				event alive
+				initial i0
+				state s0 {
+				}
+				transition t0 {
+					from i0
+					to s0
+				}
+				transition t1 {
+					from s0
+					to s0
+					condition filter ( x , { 1 } ) == {}
+					action alive
+				}
+			}
+		'''.parse(rs)
+		Assertions.assertNotNull(result)
+		val errors = result.eResource.errors
+		Assertions.assertTrue(errors.isEmpty, '''Unexpected errors: «errors.join(", ")»''')
+		result.assertNoErrors
+		result.assertNoIssues
+		
+	}
 
 }
 
