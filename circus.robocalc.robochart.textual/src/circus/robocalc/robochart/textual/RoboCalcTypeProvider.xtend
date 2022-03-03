@@ -222,6 +222,12 @@ class RoboCalcTypeProvider {
 				return normalise((t as ProductType).types.get(index - 1))
 			} else
 				return null
+		} else if (t instanceof VectorType && e.parameters.size === 1) {
+			// cannot check if indices are within range unless they are IntegerExp.
+			return normalise((t as VectorType).base)
+		} else if (t instanceof MatrixType && e.parameters.size === 2) {
+			// cannot check if indices are within range unless they are IntegerExp.
+			return normalise((t as MatrixType).base)
 		}
 		else if (t instanceof TypeRef && (t as TypeRef).ref instanceof Literal) {
 			val variant = ((t as TypeRef).ref) as Literal // a variant is interpreted as a constructor function
@@ -464,6 +470,14 @@ class RoboCalcTypeProvider {
 //				} else return null
 //			} else return null
 //		}
+	}
+
+	def dispatch Type typeFor(Equals e) {
+		val b = getBooleanType(e)
+		val t1 = e.left.typeFor
+		val t2 = e.right.typeFor
+		// not sure if this is this is needed. If type compatibility is commutative, than it is not needed
+		if(!typeCompatible(t1, t2) && !(typeCompatible(t2, t1))) return null else return normalise(b)
 	}
 
 	def dispatch Type typeFor(Iff e) {

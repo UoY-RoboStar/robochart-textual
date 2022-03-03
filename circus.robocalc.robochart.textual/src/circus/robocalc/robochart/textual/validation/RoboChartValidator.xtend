@@ -227,16 +227,39 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				'noTransitionFromFinal'
 			)
 		}
-		/* @TODO: (FS2/S3) currently missing in RefMan, should FS2 be 
-		 * generalised to all states?
-		 */
-		if (parent.transitions.filter[t|t.target === f].size === 0) {
+		/* FS2 */
+		if (f.actions.size > 0) {
 			error(
-				'The final state in ' + parent.name + ' should have at least one incoming transition',
+				'A final state cannot have actions',
 				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
-				'transitionToJunction'
+				'noActionsInFinalState'
 			)
 		}
+		/* FS3 (nodes) */
+		if (f.nodes.size > 0) {
+			error(
+				'A final state cannot have sub-nodes',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'noSubNodesInFinalState'
+			)
+		}
+		/* FS3 (transitions) */
+		if (f.transitions.size > 0) {
+			error(
+				'A final state cannot have transitions',
+				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+				'noTransitionsInFinalState'
+			)
+		}
+		
+//		TODO: Check is this is needed or not. It is no longer a WFC in the reference manual.
+//		if (parent.transitions.filter[t|t.target === f].size === 0) {
+//			error(
+//				'The final state in ' + parent.name + ' should have at least one incoming transition',
+//				RoboChartPackage.Literals.NAMED_ELEMENT__NAME,
+//				'transitionToJunction'
+//			)
+//		}
 	}
 
 	@Check
@@ -1732,6 +1755,15 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	def wfcTE3_NoForeignState(StateClockExp sce) {
 		val stm =  identifyContainingStateMachineBody(sce)
 		val nestedStates = identifyNestedStates(stm)
+		
+		if (sce.state instanceof Final) {
+			error("TE3: The state in " + print(sce) 
+				+ " cannot be a final state",
+			 	RoboChartPackage.Literals.STATE_CLOCK_EXP__STATE,
+			 	"NoFinalStateInStateClockExp"
+			)
+		}
+		
 		if (sce.state !== null && !nestedStates.contains(sce.state)) {
 			error("TE3: The state in " + print(sce) 
 				+ " is not declared within state machine " + stm.name,
@@ -1845,7 +1877,10 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	/* RP3, I3, C5, STM5, O1:STM5 */
 	@Check(CheckType.FAST)
 	def checkUniqueness(NamedElement o) {
-		val project = o.eResource.URI.segment(1)
+		val uri = o.eResource.URI
+		// This is to avoid trying to get a segment of a __synthetic file.
+		if (uri.segmentCount <= 1) return;
+		val project = uri.segment(1)
 		val c = new LinkedList<IEObjectDescription>()
 		val qn = qnp.getFullyQualifiedName(o)
 		rds.allResourceDescriptions.filter[rd|rd.URI.segment(1) === project].forEach [ rd |
