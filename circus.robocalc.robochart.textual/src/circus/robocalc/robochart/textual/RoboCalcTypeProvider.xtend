@@ -1150,7 +1150,7 @@ class RoboCalcTypeProvider {
 					val sizeEq = equalsConstExp(a.size,(b as VectorType).size)
 					if (!sizeEq) return false
 					if (! typeCompatible(a.base, (b as VectorType).base))
-						return false
+						return false					
 					return true
 				}
 				MatrixType: {
@@ -1245,6 +1245,16 @@ class RoboCalcTypeProvider {
 			p.types.add(EcoreUtil2.copy(nat))
 			t.domain = p
 			return t
+		} else if (a instanceof VectorType) {
+			if (a.size instanceof IntegerExp) {
+				var base = a.base 
+				val sizeEq = (a.size as IntegerExp).value
+				val p = RoboChartFactory.eINSTANCE.createProductType
+				for (var i = 0; i < sizeEq; i++) {
+					p.types.add(EcoreUtil2.copy(base))
+				}
+				return p
+			} else return a
 		} else {
 			return a
 		}
