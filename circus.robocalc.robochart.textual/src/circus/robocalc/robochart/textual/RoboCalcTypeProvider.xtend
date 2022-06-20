@@ -202,6 +202,8 @@ class RoboCalcTypeProvider {
 	def dispatch Type typeFor(Declaration e) {
 		return e.value?.typeFor
 	}
+	
+
 
 	def dispatch Type typeFor(ArrayExp e) {
 		// I'll make it work for A[1], need to fix it to work for A[1][2] etc
@@ -552,10 +554,12 @@ class RoboCalcTypeProvider {
 		var base = EcoreUtil2.copy(e.values.get(0).typeFor)
 		for (var i = 1; i < e.values.size; i++) {
 			val other = EcoreUtil2.copy(e.values.get(i).typeFor)
-			if (!typeCompatible(base,other)) {
-				return null
-			} else {
+			if (typeCompatible(base,other)) {
 				base = commonType(base,other)
+			} else if (typeCompatible(other,base)) {
+				base = commonType(other,base)
+			} else {
+				return null
 			}
 		}
 		val t = RoboChartFactory.eINSTANCE.createVectorType()
@@ -579,11 +583,12 @@ class RoboCalcTypeProvider {
 			if (vt instanceof VectorType) {
 				val obase = vt.base
 				val osize = vt.size
-				if (!typeCompatible(base,obase) || !equalsConstExp(size,osize)) {
-					return null
-				} else {
+				if (typeCompatible(base,obase) && equalsConstExp(size,osize))
 					base = commonType(base,obase)
-				}
+				else if (typeCompatible(obase,base) && equalsConstExp(size,osize))
+					base = commonType(obase,base)
+				else
+					return null
 			}
 		}
 		val t = RoboChartFactory.eINSTANCE.createMatrixType()
