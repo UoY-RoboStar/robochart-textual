@@ -611,7 +611,37 @@ class RoboCalcTypeProvider {
 				return getBooleanType(e)
 			}
 			Neg: {
-				return getIntType(e)
+				val nat = getNatType(e)
+				val integer = getIntType(e)
+				val real = getRealType(e)
+				val t = e.exp.typeFor
+				if (typeCompatible(t, nat))
+					return integer
+				else if (typeCompatible(t, integer))
+					return integer
+				else if(typeCompatible(t, real)) 
+					return real
+				else if(t instanceof MatrixType) {
+					val m = t as MatrixType
+					if (isNumeric(m.base)) {
+						val mt = RoboChartFactory.eINSTANCE.createMatrixType()
+						mt.base = m.base
+						mt.rows = m.rows
+						mt.columns = m.columns
+						return normalise(mt)
+					} else return null
+				} else if (t instanceof VectorType) {
+					val v = t as VectorType
+					if (isNumeric(v.base)) {
+						val vt = RoboChartFactory.eINSTANCE.createVectorType()
+						vt.base = v.base
+						vt.size = v.size
+						return normalise(vt)
+					} else return null
+				}
+				else 
+					return null
+				
 			}
 			IsExp: {
 				return getBooleanType(e)
