@@ -552,7 +552,7 @@ class RoboCalcTypeProvider {
 		var base = EcoreUtil2.copy(e.values.get(0).typeFor)
 		for (var i = 1; i < e.values.size; i++) {
 			val other = EcoreUtil2.copy(e.values.get(i).typeFor)
-			if (!typeCompatible(base,other)) {
+			if (!typeCompatible(base,other) && !typeCompatible(other,base)) {
 				return null
 			} else {
 				base = commonType(base,other)
@@ -579,7 +579,7 @@ class RoboCalcTypeProvider {
 			if (vt instanceof VectorType) {
 				val obase = vt.base
 				val osize = vt.size
-				if (!typeCompatible(base,obase) || !equalsConstExp(size,osize)) {
+				if ((!typeCompatible(base,obase) && !typeCompatible(obase,base)) || !equalsConstExp(size,osize)) {
 					return null
 				} else {
 					base = commonType(base,obase)
@@ -590,8 +590,9 @@ class RoboCalcTypeProvider {
 		t.base = base
 		val n = RoboChartFactory.eINSTANCE.createIntegerExp()
 		n.value = e.values.size
-		t.rows = size
-		t.columns = n
+		// Swapped this to change representation to row-major
+		t.rows = n
+		t.columns = size
 		return t
 	}
 	

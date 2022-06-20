@@ -514,12 +514,12 @@ Atomic returns Expression:
 	{TupleExp} '(|' (values+=Expression (',' values+=Expression)*)? '|)'
 ;
 
-Column returns VectorExp:
+Row returns VectorExp:
 	{VectorExp} values += Expression (',' values += Expression)*
 ;
 
 VectorOrMatrixExp returns Expression:
-	'[|' Column ({MatrixExp.values+=current} (';' values+=Column)+)? '|]' |
+	'[|' Row ({MatrixExp.values+=current} (';' values+=Row)+)? '|]' |
 	{InverseExp} 'inverse' '(' value=Expression ')' |
 	{TransposeExp} 'transpose' '(' value=Expression ')'
 ;
