@@ -569,6 +569,14 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 		p
 	}
 
+	def dispatch IScope variablesDeclared(Interface cont, IScope p) {
+		var s = p
+		for (l : cont.variableList) {
+			s = Scopes::scopeFor(l.vars, s)
+		}
+		return s
+	}
+
 	def dispatch IScope variablesDeclared(Context cont, IScope p) {
 		var s = p
 		for (l : cont.variableList) {
