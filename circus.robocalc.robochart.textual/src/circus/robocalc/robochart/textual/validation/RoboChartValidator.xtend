@@ -805,11 +805,16 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				
 			/* C3 */
 			val rVars = getRVars(s)
-			if (!pVars.containsAll(rVars)) {
+			
+			val matched = rVars.forall[v1|pVars.exists[v2|v1.name.equals(v2.name) && ((v1.type === null && v2.type === null) ||typeCompatible(v1.type, v2.type))]]
+			
+			if (!matched) {
+//			if (!pVars.containsAll(rVars)) {
 				var vs = ""
 				var started = false
 				for (v : rVars) {
-					if (!pVars.contains(v)) {
+					val contains = pVars.exists[v1|v.name.equals(v1.name) && ((v.type === null && v1.type === null) || typeCompatible(v.type, v1.type))]
+					if (!contains) {
 						if(started) vs += ', '
 						vs += v.name
 						started = true
@@ -1358,11 +1363,16 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		val pOps = getPOps(rp)
 		for (c : m.nodes.filter[n|n instanceof Controller]) {
 			val rVars = getRVars(c)
-			if (!pVars.containsAll(rVars)) {
+			
+			val matched = rVars.forall[v1|pVars.exists[v2|v1.name.equals(v2.name) && ((v1.type === null && v2.type === null) || typeCompatible(v1.type, v2.type))]]
+			
+			if (!matched) {
+//			if (!pVars.containsAll(rVars)) {
 				var s = ""
 				var started = false
 				for (v : rVars) {
-					if (!pVars.contains(v)) {
+					val contains = pVars.exists[v1|v.name.equals(v1.name) && ((v.type === null && v1.type === null) || typeCompatible(v.type, v1.type))]
+					if (!contains) {
 						if(started) s += ', '
 						s += v.name
 						started = true
