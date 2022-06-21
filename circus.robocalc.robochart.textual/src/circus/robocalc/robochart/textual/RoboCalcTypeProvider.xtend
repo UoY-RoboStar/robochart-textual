@@ -256,6 +256,10 @@ class RoboCalcTypeProvider {
 		}
 		if (t instanceof SeqType) {
 			return normalise(t.domain)
+		} else if (t instanceof VectorType) {
+			return normalise(t.base)
+		} else if (t instanceof MatrixType) {
+			return normalise(t.base)
 		}
 
 		return null
