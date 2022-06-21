@@ -202,6 +202,8 @@ class RoboCalcTypeProvider {
 	def dispatch Type typeFor(Declaration e) {
 		return e.value?.typeFor
 	}
+	
+
 
 	def dispatch Type typeFor(ArrayExp e) {
 		// I'll make it work for A[1], need to fix it to work for A[1][2] etc
