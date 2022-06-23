@@ -72,12 +72,12 @@ class RoboChartFormatter extends AbstractFormatter2 {
 		context.regionFor.feature(RoboChartPackage.eINSTANCE.namedElement_Name).surround[oneSpace]
 		interior(
 			context.regionFor.keyword('{').append[newLine],
-			context.regionFor.keyword('}').append[newLines = 1],
+			context.regionFor.keyword('}').append[newLines = 2],
 			[indent]
 		)
 		for (_child : context.eContents) {
 			format(_child, document)
-			_child.append[setNewLines(1, 1, 1)]
+			_child.append[setNewLines(1, 1, 2)]
 		}
 	}
 
@@ -85,12 +85,12 @@ class RoboChartFormatter extends AbstractFormatter2 {
 		module.regionFor.feature(RoboChartPackage.eINSTANCE.namedElement_Name).surround[oneSpace]
 		interior(
 			module.regionFor.keyword('{').append[newLine],
-			module.regionFor.keyword('}').append[newLines = 1],
+			module.regionFor.keyword('}').append[newLines = 2],
 			[indent]
 		)
 		for (_child : module.eContents) {
 			format(_child, document)
-			_child.append[setNewLines(1, 1, 1)]
+			_child.append[setNewLines(1, 1, 2)]
 		}
 	}
 	
@@ -104,7 +104,7 @@ class RoboChartFormatter extends AbstractFormatter2 {
 		)
 		for (_child : state.eContents) {
 			format(_child, document)
-			_child.append[setNewLines(1, 1, 1)]
+			_child.append[setNewLines(1, 1, 2)]
 		}
 	}
 	
@@ -119,7 +119,7 @@ class RoboChartFormatter extends AbstractFormatter2 {
 		transition.regionFor.feature(RoboChartPackage.eINSTANCE.transition_Target).append[newLine]
 		for (_child : transition.eContents) {
 			format(_child, document)
-			_child.append[setNewLines(1, 1, 1)]
+			_child.append[setNewLines(1, 1, 2)]
 		}
 	}
 
