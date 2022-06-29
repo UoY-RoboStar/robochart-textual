@@ -1837,7 +1837,8 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		val to = c.to
 		if (from instanceof StateMachine && to instanceof StateMachine) {
 			if (c.async) {
-				error('Cn11: A connection between state machines must be synchronous',
+				warning('Asynchronous connections currently have no semantics implemented. See:
+https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 				RoboChartPackage.Literals.CONNECTION__ASYNC, 
 				'Cn11')
 			}
