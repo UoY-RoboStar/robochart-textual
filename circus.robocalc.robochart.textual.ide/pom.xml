@@ -5,6 +5,12 @@ under the terms of the Eclipse Public License 2.0 which is available at
 http://www.eclipse.org/legal/epl-2.0.
 
 SPDX-License-Identifier: EPL-2.0
+
+Version Update 3.1.0 : Nov 2022
+Changes:
+1. dependency log4j-core upgraded (from 2.17.1)
+2. dependency org.eclipse.lsp4j upgraded (from 0.7.0)
+3. dependencies org.ow2.asm - asm, asm-commons, asm-tree upgraded (from 7.0)
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -12,7 +18,7 @@ SPDX-License-Identifier: EPL-2.0
 	<parent>
 		<groupId>circus.robocalc.robochart.textual</groupId>
 		<artifactId>circus.robocalc.robochart.textual.parent</artifactId>
-		<version>3.0.0-SNAPSHOT</version>
+		<version>3.1.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>circus.robocalc.robochart.textual.ide</artifactId>
 	<packaging>eclipse-plugin</packaging>
@@ -21,27 +27,27 @@ SPDX-License-Identifier: EPL-2.0
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-core</artifactId>
-			<version>2.17.1</version>
+			<version>2.19.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.lsp4j</groupId>
-			<artifactId>org.eclipse.lsp4j</artifactId>
-			<version>0.7.0</version>
+			<artifactId>org.eclipse.lsp4j</artifactId>	
+			<version>0.10.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.ow2.asm</groupId>
 			<artifactId>asm</artifactId>
-			<version>7.0</version>
+			<version>9.1</version>			
 		</dependency>
 		<dependency>
 			<groupId>org.ow2.asm</groupId>
 			<artifactId>asm-commons</artifactId>
-			<version>7.0</version>
+			<version>9.1</version>	
 		</dependency>
 		<dependency>
 			<groupId>org.ow2.asm</groupId>
 			<artifactId>asm-tree</artifactId>
-			<version>7.0</version>
+			<version>9.1</version>	
 		</dependency>
 	</dependencies>
 	<build>
