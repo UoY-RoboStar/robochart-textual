@@ -5,6 +5,8 @@ under the terms of the Eclipse Public License 2.0 which is available at
 http://www.eclipse.org/legal/epl-2.0.
 
 SPDX-License-Identifier: EPL-2.0
+
+Version Update 3.1.0 : Nov 2022
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -12,7 +14,7 @@ SPDX-License-Identifier: EPL-2.0
 	<parent>
 		<groupId>circus.robocalc.robochart.textual</groupId>
 		<artifactId>circus.robocalc.robochart.textual.parent</artifactId>
-		<version>3.0.0-SNAPSHOT</version>
+		<version>3.1.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>circus.robocalc.robochart.textual.ui</artifactId>
 	<packaging>eclipse-plugin</packaging>
