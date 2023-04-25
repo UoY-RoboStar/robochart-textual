@@ -10,7 +10,7 @@ Bundle-ActivationPolicy: lazy
 Require-Bundle: circus.robocalc.robochart,
  org.eclipse.xtext;bundle-version="2.25.0",
  org.eclipse.xtext.xbase;bundle-version="2.25.0",
- org.eclipse.equinox.common;bundle-version="3.15.100",
+ org.eclipse.equinox.common;bundle-version="3.5.0",
  org.eclipse.xtext.xbase.lib;bundle-version="2.25.0",
  org.eclipse.xtext.util;bundle-version="2.25.0",
  org.eclipse.xtend.lib;bundle-version="2.25.0",
