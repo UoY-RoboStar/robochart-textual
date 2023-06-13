@@ -1,11 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+Version Update 3.1.0 : Nov 2022
+Changes:
+1. Updated description url for robostar (was https://www.cs.york.ac.uk/robostar/robotool/)
+-->
+
+
 <feature
       id="circus.robocalc.robochart.textual.feature"
       label="RoboChart Textual Editor"
-      version="3.0.0.qualifier"
+      version="3.1.0.qualifier"
       provider-name="RoboCalc Project">
 
-   <description url="https://www.cs.york.ac.uk/robostar/robotool/">
+	<description url="https://robostar.cs.york.ac.uk/robotool/">
       This feature includes plugins that provide a textual editor for RoboChart.
    </description>
 

@@ -4,22 +4,24 @@ Bundle-ManifestVersion: 2
 Bundle-Localization: plugin
 Bundle-Name: %pluginName
 Bundle-Vendor: %providerName
-Bundle-Version: 3.0.0.qualifier
+Bundle-Version: 3.1.0.qualifier
 Bundle-SymbolicName: circus.robocalc.robochart.textual;singleton:=true
 Bundle-ActivationPolicy: lazy
 Require-Bundle: circus.robocalc.robochart,
- org.eclipse.xtext,
- org.eclipse.xtext.xbase,
+ org.eclipse.xtext;bundle-version="2.25.0",
+ org.eclipse.xtext.xbase;bundle-version="2.25.0",
  org.eclipse.equinox.common;bundle-version="3.5.0",
- org.eclipse.xtext.xbase.lib;bundle-version="2.14.0",
- org.eclipse.xtext.util,
- org.eclipse.xtend.lib;bundle-version="2.14.0",
+ org.eclipse.xtext.xbase.lib;bundle-version="2.25.0",
+ org.eclipse.xtext.util;bundle-version="2.25.0",
+ org.eclipse.xtend.lib;bundle-version="2.25.0",
  org.antlr.runtime;bundle-version="[3.2.0,3.2.1)",
  circus.robocalc.robochart.edit;bundle-version="2.0.0",
  circus.robocalc.robochart.editor;bundle-version="2.0.0",
  org.eclipse.core.runtime;bundle-version="3.15.200",
- org.eclipse.e4.core.di;bundle-version="1.7.100"
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+ org.eclipse.e4.core.di;bundle-version="1.7.100",
+ org.eclipse.emf.mwe2.language;bundle-version="2.12.1",
+ org.eclipse.emf.mwe2.launch;bundle-version="2.12.1"
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Export-Package: circus.robocalc.robochart.textual,
  circus.robocalc.robochart.textual.formatting2,
  circus.robocalc.robochart.textual.generator,
@@ -31,3 +33,4 @@ Export-Package: circus.robocalc.robochart.textual,
  circus.robocalc.robochart.textual.validation,
  robochart
 Import-Package: org.apache.log4j
+Bundle-ClassPath: .

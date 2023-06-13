@@ -3,9 +3,8 @@ This repository contains the plugins for the RoboChart textual editor
 
 ### Development platform requirements ###
 
-* Eclipse 2019-06
-* Sirius 6.2.0 http://download.eclipse.org/sirius/updates/releases/6.2.0/2018-12
-* Xtext 2.18.0 can be found in the standard repository in http://download.eclipse.org/modeling/tmf/xtext/updates/composite/releases/ but the option "Show only the latest versions of available software" needs to be unchecked.
+* Eclipse 2021-12
+* Sirius SE 6.5.1 and Xtext SDK 2.25.0 (can be found in the repository in http://download.eclipse.org/releases/2021-12 under Modeling).
 * Maven
 * Git
 
@@ -13,8 +12,9 @@ This repository contains the plugins for the RoboChart textual editor
 
         1. mvn clean install
 
-### Build (eclipse) ###
-
+### Build (eclipse)  ###
+        Note: not tested! (for now use maven build only)
+        
         1. Right click circus.robocalc.robochart.textual/src/circus.robocalc.robochart.textual/GenerateRoboChart.mwe2
             1. select 'Run As' > 'MWE2 Workflow'
 
