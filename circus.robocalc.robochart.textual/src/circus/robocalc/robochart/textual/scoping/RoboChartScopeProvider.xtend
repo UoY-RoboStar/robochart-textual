@@ -87,7 +87,9 @@ import org.eclipse.xtext.scoping.impl.SimpleScope
 import static circus.robocalc.robochart.RoboChartPackage.Literals.*
 import circus.robocalc.robochart.FieldDefinition
 import circus.robocalc.robochart.StateMachineBody
-
+import circus.robocalc.robochart.ANNController
+import circus.robocalc.robochart.GeneralOperation
+import circus.robocalc.robochart.ANNOperation
 /**
  * This class contains custom scoping description.
  * 
@@ -531,6 +533,15 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 			n.ref.eventsDeclared(p)
 		else p
 	}
+	
+	def dispatch IScope eventsDeclared(ANNController n, IScope p) {
+		var s = Scopes::scopeFor(n.events, p)
+		for (Interface i : n.interfaces) {
+			s = Scopes::scopeFor(i.events, s)
+		}
+		return s
+		
+	}
 
 	def dispatch IScope eventsDeclared(ControllerDef n, IScope p) {
 		var s = Scopes::scopeFor(n.events, p)
@@ -675,6 +686,14 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 			parent
 	}
 
+	def dispatch IScope operationsDeclared(ANNOperation cont, IScope parent) {
+		// TODO: is this necessary?  The ANN operation can't use these operations
+		Scopes::scopeFor(
+			cont.RInterfaces.operationsInInterfaces,
+			parent
+		)
+	}
+	
 	def dispatch IScope operationsDeclared(ControllerDef cont, IScope parent) {
 		Scopes::scopeFor(
 			cont.operations.filter[o|!(o instanceof OperationDef)],
@@ -750,6 +769,10 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 			cont.operations.filter[o|!(o instanceof OperationDef)],
 			parent
 		)
+	}
+	
+	private def Iterable<? extends OperationSig> declsOnly(List<? extends OperationSig> ops) {
+		ops.filter[!(it instanceof GeneralOperation)]
 	}
 
 // functions declared

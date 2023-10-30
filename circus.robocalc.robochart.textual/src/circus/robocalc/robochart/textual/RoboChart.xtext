@@ -153,7 +153,8 @@ GeneralController:
 		'provides' pInterfaces+=[Interface|QualifiedName] |
 		'requires' rInterfaces+=[Interface|QualifiedName] |
 		variableList+=VariableList |
-		events+=Event
+		events+=Event |
+		clocks+=Clock
 	)*
 	'}' ) | ControllerDef | ANNController
 ;
@@ -237,13 +238,7 @@ GeneralOperation:
 		(
 			terminates?='terminates' |
 			'precondition' preconditions+=Expression |
-			'postcondition' postconditions+=Expression |
-			'uses' interfaces+=[Interface|QualifiedName] |
-			'provides' pInterfaces+=[Interface|QualifiedName] |
-			'requires' rInterfaces+=[Interface|QualifiedName] |
-			variableList+=VariableList |
-			events+=Event |
-			clocks+=Clock
+			'postcondition' postconditions+=Expression
 		)*
 	'}') | OperationDef | ANNOperation
 ;
@@ -679,7 +674,6 @@ ANNController:
 	annparameters=ANNParameters
 	( (events+=Event) | 
 	  ('uses' interfaces+=[Interface|QualifiedName])
-	 
 	  )*
 	'}'
 	;
