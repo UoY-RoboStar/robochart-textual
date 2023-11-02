@@ -90,6 +90,8 @@ import circus.robocalc.robochart.StateMachineBody
 import circus.robocalc.robochart.ANNController
 import circus.robocalc.robochart.GeneralOperation
 import circus.robocalc.robochart.ANNOperation
+import circus.robocalc.robochart.GeneralController
+
 /**
  * This class contains custom scoping description.
  * 
@@ -438,10 +440,10 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	def getScopeForConnection(Connection context, EReference reference) {
 		if (reference === CONNECTION__EFROM) {
 			val result = IScope::NULLSCOPE //delegateGetScope(context, reference)
-			return context.from.eventsDeclared(result)
+			return context.from?.eventsDeclared(result) ?: result
 		} else if (reference === CONNECTION__ETO) {
 			val result = IScope::NULLSCOPE //delegateGetScope(context, reference)
-			return context.to.eventsDeclared(result)
+			return context.to?.eventsDeclared(result) ?: result
 		} else if (reference === CONNECTION__FROM) {
 			val result = delegateGetScope(context, reference)
 			if (context === null) return result
@@ -696,7 +698,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	
 	def dispatch IScope operationsDeclared(ControllerDef cont, IScope parent) {
 		Scopes::scopeFor(
-			cont.operations.filter[o|!(o instanceof OperationDef)],
+			cont.operations.declsOnly,
 			Scopes::scopeFor(
 				cont.RInterfaces.operationsInInterfaces,
 				Scopes::scopeFor(cont.PInterfaces.operationsInInterfaces, parent)
@@ -711,7 +713,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 
 	def dispatch IScope operationsDeclared(StateMachineDef cont, IScope parent) {
 		Scopes::scopeFor(
-			cont.operations.filter[o|!(o instanceof OperationDef)],
+			cont.operations.declsOnly,
 			Scopes::scopeFor(
 				cont.RInterfaces.operationsInInterfaces,
 				Scopes::scopeFor(
@@ -725,7 +727,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 
 	def dispatch IScope operationsDeclared(OperationDef cont, IScope parent) {
 		Scopes::scopeFor(
-			cont.operations.filter[o|!(o instanceof OperationDef)],
+			cont.operations.declsOnly,
 			Scopes::scopeFor(
 				cont.RInterfaces.operationsInInterfaces,
 				Scopes::scopeFor(
@@ -738,7 +740,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 
 	def dispatch IScope operationsDeclared(RoboticPlatformDef cont, IScope parent) {
 		Scopes::scopeFor(
-			cont.operations.filter[o|!(o instanceof OperationDef)],
+			cont.operations.declsOnly,
 			Scopes::scopeFor(
 				cont.RInterfaces.operationsInInterfaces,
 				Scopes::scopeFor(cont.PInterfaces.operationsInInterfaces, parent)
@@ -752,8 +754,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	}
 
 	def dispatch IScope operationsDeclared(RCPackage cont, IScope parent) {
-		val s = Scopes::scopeFor(cont.operations.filter[o|!(o instanceof OperationDef)], parent)
-		return s
+		Scopes::scopeFor(cont.operations.declsOnly, parent)
 	}
 
 	def private operationsInInterfaces(List<Interface> list) {
@@ -765,10 +766,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	}
 
 	def dispatch IScope operationsDeclared(Interface cont, IScope parent) {
-		Scopes::scopeFor(
-			cont.operations.filter[o|!(o instanceof OperationDef)],
-			parent
-		)
+		Scopes::scopeFor(cont.operations.declsOnly, parent)
 	}
 	
 	private def Iterable<? extends OperationSig> declsOnly(List<? extends OperationSig> ops) {
