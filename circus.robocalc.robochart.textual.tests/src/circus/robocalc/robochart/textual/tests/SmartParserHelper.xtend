@@ -22,6 +22,7 @@ import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.emf.ecore.resource.ResourceSet
 import org.eclipse.xtext.resource.XtextResourceSet
 import org.eclipse.xtext.testing.util.ParseHelper
+import org.eclipse.core.runtime.FileLocator
 
 /*
  * code based on answer by Christian Dietrich in https://www.eclipse.org/forums/index.php/t/1068376/
@@ -54,6 +55,8 @@ class SmartParserHelper<T extends EObject> extends ParseHelper<T> {
 			if (url === null) {
 				url = classLoader.getResource("robochart");
 			}
+			
+			url = FileLocator.toFileURL(url);
 			val path = Paths.get(url.toURI)
 			var Stream<Path> walk = Files.list(path);
 			for (var Iterator<Path> it = walk.iterator(); it.hasNext();) {

@@ -28,11 +28,20 @@ Version Update 3.1.0 : Nov 2022
 				<groupId>org.eclipse.xtend</groupId>
 				<artifactId>xtend-maven-plugin</artifactId>
 			</plugin>
+			<!-- <plugin>
+		        <groupId>org.eclipse.tycho</groupId>
+		        <artifactId>tycho-surefire-plugin</artifactId>
+		        <configuration>
+		          <useUIHarness>false</useUIHarness>
+				  <work>robochart-tests/</work>
+		        </configuration>
+		    </plugin>-->
 			<?ignore
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>target-platform-configuration</artifactId>
 				<configuration>
+					<work>robochart-tests</work>
 					<dependency-resolution>
 						<extraRequirements>
 							<!-- workaround for missing javax.annotation in tycho version
