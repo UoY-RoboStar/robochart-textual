@@ -3515,6 +3515,15 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		params.layerstructure.values.get(layer).assertInt
 	}
 	
+	//Gets the number of events defined in either the ANNController, or the interfaces defined by an ANNController.
+	private def getANNControllerEvents(ANNController ctrl) {
+		var numEvents = ctrl.events
+		//add the events from the defined interface
+		for (Interface i : ctrl.interfaces) {
+			numEvents += i.events
+		}
+		return numEvents
+	}
 	
 	//
 	// WF7
@@ -3532,7 +3541,8 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 	 */
 	@Check
 	def checkANN7(ANNController ctrl) {
-		val numEvents = ctrl.events.size
+		val numEvents = ctrl.getANNControllerEvents.size
+		
 		val ok = numEvents == 2 || equalsSizeSum(numEvents, ctrl)
 		if (!ok) {
 			error('''ANN controller must have exactly 2 or insize+outsize events, but has «numEvents»''',
@@ -3578,7 +3588,8 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		val outputs = mod.connections.filter[from == ctrl].toSet
 			
 		checkANN8SizesCompatible(ctrl, inputs, outputs)
-		checkANN8EventsExist(ctrl, inputs, outputs)
+		//Don't believe we need this. 
+		//checkANN8EventsExist(ctrl, inputs, outputs)
 	}
 	
 	private def checkANN8SizesCompatible(ANNController ctrl, Set<Connection> inputs, Set<Connection> outputs) {
@@ -3601,7 +3612,7 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		)
 	}
 	
-		
+    //I don't think we need this. - Ziggy
 	private def checkANN8EventsExist(ANNController ctrl, Set<Connection> inputs, Set<Connection> outputs) {
 		/* The forall-exists in the Z seem to be independent between
 		 * inputs and outputs, so they're separated here;
@@ -3615,8 +3626,9 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		outputs.forEach[output|checkANN8EventExists(ctrl, output, "Output", [efrom])]
 	}
 	
+	//I don't think we need this. - Ziggy
 	private def checkANN8EventExists(ANNController ctrl, Connection conn, String dirName, Function<Connection, Event> dirGet) {
-		if (!ctrl.events.exists[EcoreUtil2.equals(type, dirGet.apply(conn).type)]) {
+		if (!ctrl.getANNControllerEvents.exists[EcoreUtil2.equals(type, dirGet.apply(conn).type)]) {
 			error(
 				'''«dirName» connection («conn.from.name» -> «conn.to.name») doesn't correspond to an event in the controller''',
 				RoboChartPackage.Literals.BASIC_CONTEXT__EVENTS,
@@ -3667,6 +3679,61 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 			)
 		}		
 	}
+	
+	/*
+	 * New WF Conditions, 
+	 * ANN Controller can only define events, ANN10 
+	 */
+	@Check
+	def checkANN10(ANNController ctrl) {
+		if (ctrl.clocks.size > 0 ||  ctrl.variableList.size > 0 || ctrl.operations.size > 0) {
+			error(
+				getName(ctrl) + ' can only define events',
+				RoboChartPackage.Literals.ANN__ANNPARAMETERS,
+				"ANN10"
+			)
+		}
+		
+	}
+	/*
+	 * ANN11
+	 *
+	 * ANN Controllers can only define interfaces that contain events. 
+	  */
+	@Check
+	def checkANN11(ANNController ctrl) {
+		for (i : ctrl.interfaces) {
+			if (i.clocks.size > 0 ||  i.variableList.size > 0 || i.operations.size > 0)
+				error(
+					ctrl.name + ' is an anncontroller and cannot define interface ' + i.name + ' because it contains non-events',
+					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					'ANN11'
+				)
+		}
+	}
+	/*
+	 * ANN12, 
+	 * ANN Controllers cannot provide or require interfaces. 
+	 */
+	@Check
+	def checkANN12(ANNController ctrl) {
+		for (i : ctrl.PInterfaces) {
+			error(
+				ctrl.name + ' is an anncontroller and cannot provide interface ' + i.name,
+				RoboChartPackage.Literals.CONTEXT__PINTERFACES,
+				'ANN12'
+			)
+		}
+		
+		for (i : ctrl.RInterfaces) {
+			error(
+				ctrl.name + ' is an anncontroller and cannot require interface ' + i.name,
+				RoboChartPackage.Literals.CONTEXT__RINTERFACES,
+				'ANN12'
+			)
+		}
+	}
+	
 
 
 	//
