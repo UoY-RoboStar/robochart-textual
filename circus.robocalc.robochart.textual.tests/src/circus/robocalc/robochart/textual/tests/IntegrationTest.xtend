@@ -37,15 +37,30 @@ import org.junit.jupiter.api.^extension.ExtendWith
 import circus.robocalc.robochart.RCPackage
 import circus.robocalc.robochart.RoboChartPackage.Literals
 import org.eclipse.emf.ecore.EClass
+import org.junit.jupiter.api.TestMethodOrder
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
+import org.junit.jupiter.api.Order
+import org.junit.jupiter.api.TestClassOrder
+import org.junit.jupiter.api.ClassOrderer
 
 @ExtendWith(InjectionExtension)
 @InjectWith(RoboChartInjectorProvider)
+@TestMethodOrder(OrderAnnotation)
+@TestClassOrder(ClassOrderer.OrderAnnotation)
+@Order(1)
 class IntegrationTest {
 //	@Inject ParseHelper<RCPackage> parseHelper
 	@Inject extension SmartParserHelper<BasicPackage>
 	@Inject extension ValidationTestHelper
 	
 	val top_dir = "robochart-tests/"
+
+	@Test
+	@Order(1)
+	def void testSimpleMachine() {
+		val dir = top_dir+"robochart/test-simple-machine"
+		TestRoboChartModel(dir)
+	}
 
 	@Test
 	def void AlphaAlgorithm() {

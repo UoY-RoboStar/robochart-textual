@@ -45,9 +45,15 @@ import org.eclipse.xtext.testing.validation.ValidationTestHelper
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.^extension.ExtendWith
+import org.eclipse.core.runtime.FileLocator
+import org.junit.jupiter.api.Order
+import org.junit.jupiter.api.TestClassOrder
+import org.junit.jupiter.api.ClassOrderer
 
 @ExtendWith(InjectionExtension)
 @InjectWith(RoboChartInjectorProvider)
+@TestClassOrder(ClassOrderer.OrderAnnotation)
+@Order(2)
 class RoboChartParsingTest {
 	@Inject extension SmartParseHelper<RCPackage>
 	@Inject extension ValidationTestHelper
@@ -278,11 +284,12 @@ class SmartParseHelper<T extends EObject> extends ParseHelper<T> {
     		jar.close();
 		} else {
 			// treating case where the resource files are a project in the workspace			
-			var url = classLoader.getResource(cleanPath);
+			var url = classLoader.getResource("lib/robochart");
 			if (url === null) {
-				val pathInLib = if (cleanPath.startsWith("lib/")) cleanPath.replaceFirst("lib/","") else cleanPath
-				url = classLoader.getResource(pathInLib);
+				url = classLoader.getResource("robochart");
 			}
+			
+			url = FileLocator.toFileURL(url);
 			val path = Paths.get(url.toURI)
 			var Stream<Path> walk = Files.list(path);
 			for (var Iterator<Path> it = walk.iterator(); it.hasNext();) {
@@ -305,7 +312,7 @@ class SmartParseHelper<T extends EObject> extends ParseHelper<T> {
 	
 	def createResourceSet() {
 		val rs = rsp.get();
-		addRoboChartLibrary(rs);
+		//addRoboChartLibrary(rs);
 		return rs;
 	}
 	
