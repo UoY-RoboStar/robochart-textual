@@ -363,7 +363,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 			return Scopes.scopeFor(o.controllers, p)
 		return p
 	}
-
+	
 	def dispatch IScope ctrlsDeclared(RCModule o, IScope p) {
 		if (o !== null && o.nodes !== null) {
 			var pscope = p

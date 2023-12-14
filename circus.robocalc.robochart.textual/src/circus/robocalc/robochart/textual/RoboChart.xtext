@@ -669,11 +669,11 @@ Else returns Expression:
 ;
 
 ANNController:
-	'ann' {ANNController} 'controller' name=ID
-	'{'
+	{ANNController} 'anncontroller' name=ID '{'
 	annparameters=ANNParameters
-	( (events+=Event) | 
-	  ('uses' interfaces+=[Interface|QualifiedName])
+	(
+	  events+=Event | 
+	  'uses' interfaces+=[Interface|QualifiedName]
 	  )*
 	'}'
 	;
