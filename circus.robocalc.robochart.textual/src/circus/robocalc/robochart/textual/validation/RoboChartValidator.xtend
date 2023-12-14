@@ -3178,7 +3178,7 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 				SeqExp : layer.values.forEach[neuron, j|
 					switch neuron {
 						SeqExp : neuron.values.forEach[input, k|
-							if (!(input instanceof FloatExp)) {
+							if (!(input instanceof Expression)) {
 								error('''Weight for input «k+1» on neuron «j+1» at layer «i+1» should be a float''',
 									RoboChartPackage.Literals.ANN_PARAMETERS__WEIGHTS,
 									"ANNTypingWeightsInput"							
@@ -3204,7 +3204,7 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		params.biases.values.forEach[layer, i|
 			switch layer {
 				SeqExp : layer.values.forEach[neuron, j|
-					if (!(neuron instanceof FloatExp)) {
+					if (!(neuron instanceof Expression)) {
 						error('''Bias for neuron «j+1» at layer «i+1» should be a float''',
 							RoboChartPackage.Literals.ANN_PARAMETERS__BIASES,
 							"ANNTypingBiasesNeuron"							

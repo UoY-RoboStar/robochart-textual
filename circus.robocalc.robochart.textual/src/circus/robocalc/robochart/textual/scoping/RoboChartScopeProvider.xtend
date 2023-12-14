@@ -24,6 +24,7 @@ import circus.robocalc.robochart.Connection
 import circus.robocalc.robochart.ConnectionNode
 import circus.robocalc.robochart.Context
 import circus.robocalc.robochart.ControllerDef
+import circus.robocalc.robochart.GeneralController
 import circus.robocalc.robochart.ControllerRef
 import circus.robocalc.robochart.DefiniteDescription
 import circus.robocalc.robochart.EnumExp
@@ -90,7 +91,6 @@ import circus.robocalc.robochart.StateMachineBody
 import circus.robocalc.robochart.ANNController
 import circus.robocalc.robochart.GeneralOperation
 import circus.robocalc.robochart.ANNOperation
-import circus.robocalc.robochart.GeneralController
 
 /**
  * This class contains custom scoping description.
@@ -370,7 +370,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 			if (o.eContainer !== null) {
 				pscope = ctrlsDeclared(o.eContainer, p)
 			}
-			var ctrls = o.nodes.filter(ControllerDef)
+			var ctrls = o.nodes.filter(GeneralController)
 			return Scopes.scopeFor(ctrls, pscope)
 		}
 		return p
@@ -536,16 +536,16 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 		else p
 	}
 	
-	def dispatch IScope eventsDeclared(ANNController n, IScope p) {
+	/*def dispatch IScope eventsDeclared(ANNController n, IScope p) {
 		var s = Scopes::scopeFor(n.events, p)
 		for (Interface i : n.interfaces) {
 			s = Scopes::scopeFor(i.events, s)
 		}
 		return s
 		
-	}
+	}*/
 
-	def dispatch IScope eventsDeclared(ControllerDef n, IScope p) {
+	def dispatch IScope eventsDeclared(GeneralController n, IScope p) {
 		var s = Scopes::scopeFor(n.events, p)
 		for (Interface i : n.PInterfaces) {
 			s = Scopes::scopeFor(i.events, s)
@@ -696,7 +696,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 		)
 	}
 	
-	def dispatch IScope operationsDeclared(ControllerDef cont, IScope parent) {
+	def dispatch IScope operationsDeclared(GeneralController cont, IScope parent) {
 		Scopes::scopeFor(
 			cont.operations.declsOnly,
 			Scopes::scopeFor(
@@ -1022,7 +1022,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 				return s	
 	}
 	
-	def dispatch IScope constantsDeclared(ControllerDef m, IScope parent) {
+	def dispatch IScope constantsDeclared(GeneralController m, IScope parent) {
 				var s = parent
 				for (l: m.variableList) {
 					if (l.modifier == VariableModifier.CONST) {
