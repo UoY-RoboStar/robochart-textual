@@ -3515,16 +3515,6 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		params.layerstructure.values.get(layer).assertInt
 	}
 	
-	//Gets the number of events defined in either the ANNController, or the interfaces defined by an ANNController.
-	private def getANNControllerEvents(ANNController ctrl) {
-		var numEvents = ctrl.events
-		//add the events from the defined interface
-		for (Interface i : ctrl.interfaces) {
-			numEvents += i.events
-		}
-		return numEvents
-	}
-	
 	//
 	// WF7
 	//
@@ -3541,7 +3531,11 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 	 */
 	@Check
 	def checkANN7(ANNController ctrl) {
-		val numEvents = ctrl.getANNControllerEvents.size
+		var numEvents = ctrl.events.size
+		
+		for(i : ctrl.interfaces) {
+			numEvents += i.events.size
+		}
 		
 		val ok = numEvents == 2 || equalsSizeSum(numEvents, ctrl)
 		if (!ok) {
@@ -3612,7 +3606,6 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		)
 	}
 	
-    //I don't think we need this. - Ziggy
 	private def checkANN8EventsExist(ANNController ctrl, Set<Connection> inputs, Set<Connection> outputs) {
 		/* The forall-exists in the Z seem to be independent between
 		 * inputs and outputs, so they're separated here;
@@ -3626,13 +3619,12 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		outputs.forEach[output|checkANN8EventExists(ctrl, output, "Output", [efrom])]
 	}
 	
-	//I don't think we need this. - Ziggy
 	private def checkANN8EventExists(ANNController ctrl, Connection conn, String dirName, Function<Connection, Event> dirGet) {
-		if (!ctrl.getANNControllerEvents.exists[EcoreUtil2.equals(type, dirGet.apply(conn).type)]) {
+		if (!ctrl.events.exists[EcoreUtil2.equals(type, dirGet.apply(conn).type)]) {
 			error(
 				'''«dirName» connection («conn.from.name» -> «conn.to.name») doesn't correspond to an event in the controller''',
-				RoboChartPackage.Literals.BASIC_CONTEXT__EVENTS,
-				'''ANN8«dirName»NoEvent'''
+				RoboChartPackage.Literals.ANN__ANNPARAMETERS,
+				"ANN8NoEvent"
 			)
 		}
 	}
