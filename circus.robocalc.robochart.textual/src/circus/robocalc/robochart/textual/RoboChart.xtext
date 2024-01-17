@@ -25,7 +25,7 @@ RCPackage:
 		interfaces+=Interface |
 		robots+=RoboticPlatformDef |
 		types+=TypeDecl |
-		controllers+=ControllerDef |
+		controllers+=GeneralController |
 		machines+=StateMachineDef |
 		operations+=GeneralOperation |
 		functions+=Function |
@@ -700,7 +700,7 @@ ANNParameters:
 ;
 
 ANNOperation:
-	'ann' {ANNOperation} 'operation' name=ID
+	{ANNOperation} 'annoperation' name=ID
 	'('
 		(
 			parameters+=Parameter
