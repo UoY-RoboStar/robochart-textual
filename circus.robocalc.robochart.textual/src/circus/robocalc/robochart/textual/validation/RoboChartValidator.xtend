@@ -2457,21 +2457,23 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 			)
 		}
 	}
-	/*def HashSet<OperationDef> stmRequiredOpDefs(StateMachineBody stm, Controller context) {
+	//Assumes that the context is a ControllerDef
+	//Assumes that the required operations are OperationDef
+	def HashSet<OperationDef> stmRequiredOpDefs(StateMachineBody stm, Controller context) {
 		val stmOps = getROps(stm)
-		val ctrlOps = ctrlDef(context).LOperations
+		val ctrlOps = (ctrlDef(context) as ControllerDef).LOperations
 		
 		var opDefSet = new HashSet()
 		for (stmOp : stmOps) {
 			for (ctrlOp : ctrlOps) {
 				if (OpEqual(stmOp, ctrlOp)) {
-					val opDef = if (ctrlOp instanceof OperationRef) ctrlOp.ref else ctrlOp as OperationDef
+					val opDef = if (ctrlOp instanceof OperationRef) ctrlOp.ref as OperationDef else ctrlOp as OperationDef
 					opDefSet.add(opDef)
 				}
 			}
 		}
 		opDefSet
-	}*/
+	}
 	
 	// recursively collects outputs of a node container, avoiding operations already checked
 	// it is required by WFC O2 that operations not be recursive, but we can't know that has been checked beforehand
@@ -2660,9 +2662,32 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 						RoboChartPackage.Literals.CONNECTION__FROM,
 						index
 					)
+					
+				} else {
+						// event is used in an operation, determine which one
+						for (op : stmRequiredOpDefs(stmDef(c.from as StateMachine), ctrl)) {
+							var opInputs = ncInputSet(op)
+							for (opEvent : opInputs) {
+								// attempt to unify the operation event with the connection event
+								if (c.efrom.name == opEvent.name
+									&& ((opEvent.type === null && c.efrom.type === null)
+										|| typeCompatible(opEvent.type,c.efrom.type))) {
+									// the event does occur as an input in this operation, signal an error
+									error(
+										c.efrom.name + " on " + c.from.name +
+											" is used as the start of a unidirectional connection, but " + c.from.name +
+											" receives input on " + c.efrom.name +
+											" via the operation " + op.name,
+										c,
+										RoboChartPackage.Literals.CONNECTION__FROM,
+										index
+									)
+								}
+							}
+						}
+					}
 
 				}
-			}
 
 			/* Cn8 */
 			if (c.to !== ctrl && c.to instanceof StateMachine) {
@@ -2674,12 +2699,34 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 						RoboChartPackage.Literals.CONNECTION__TO,
 						index
 					)
+					} else {
+						// event is used in an operation, determine which one (only check one level for simplicity of error reporting)
+						for (op : stmRequiredOpDefs(stmDef(c.to as StateMachine), ctrl)) {
+							var opOutputs = ncOutputSet(op)
+							for (opEvent : opOutputs) {
+								// attempt to unify the operation event with the connection event
+								if (c.eto.name == opEvent.name
+									&& ((opEvent.type === null && c.eto.type === null)
+										|| typeCompatible(opEvent.type,c.eto.type))) {
+									// the event does occur as an output in this operation, signal an error
+									error(
+										c.eto.name + " on " + c.to.name +
+											" is used as the end of a unidirectional connection, but " + c.to.name +
+											" outputs on " + c.eto.name +
+											" via the operation " + op.name,
+										c,
+										RoboChartPackage.Literals.CONNECTION__TO,
+										index
+									)
+								}
+							}
+						}
+						}
 				}
 			}
 
 			index++
 		}
-	}
 
 	def Connection getControllerConnection(ControllerDef ctrl, Event e) {
 		for (conn : ctrl.connections) {
