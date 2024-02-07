@@ -231,7 +231,8 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 				return scope
 			}
 		} else if (context instanceof Transition) {
-			val r = delegateGetScope(context, reference)
+			delegateGetScope(context, reference)
+			val r = IScope::NULLSCOPE
 			if (reference === TRANSITION__SOURCE) {
 				if (context.eContainer instanceof NodeContainer) {
 					return Scopes.scopeFor(

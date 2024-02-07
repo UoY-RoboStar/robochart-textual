@@ -22,6 +22,7 @@ import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.emf.ecore.resource.ResourceSet
 import org.eclipse.xtext.resource.XtextResourceSet
 import org.eclipse.xtext.testing.util.ParseHelper
+import org.eclipse.core.runtime.FileLocator
 
 /*
  * code based on answer by Christian Dietrich in https://www.eclipse.org/forums/index.php/t/1068376/
@@ -50,27 +51,29 @@ class SmartParserHelper<T extends EObject> extends ParseHelper<T> {
 			jar.close();
 		} else {
 			// treating case where the resource files are a project in the workspace			
-			var url = classLoader.getResource("lib/robochart");
-			if (url === null) {
-				url = classLoader.getResource("robochart");
-			}
-			val path = Paths.get(url.toURI)
-			var Stream<Path> walk = Files.list(path);
-			for (var Iterator<Path> it = walk.iterator(); it.hasNext();) {
-				val p = it.next()
-				val is = p.toUri().toURL.openStream;
-				val furi = URI.createFileURI(p.toUri.toURL.path)
-				val r = rs.createResource(furi)
-				r.load(is, rs.loadOptions)
-			}
-			walk.close();
+//			var url = classLoader.getResource("lib/robochart");
+//			if (url === null) {
+//				url = classLoader.getResource("robochart");
+//			}
+//			
+//			url = FileLocator.toFileURL(url);
+//			val path = Paths.get(url.toURI)
+//			var Stream<Path> walk = Files.list(path);
+//			for (var Iterator<Path> it = walk.iterator(); it.hasNext();) {
+//				val p = it.next()
+//				val is = p.toUri().toURL.openStream;
+//				val furi = URI.createFileURI(p.toUri.toURL.path)
+//				val r = rs.createResource(furi)
+//				r.load(is, rs.loadOptions)
+//			}
+//			walk.close();
 		}
 	}
 
 	def createResourceSet() {
 		val rs = rsp.get();
 		// loading robochart libraries
-		loadRoboChartLibrary(rs)
+		//loadRoboChartLibrary(rs)
 
 		return rs;
 	}
