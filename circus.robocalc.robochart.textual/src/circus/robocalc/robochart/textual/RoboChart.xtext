@@ -671,7 +671,7 @@ Else returns Expression:
 //Similar definition to RoboSim but no InputContext and OutputContext class.
 InputContext returns Context:
 	{InputContext}
-	'input' 'context' '{'
+	'inputcontext' '{'
 		(
 			'uses' interfaces+=[Interface|QualifiedName] |
 			events+=Event 
@@ -681,7 +681,7 @@ InputContext returns Context:
 
 OutputContext returns Context: 
 	{OutputContext}
-	'output' 'context' '{'
+	'outputcontext' '{'
 		(
 			'uses' interfaces+=[Interface|QualifiedName] |
 			events+=Event 
