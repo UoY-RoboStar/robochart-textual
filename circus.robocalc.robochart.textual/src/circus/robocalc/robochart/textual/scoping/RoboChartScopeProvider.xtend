@@ -537,14 +537,22 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 		else p
 	}
 	
-	/*def dispatch IScope eventsDeclared(ANNController n, IScope p) {
-		var s = Scopes::scopeFor(n.events, p)
-		for (Interface i : n.interfaces) {
+	//Adds the events from both the input and output contexts to scope.
+	def dispatch IScope eventsDeclared(ANNController n, IScope p) {
+		//n.events should be empty, just scope for the inputContext and outputContext's events.
+		var s = Scopes::scopeFor(n.annparameters.inputContext.events, p)
+		s = Scopes::scopeFor(n.annparameters.outputContext.events, s)
+		
+		//Add all input and output events from the defined interfaces to the scope. 
+		for (Interface i : n.annparameters.inputContext.interfaces) {
+			s = Scopes::scopeFor(i.events, s)
+		}
+		for (Interface i : n.annparameters.outputContext.interfaces) {
 			s = Scopes::scopeFor(i.events, s)
 		}
 		return s
 		
-	}*/
+	}
 
 	def dispatch IScope eventsDeclared(GeneralController n, IScope p) {
 		var s = Scopes::scopeFor(n.events, p)

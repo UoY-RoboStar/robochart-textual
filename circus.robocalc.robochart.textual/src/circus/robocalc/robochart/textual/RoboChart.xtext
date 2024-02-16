@@ -668,34 +668,54 @@ Else returns Expression:
 	{ElseExp} 'else'
 ;
 
+//Similar definition to RoboSim but no InputContext and OutputContext class.
+InputContext returns Context:
+	{InputContext}
+	'input' 'context' '{'
+		(
+			'uses' interfaces+=[Interface|QualifiedName] |
+			events+=Event 
+		)*
+	'}'
+;
+
+OutputContext returns Context: 
+	{OutputContext}
+	'output' 'context' '{'
+		(
+			'uses' interfaces+=[Interface|QualifiedName] |
+			events+=Event 
+		)*
+	'}' 
+;  
+
 ANNController:
 	{ANNController} 'anncontroller' name=ID '{'
-	annparameters=ANNParameters
-	(
-	  events+=Event | 
-	  'uses' interfaces+=[Interface|QualifiedName]
-	  )*
+	  annparameters=ANNParameters
 	'}'
 	;
 
 
 ANNParameters:
 	{ANNParameters} (
-		(
-			('insize' insize=IntegerExp) &
-			('outsize' outsize=IntegerExp)
-		)
-		(
-			'file' filename=StringExp |
+
+			
 			'params' '{'
 			(
-				('layerstructure' layerstructure=SeqExp) &
-				('weights' weights=SeqExp) &
-				('biases' biases=SeqExp) &
-				('activationfunction' activationfunction=ActivationFunction)
+				(
+					(inputContext=InputContext) &
+					(outputContext=OutputContext)
+				)
+				(
+					'file' filename=StringExp |
+					('layerstructure' layerstructure=SeqExp) &
+					('weights' weights=SeqExp) &
+					('biases' biases=SeqExp) &
+					('activationfunction' activationfunction=ActivationFunction)
+					
+				)
 			)
 			'}'
-		)
 	)
 ;
 

@@ -3282,7 +3282,6 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		]
 	}
 	
-	
 	//
 	// ANN1
 	//
@@ -3291,7 +3290,7 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 	 * Checks ANN well-formedness condition 1.
 	 * 
 	 * <p>
-	 * The insize and outsize are greater than zero, and layerstructure,
+	 * The inputContext and outputContext each define at least one event, and layerstructure,
 	 * weights, and biases are non-empty and of the same size, if not null.
 	 * </p>
 	 * 
@@ -3304,15 +3303,16 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 	}
 	
 	/**
-	 * Checks that insize and outsize are greater than zero.
+	 * Checks that the inputContext and outputContext each define at least one event.
 	 * 
 	 * @param params the ANN parameters structure to check
 	 */
 	private def checkANN1InOutPositive(ANNParameters params) {
 		#[INSIZE, OUTSIZE].forEach[
-			val size = getIn(params)
-			if (size <= 0) {
-				error('''«name» size is «size», but must be positive''',
+			val c = getIn(params)
+			var ev = allEvents(c)
+			if (ev.size <= 0) {
+				error('''«name» size is «ev.size», but must be positive''',
 					ref,
 					'''ANN1«name»SizeNonPositive'''
 				)
@@ -3554,7 +3554,7 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		
 		if (layer == 0) {
 			// First layer should have weights corresponding to inputs
-			return params.insize.value
+			return insize(params)
 		}
 
 		val layers = params.layerstructure.values
@@ -3565,45 +3565,14 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		
 		params.layerstructure.values.get(layer).assertInt
 	}
-	
+
+
 	//
 	// WF7
 	//
 	
 	/**
 	 * Checks ANN well-formedness condition 7.
-	 * 
-	 * <p>
-	 * An ANN controller must have exactly the sum of insize and outsize events,
-	 * or exactly two events.
-	 * </p>
-	 * 
-	 * @param ctrl the ANN controller to check
-	 */
-	@Check
-	def checkANN7(ANNController ctrl) {
-		var numEvents = ctrl.events.size
-		
-		for(i : ctrl.interfaces) {
-			numEvents += i.events.size
-		}
-		
-		val ok = numEvents == 2 || equalsSizeSum(numEvents, ctrl)
-		if (!ok) {
-			error('''ANN controller must have exactly 2 or insize+outsize events, but has «numEvents»''',
-				RoboChartPackage.Literals.ANN__ANNPARAMETERS,
-				"ANN7EventCount"
-			)
-		}
-	}
-
-
-	//
-	// WF8
-	//
-	
-	/**
-	 * Checks ANN well-formedness condition 8.
 	 * 
 	 * <p>
 	 * The connections to and from an ANN controller match the nature of the
@@ -3613,7 +3582,7 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 	 * @param mod the RoboChart module to check
 	 */
 	@Check
-	def checkANN8(ANNController ctrl) {
+	def checkANN7(ANNController ctrl) {
 		/* The Z specification of ANN8 starts with an outer quantification
 		 * over RCModule.  We could do the same here, but then we wouldn't
 		 * be able to tag the specific parts of the controller that are
@@ -3632,17 +3601,17 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		val inputs = mod.connections.filter[to == ctrl].toSet
 		val outputs = mod.connections.filter[from == ctrl].toSet
 			
-		checkANN8SizesCompatible(ctrl, inputs, outputs)
+		checkANN7SizesCompatible(ctrl, inputs, outputs)
 		//Don't believe we need this. 
 		//checkANN8EventsExist(ctrl, inputs, outputs)
 	}
 	
-	private def checkANN8SizesCompatible(ANNController ctrl, Set<Connection> inputs, Set<Connection> outputs) {
-		checkANN8SizeCompatible(ctrl, inputs, INSIZE)
-		checkANN8SizeCompatible(ctrl, outputs, OUTSIZE)
+	private def checkANN7SizesCompatible(ANNController ctrl, Set<Connection> inputs, Set<Connection> outputs) {
+		checkANN7SizeCompatible(ctrl, inputs, INSIZE)
+		checkANN7SizeCompatible(ctrl, outputs, OUTSIZE)
 	}
 	
-	private def checkANN8SizeCompatible(ANNController ctrl, Set<Connection> conns, ANNParameter<Integer> sizeParam) {
+	private def checkANN7SizeCompatible(ANNController ctrl, Set<Connection> conns, ANNParameter<Context> sizeParam) {
 		val params = ctrl.annparameters
 		if (params === null) {
 			// ill-formed, but we won't report that here
@@ -3650,121 +3619,40 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		}
 
 		checkSeqSize(conns,
-			sizeParam.getIn(params),
+			allEvents(sizeParam.getIn(params)).size,
 			'''«sizeParam.name» connection set''',
 			RoboChartPackage.Literals.ANN__ANNPARAMETERS,
-			'''ANN8«sizeParam.name»SizeIncompatible'''
+			'''ANN7«sizeParam.name»SizeIncompatible'''
 		)
 	}
 	
-	private def checkANN8EventsExist(ANNController ctrl, Set<Connection> inputs, Set<Connection> outputs) {
-		/* The forall-exists in the Z seem to be independent between
-		 * inputs and outputs, so they're separated here;
-		 * TODO: is this valid?
-		 */
-		
-		// TODO: what is this WFC telling us?
-		// Should it be that the efrom/eto are in the controller's events?
-
-		inputs.forEach[input|checkANN8EventExists(ctrl, input, "Input", [eto])]		
-		outputs.forEach[output|checkANN8EventExists(ctrl, output, "Output", [efrom])]
-	}
-	
-	private def checkANN8EventExists(ANNController ctrl, Connection conn, String dirName, Function<Connection, Event> dirGet) {
-		if (!ctrl.events.exists[EcoreUtil2.equals(type, dirGet.apply(conn).type)]) {
-			error(
-				'''«dirName» connection («conn.from.name» -> «conn.to.name») doesn't correspond to an event in the controller''',
-				RoboChartPackage.Literals.ANN__ANNPARAMETERS,
-				"ANN8NoEvent"
-			)
-		}
-	}
-	
-	//
-	// WF9
-	//
-	
-	/**
-	 * Checks ANN well-formedness condition 9.
-	 * 
-	 * <p>
-	 * An ANN operation must have exactly insize parameters or just one, and
-	 * must have exactly outsize required variables or just one.
-	 * </p>
-	 * 
-	 * @param ctrl the ANN controller to check
-	 */
-	@Check
-	def checkANN9(ANNOperation op) {
-		checkANN9Parameters(op)
-		checkANN9Variables(op)
-	}
-	
-	private def checkANN9Parameters(ANNOperation op) {
-		val numPars = op.parameters.size
-		val ok = numPars == 1 || equalsInsize(numPars, op)
-		if (!ok) {
-			error('''ANN operation must have exactly 1 or insize parameters, but has «numPars»''',
-				RoboChartPackage.Literals.ANN__ANNPARAMETERS,
-				"ANN9ParameterCount"
-			)
-		}
-	}
-	
-	private def checkANN9Variables(ANNOperation op) {
-		val vars = op.RInterfaces.flatMap[variableList].flatMap[vars].toSet
-		val numVars = vars.size
-		val ok = numVars == 1 || equalsOutsize(numVars, op)
-		if (!ok) {
-			error('''ANN operation must have exactly 1 or outsize required variables, but has «numVars»''',
-				RoboChartPackage.Literals.ANN_OPERATION__RINTERFACES,
-				"ANN9VariableCount"
-			)
-		}		
-	}
-	
 	/*
-	 * New WF Conditions, 
-	 * ANN Controller can only define events, ANN10 
+	 * ANN8:
+	 * ANN Controller cannot define variables, clocks, or events. 
 	 */
 	@Check
-	def checkANN10(ANNController ctrl) {
-		if (ctrl.clocks.size > 0 ||  ctrl.variableList.size > 0 || ctrl.operations.size > 0) {
+	def checkANN8(ANNController ctrl) {
+		if (ctrl.clocks.size > 0 ||  ctrl.variableList.size > 0 || ctrl.operations.size > 0 || ctrl.events.size > 0) {
 			error(
-				getName(ctrl) + ' can only define events',
+				getName(ctrl) + ' cannot define this parameter.',
 				RoboChartPackage.Literals.ANN__ANNPARAMETERS,
-				"ANN10"
+				"ANN8"
 			)
 		}
 		
 	}
 	/*
-	 * ANN11
+	 * ANN9:
 	 *
-	 * ANN Controllers can only define interfaces that contain events. 
+	 * ANN Controllers cannot define, provide, or require interfaces. 
 	  */
 	@Check
-	def checkANN11(ANNController ctrl) {
-		for (i : ctrl.interfaces) {
-			if (i.clocks.size > 0 ||  i.variableList.size > 0 || i.operations.size > 0)
-				error(
-					ctrl.name + ' is an anncontroller and cannot define interface ' + i.name + ' because it contains non-events',
-					RoboChartPackage.Literals.CONTEXT__INTERFACES,
-					'ANN11'
-				)
-		}
-	}
-	/*
-	 * ANN12, 
-	 * ANN Controllers cannot provide or require interfaces. 
-	 */
-	@Check
-	def checkANN12(ANNController ctrl) {
+	def checkANN9(ANNController ctrl) {
 		for (i : ctrl.PInterfaces) {
 			error(
 				ctrl.name + ' is an anncontroller and cannot provide interface ' + i.name,
 				RoboChartPackage.Literals.CONTEXT__PINTERFACES,
-				'ANN12'
+				'ANN9'
 			)
 		}
 		
@@ -3772,10 +3660,76 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 			error(
 				ctrl.name + ' is an anncontroller and cannot require interface ' + i.name,
 				RoboChartPackage.Literals.CONTEXT__RINTERFACES,
-				'ANN12'
+				'ANN9'
+			)
+		}
+		
+		for (i : ctrl.interfaces) {
+			error(
+				ctrl.name + ' is an anncontroller and cannot define interface ' + i.name,
+				RoboChartPackage.Literals.CONTEXT__RINTERFACES,
+				'ANN9'
 			)
 		}
 	}
+	
+	/*
+	 * ANN10:
+	 * An ANNController's input and output contexts cannot provide or require interfaces.
+	 */
+	@Check
+	def checkANN10(ANNController ctrl) {
+		val inputContext = ctrl.annparameters.inputContext
+		if (inputContext.PInterfaces.size > 0 || inputContext.RInterfaces.size > 0) 
+			error(
+					ctrl.name + ' is an anncontroller and its input context cannot provide or require interfaces',
+					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					'ANN10'
+				)
+		val outputContext = ctrl.annparameters.outputContext
+		if (outputContext.PInterfaces.size > 0 || outputContext.RInterfaces.size > 0) 
+			error(
+					ctrl.name + ' is an anncontroller and its output context cannot provide or require interfaces',
+					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					'ANN10'
+				)
+	}
+	
+	/*
+	 * ANN11:
+	 * An ANNController's input and output contexts cannot define variables or clocks.
+	 */
+	@Check
+	def checkANN11(ANNController ctrl) {
+		for (i : ctrl.annparameters.inputContext.interfaces) {
+			if (i.clocks.size > 0 ||  i.variableList.size > 0 || i.operations.size > 0)
+				error(
+					ctrl.name + ' is an anncontroller and its input context can only define events',
+					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					'ANN11'
+				)
+		}
+		
+		for (i : ctrl.annparameters.outputContext.interfaces) {
+			if (i.clocks.size > 0 ||  i.variableList.size > 0 || i.operations.size > 0)
+				error(
+					ctrl.name + ' is an anncontroller and its output context can only define events',
+					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					'ANN11'
+				)
+		}
+	}
+	
+	/*
+	 * Special WF condition: we throw an error if there is an ANNOperation, we will add support for this later.  
+	  */
+	 @Check
+	 def noANNOperation(ANNOperation op) {
+	 	error('''ANN operations are not supported in this version.''',
+				RoboChartPackage.Literals.ANN_OPERATION__RINTERFACES,
+				"ANN9VariableCount"
+			)
+	 }
 	
 
 
@@ -3817,8 +3771,8 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		}
 	}
 
-	static val INSIZE = new ANNParameter("Input", RoboChartPackage.Literals.ANN_PARAMETERS__INSIZE, [insize.asInt])
-	static val OUTSIZE = new ANNParameter("Output", RoboChartPackage.Literals.ANN_PARAMETERS__OUTSIZE, [outsize.asInt])
+	static val INSIZE = new ANNParameter("Input", RoboChartPackage.Literals.ANN_PARAMETERS__INPUT_CONTEXT, [inputContext])
+	static val OUTSIZE = new ANNParameter("Output", RoboChartPackage.Literals.ANN_PARAMETERS__OUTPUT_CONTEXT, [outputContext])
 
 	static val WEIGHTS = new ANNParameter("Weights", RoboChartPackage.Literals.ANN_PARAMETERS__WEIGHTS, [weights?.values])
 	static val BIASES = new ANNParameter("Biases", RoboChartPackage.Literals.ANN_PARAMETERS__BIASES, [biases?.values])
@@ -3829,6 +3783,27 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 	 * ANN parameters.
 	 */
 	static val ALL_STRUCTURES = #[WEIGHTS, BIASES, LAYERS]
+	
+	//Get all events from an Input or Output Context
+	private def allEvents(Context c) {
+		var events = new HashSet<Event>()
+		events.addAll(c.events)
+		for (iface : c.interfaces) {
+			events.addAll(iface.events)
+		}
+		events
+	}
+	
+	//Gets the input size, as an integer, from an ANNController.
+	private def insize(ANNParameters p) {
+		return allEvents(p.inputContext).size
+	}
+	
+	//Gets the input size, as an integer, from an ANNController.
+	private def outsize(ANNParameters p) {
+		return allEvents(p.outputContext).size
+	}
+
 	
 	private def checkSeqSize(Collection<?> coll, int want, CharSequence name, EReference ref, CharSequence code) {
 		if (coll === null) {
@@ -3912,19 +3887,19 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 	def private boolean equalsSizeSum(int numEvents, ANNController ctrl) {
 		val params = ctrl.annparameters
 		// params being null isn't well-formed, but we don't check that here
-		params !== null && (numEvents == params.insize.value + params.outsize.value)
+		params !== null && (numEvents == insize(params) + outsize(params))
 	}
 	
 	def private boolean equalsInsize(int numParams, ANNOperation op) {
 		val params = op.annparameters
 		// params being null isn't well-formed, but we don't check that here
-		params !== null && numParams == params.insize.value
+		params !== null && numParams == insize(params)
 	}
 
 	def private boolean equalsOutsize(int numParams, ANNOperation op) {
 		val params = op.annparameters
 		// params being null isn't well-formed, but we don't check that here
-		params !== null && numParams == params.outsize.value
+		params !== null && numParams == outsize(params)
 	}
 
 	//
