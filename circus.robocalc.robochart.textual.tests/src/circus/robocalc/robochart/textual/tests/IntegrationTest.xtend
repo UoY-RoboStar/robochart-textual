@@ -81,6 +81,12 @@ class IntegrationTest {
 	}
 	
 	@Test
+	def void anncont1() {
+		val dir = top_dir+"robochart/anncont1"
+		TestRoboChartModel(dir)
+	}
+	
+	@Test
 	def void ChemicalDetector() {
 		val dir = top_dir+"robochart/ChemicalDetector"
 		TestRoboChartModel(dir)
