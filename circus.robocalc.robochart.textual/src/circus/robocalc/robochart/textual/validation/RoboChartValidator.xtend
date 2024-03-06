@@ -3719,6 +3719,73 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 				)
 		}
 	}
+
+	
+	//
+	// WF12
+	//
+	
+	/**
+	 * Checks ANN well-formedness condition 12.
+	 * 
+	 * <p>
+	 * The connections to an ANNController must be to events in its input context, and connections from an ANNController must be from its output context. 
+	 * </p>
+	 * 
+	 * @param mod the RoboChart module to check
+	 */
+	@Check
+	def checkANN12(ANNController ctrl) {
+		
+		val mod = EcoreUtil2.getContainerOfType(ctrl, RCModule)
+		if (mod === null) {
+			return
+		}
+		val inputs = mod.connections.filter[to == ctrl].toSet.iterator()
+		val outputs = mod.connections.filter[from == ctrl].toSet.iterator()
+		val inevents = 
+		{ 
+			var inevents = new HashSet<Event>()
+			while(inputs.hasNext()) {
+				inevents.add(inputs.next().eto)
+			}
+			inevents
+		}
+		val outevents = 
+		{ 
+			var outevents = new HashSet<Event>()
+			while(outputs.hasNext()) {
+				outevents.add(outputs.next().efrom)
+			}
+			outevents
+		}
+		
+		val inputContext = ctrl.annparameters.inputContext
+		val outputContext = ctrl.annparameters.outputContext
+		
+		val inputContextEvents = allEvents(inputContext)
+		val outputContextEvents = allEvents(outputContext)
+		
+		//Every inevent must be contained in allEvents(
+		for(e : inevents) {
+			if(!inputContextEvents.contains(e)) {
+				error("All incoming connections must connect to events in the input context",
+					RoboChartPackage.Literals.ANN__ANNPARAMETERS,
+					"ANN12ConnectionsContext"
+				)
+			}
+		}
+		
+		for(e : outevents) {
+			if(!outputContextEvents.contains(e)) {
+				error("All outgoing connections must connect to events in the output context",
+					RoboChartPackage.Literals.ANN__ANNPARAMETERS,
+					"ANN12ConnectionsContext"
+				)
+			}
+		}
+	}
+
 	
 	/*
 	 * Special WF condition: we throw an error if there is an ANNOperation, we will add support for this later.  
@@ -3730,8 +3797,6 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 				"ANN9VariableCount"
 			)
 	 }
-	
-
 
 	//
 	// Helper code for handling ANN parameters
