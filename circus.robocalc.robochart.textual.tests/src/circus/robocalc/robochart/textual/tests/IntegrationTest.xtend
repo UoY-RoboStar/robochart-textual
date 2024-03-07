@@ -87,6 +87,12 @@ class IntegrationTest {
 	}
 	
 	@Test
+	def void anncont2() {
+		val dir = top_dir+"robochart/anncont2"
+		TestRoboChartModel(dir)
+	}
+	
+	@Test
 	def void ChemicalDetector() {
 		val dir = top_dir+"robochart/ChemicalDetector"
 		TestRoboChartModel(dir)
@@ -389,7 +395,68 @@ class IntegrationTest {
 		TestRoboChartModelError(dir, file, Literals.TRANSITION, "org.eclipse.xtext.diagnostics.Diagnostic.Linking", errorMessage1)
 		TestRoboChartModelError(dir, file, Literals.TRANSITION, "org.eclipse.xtext.diagnostics.Diagnostic.Linking", errorMessage2)
 	}	
-
+	
+	@Test
+	def void annfail1() {
+		val dir = top_dir+"robochart-fail/annfail1"
+		val file = "annfail1.rct"
+		val errorMessage = "Input size is 0, but must be positive"
+		TestRoboChartModelError(dir, file, Literals.ANN_PARAMETERS, "ANN1InputSizeNonPositive", errorMessage)
+	}
+	
+	@Test
+	def void annfail2() {
+		val dir = top_dir+"robochart-fail/annfail2"
+		val file = "annfail2.rct"
+		val errorMessage = "Weights must be given if a filename is not given"
+		TestRoboChartModelError(dir, file, Literals.ANN_PARAMETERS, "ANN2NoFilenameNoWeights", errorMessage)
+	}
+	
+	@Test
+	def void annfail3() {
+		val dir = top_dir+"robochart-fail/annfail3"
+		val file = "annfail3.rct"
+		val errorMessage = "If parameters are not given, a filename must be given"
+		TestRoboChartModelError(dir, file, Literals.ANN_PARAMETERS, "ANN3NoParamsFilenameMustExist", errorMessage)
+	}
+	
+	
+	@Test
+	def void annfail5() {
+		val dir = top_dir+"robochart-fail/annfail5"
+		val file = "annfail5.rct"
+		val errorMessage = "Weights at layer 1 must be of size 1, but was 2"
+		TestRoboChartModelError(dir, file, Literals.ANN_PARAMETERS, "ANN5WeightsBadSize", errorMessage)
+	}
+	
+	@Test
+	def void annfail6() {
+		val dir = top_dir+"robochart-fail/annfail6"
+		val file = "annfail6.rct"
+		val errorMessage = "Weights at neuron 1 of layer 1 must be of size 1, but was 2"
+		TestRoboChartModelError(dir, file, Literals.ANN_PARAMETERS, "ANN6NeuronWeightsBadSize", errorMessage)
+	}
+	
+	@Test
+	def void annfail7() {
+		val dir = top_dir+"robochart-fail/annfail7"
+		val file = "annfail7.rct"
+		val errorMessage = "Input connection set must be of size 1, but was 0"
+		TestRoboChartModelError(dir, file, Literals.ANN_CONTROLLER, "ANN7InputSizeIncompatible", errorMessage)
+	}
+	
+	@Test
+	def void annfail12() {
+		val dir = top_dir+"robochart-fail/annfail12"
+		val file = "annfail12.rct"
+		val errorMessage1 = "All incoming connections must connect to events in the input context"
+		val errorMessage2 = "All outgoing connections must connect to events in the output context"
+		TestRoboChartModelError(dir, file, Literals.ANN_CONTROLLER, "ANN12ConnectionsContext", errorMessage1)
+		TestRoboChartModelError(dir, file, Literals.ANN_CONTROLLER, "ANN12ConnectionsContext", errorMessage2)
+	}
+	
+	
+	
 	// This is not ideal as the errors trace back to this function instead of the test that failed.
 	// TODO: check why resolveAll is needed here and why it duplicates the library files (We add them as file:/ and the resolver adds them as platform:/
 	def void TestRoboChartModel(String dir) {
