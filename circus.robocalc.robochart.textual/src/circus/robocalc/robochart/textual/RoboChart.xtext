@@ -543,7 +543,6 @@ Atomic returns Expression:
 	{TupleExp} '(|' (values+=Expression (',' values+=Expression)*)? '|)'
 ;
 
-IntegerExp: value=INT;
 StringExp: value=STRING;
 
 SeqExp:
