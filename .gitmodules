@@ -1,4 +1,4 @@
 [submodule "circus.robocalc.robochart.textual.tests/robochart-tests"]
 	path = circus.robocalc.robochart.textual.tests/robochart-tests
 	url = git@github.com:UoY-RoboStar/robochart-tests.git
-	branch = operation-event-tests
+	branch = Ziggy
