@@ -339,6 +339,12 @@ class IntegrationTest {
 	}
 	
 	@Test
+	def void test16() {
+		val dir = top_dir+"robochart/test16"
+		TestRoboChartModel(dir)
+	}
+	
+	@Test
 	def void operationInputTest() {
 		val dir = top_dir+"robochart-fail/operationInput"
 		val file = "operationInput.rct"
@@ -453,6 +459,14 @@ class IntegrationTest {
 		val errorMessage2 = "All outgoing connections must connect to events in the output context"
 		TestRoboChartModelError(dir, file, Literals.ANN_CONTROLLER, "ANN12ConnectionsContext", errorMessage1)
 		TestRoboChartModelError(dir, file, Literals.ANN_CONTROLLER, "ANN12ConnectionsContext", errorMessage2)
+	}
+	
+	@Test
+	def void opequals() {
+		val dir = top_dir+"robochart-fail/opequals"
+		val file = "opequals.rct"
+		val errorMessage = "STM does not provide all variables required by call to operation Output (missing variables: x)"
+		TestRoboChartModelError(dir, file, Literals.STATE_MACHINE, "ControllerProvidesAllVars", errorMessage)
 	}
 	
 	

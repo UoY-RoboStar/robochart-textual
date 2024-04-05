@@ -1041,7 +1041,6 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	}
 	
 	def Boolean OpEqual(OperationSig sig, Operation op) {
-		// TODO: is this correct for ANNs?
 		val GeneralOperation def = opDef(op)
 		if (def === null) return false;
 		
@@ -1050,7 +1049,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		for (var i = 0; i < sig.parameters.size; i++) {
 			val par1 = sig.parameters.get(i);
 			val par2 = def.parameters.get(i);
-			if (!par1.equals(par2)) return false;
+			if (!paramEqual(par1, par2)) return false;
 		}
 		return true;
 	}
@@ -1140,17 +1139,27 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		
 		if (c.eContainer instanceof ControllerDef) {
 
+			val operations = new HashSet<OperationDef>();
 			val parent = c.eContainer as ControllerDef;
 			val pVars = getPVars(c);
-			
-			for (s : calledOps(c, parent)) {
+			val pOps = getPOps(c);
+			c.eAllContents.filter(Call).forEach[x|
+				val sig = x.operation;
+				val op = parent.LOperations.findFirst[y|OpEqual(sig,y)]
+				if (op !== null) {
+					if (op instanceof OperationRef) 	
+						operations.add(op.ref as OperationDef)
+					else operations.add(op as OperationDef)
+				} 
+			]
+			for (s : operations) {
 				/* C3 */
 				val rVars = getRVars(s)
-				if (!pVars.containsAll(rVars)) {
+				if (!rVars.forall[x|pVars.exists[v|x.name == v.name && ((v.type === null && x.type === null) || typeCompatible(v.type,x.type))]]) {
 					var vs = ""
 					var started = false
 					for (v : rVars) {
-						if (!pVars.contains(v)) {
+						if (!pVars.exists[x|x.name == v.name && ((v.type === null && x.type === null) || typeCompatible(v.type,x.type))]) {
 							if(started) vs += ', '
 							vs += v.name
 							started = true
@@ -1224,38 +1233,30 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		
 	}
 	
-	/**
-	 * Gets all non-ANN operations in the parent that are called within the
-	 * given object.
-	 * 
-	 * @param c      the object whose calls are being investigated
-	 * @param parent the parent supplying the operations
-	 * @return a set of corresponding operation definitions
-	 */
-	private def Set<OperationDef> calledOps(EObject c, ControllerDef parent) {
-		val calls = c.eAllContents.filter(Call)
-		val allOps = calls.map[
-			val sig = operation
-			opDef(parent.LOperations.findFirst[OpEqual(sig, it)])
-		]
-		// Assume we only need non-ANN operation definitions here
-		// TODO: is this correct?
-		allOps.filter(OperationDef).toSet
-	}
-	
 	@Check
 	def stmRefWFC(StateMachineRef c) {
 		if (c.eContainer instanceof ControllerDef) {
+			val operations = new HashSet<OperationDef>();
 			val parent = c.eContainer as ControllerDef;
 			val pVars = getPVars(c);
-			for (s : calledOps(c, parent)) {
+			val pOps = getPOps(c);
+			c.ref.eAllContents.filter(Call).forEach[x|
+				val sig = x.operation;
+				val op = parent.LOperations.findFirst[y|OpEqual(sig,y)]
+				if (op !== null) {
+					if (op instanceof OperationRef) 	
+						operations.add(op.ref as OperationDef)
+					else operations.add(op as OperationDef)
+				} 
+			]
+			for (s : operations) {
 				/* C3 */
 				val rVars = getRVars(s)
-				if (!pVars.containsAll(rVars)) {
+				if (!rVars.forall[x|pVars.exists[v|x.name == v.name && ((v.type === null && x.type === null) || typeCompatible(v.type,x.type))]]) {
 					var vs = ""
 					var started = false
 					for (v : rVars) {
-						if (!pVars.contains(v)) {
+						if (!pVars.exists[x|x.name == v.name && ((v.type === null && x.type === null) || typeCompatible(v.type,x.type))]) {
 							if(started) vs += ', '
 							vs += v.name
 							started = true
@@ -2477,7 +2478,7 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 	
 	// recursively collects outputs of a node container, avoiding operations already checked
 	// it is required by WFC O2 that operations not be recursive, but we can't know that has been checked beforehand
-	/*private def HashSet<Event> stmOutputSetInContextRecursive(StateMachineBody stm, Controller context, HashSet<OperationSig> alreadyChecked, StateMachineBody outerstm) {
+	private def HashSet<Event> stmOutputSetInContextRecursive(StateMachineBody stm, Controller context, HashSet<OperationSig> alreadyChecked, StateMachineBody outerstm) {
 		var innerOutputs = ncOutputSet(stm)
 		// unify the stmOutputs with the events of outerstm
 		var outputs = new HashSet<Event>(innerOutputs.size())
@@ -2501,7 +2502,7 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 			
 		}
 		outputs
-	}*/
+	}
 		
 	def getAllEvents(StateMachineBody stm) {
 		var events = new HashSet<Event>()
@@ -2512,9 +2513,9 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		events
 	}
 	
-	/*def HashSet<Event> stmOutputSetInContext(StateMachineBody stm, Controller context) {
+	def HashSet<Event> stmOutputSetInContext(StateMachineBody stm, Controller context) {
 		stmOutputSetInContextRecursive(stm, context, new HashSet<OperationSig>(), stm)
-	}*/
+	}
 
 	def HashSet<Event> ncOutputSet(NodeContainer nc) {
 		var outputs = new HashSet<Event>()
@@ -2691,14 +2692,16 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 
 			/* Cn8 */
 			if (c.to !== ctrl && c.to instanceof StateMachine) {
-				if (ncOutputSet(stmDef(c.to as StateMachine)).contains(c.eto)) {
-					error(
-						c.eto.name + " on " + c.to.name + " is used as the end of a unidirectional connection, but " +
-							c.to.name + " outputs on " + c.eto.name,
-						c,
-						RoboChartPackage.Literals.CONNECTION__TO,
-						index
-					)
+				if (stmOutputSetInContext(stmDef(c.to as StateMachine), ctrl).contains(c.eto)) {
+					// determine the source of the error more exactly
+					if (ncOutputSet(stmDef(c.to as StateMachine)).contains(c.eto)) {
+						error(
+							c.eto.name + " on " + c.to.name + " is used as the end of a unidirectional connection, but " +
+								c.to.name + " outputs on " + c.eto.name,
+							c,
+							RoboChartPackage.Literals.CONNECTION__TO,
+							index
+						)
 					} else {
 						// event is used in an operation, determine which one (only check one level for simplicity of error reporting)
 						for (op : stmRequiredOpDefs(stmDef(c.to as StateMachine), ctrl)) {
@@ -2721,11 +2724,12 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 								}
 							}
 						}
-						}
+					}
 				}
 			}
 
 			index++
+			}
 		}
 
 	def Connection getControllerConnection(ControllerDef ctrl, Event e) {

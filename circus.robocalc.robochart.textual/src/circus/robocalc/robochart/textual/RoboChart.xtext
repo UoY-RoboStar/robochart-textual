@@ -153,8 +153,7 @@ GeneralController:
 		'provides' pInterfaces+=[Interface|QualifiedName] |
 		'requires' rInterfaces+=[Interface|QualifiedName] |
 		variableList+=VariableList |
-		events+=Event |
-		clocks+=Clock
+		events+=Event
 	)*
 	'}' ) | ControllerDef | ANNController
 ;
