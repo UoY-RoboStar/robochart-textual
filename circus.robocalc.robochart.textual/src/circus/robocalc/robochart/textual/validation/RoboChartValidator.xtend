@@ -1,5 +1,6 @@
 /********************************************************************************
- * Copyright (c) 2019 University of York and others
+#
+*  * Copyright (c) 2019 University of York and others
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -3567,7 +3568,7 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 			return null
 		}
 		
-		params.layerstructure.values.get(layer).assertInt
+		params.layerstructure.values.get(layer-1).assertInt
 	}
 
 
