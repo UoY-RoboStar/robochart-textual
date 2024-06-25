@@ -1,5 +1,6 @@
 /********************************************************************************
- * Copyright (c) 2019 University of York and others
+#
+*  * Copyright (c) 2019 University of York and others
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -16,6 +17,10 @@
  */
 package circus.robocalc.robochart.textual.validation
 
+import circus.robocalc.robochart.ANNController
+import circus.robocalc.robochart.ANNOperation
+import circus.robocalc.robochart.ANNParameters
+import circus.robocalc.robochart.ActivationFunction
 import circus.robocalc.robochart.And
 import circus.robocalc.robochart.ArrayExp
 import circus.robocalc.robochart.AsExp
@@ -24,8 +29,12 @@ import circus.robocalc.robochart.BooleanExp
 import circus.robocalc.robochart.Call
 import circus.robocalc.robochart.CallExp
 import circus.robocalc.robochart.Cat
+import circus.robocalc.robochart.Clock
 import circus.robocalc.robochart.ClockExp
 import circus.robocalc.robochart.ClockReset
+import circus.robocalc.robochart.Communication
+import circus.robocalc.robochart.CommunicationStmt
+import circus.robocalc.robochart.CommunicationType
 import circus.robocalc.robochart.Connection
 import circus.robocalc.robochart.ConnectionNode
 import circus.robocalc.robochart.Context
@@ -43,7 +52,10 @@ import circus.robocalc.robochart.ExitAction
 import circus.robocalc.robochart.Expression
 import circus.robocalc.robochart.FieldDefinition
 import circus.robocalc.robochart.Final
+import circus.robocalc.robochart.FloatExp
 import circus.robocalc.robochart.FunctionType
+import circus.robocalc.robochart.GeneralController
+import circus.robocalc.robochart.GeneralOperation
 import circus.robocalc.robochart.GreaterOrEqual
 import circus.robocalc.robochart.GreaterThan
 import circus.robocalc.robochart.IfStmt
@@ -74,6 +86,7 @@ import circus.robocalc.robochart.ParExp
 import circus.robocalc.robochart.Parameter
 import circus.robocalc.robochart.Plus
 import circus.robocalc.robochart.PrimitiveType
+import circus.robocalc.robochart.ProbabilisticJunction
 import circus.robocalc.robochart.ProductType
 import circus.robocalc.robochart.QuantifierExpression
 import circus.robocalc.robochart.RCModule
@@ -96,7 +109,6 @@ import circus.robocalc.robochart.StateMachineDef
 import circus.robocalc.robochart.StateMachineRef
 import circus.robocalc.robochart.Statement
 import circus.robocalc.robochart.Transition
-import circus.robocalc.robochart.CommunicationType
 import circus.robocalc.robochart.TupleExp
 import circus.robocalc.robochart.Type
 import circus.robocalc.robochart.TypeRef
@@ -107,14 +119,19 @@ import circus.robocalc.robochart.VectorType
 import circus.robocalc.robochart.Wait
 import circus.robocalc.robochart.textual.RoboCalcTypeProvider
 import com.google.inject.Inject
+import java.util.ArrayList
+import java.util.Collection
 import java.util.HashMap
 import java.util.HashSet
 import java.util.LinkedList
 import java.util.List
 import java.util.Map
 import java.util.Set
+import java.util.function.BiConsumer
+import java.util.function.Consumer
 import org.eclipse.emf.common.util.BasicEList
 import org.eclipse.emf.ecore.EObject
+import org.eclipse.emf.ecore.EReference
 import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.xtext.EcoreUtil2
 import org.eclipse.xtext.naming.IQualifiedNameProvider
@@ -123,10 +140,8 @@ import org.eclipse.xtext.resource.IResourceDescriptions
 import org.eclipse.xtext.serializer.ISerializer
 import org.eclipse.xtext.validation.Check
 import org.eclipse.xtext.validation.CheckType
-import java.util.ArrayList
-import circus.robocalc.robochart.Clock
-import circus.robocalc.robochart.Communication
-import circus.robocalc.robochart.CommunicationStmt
+import java.util.function.Function
+import circus.robocalc.robochart.ANNParameters
 
 /**
  * This class contains custom validation rules. 
@@ -285,7 +300,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			)
 		}
 		
-		if (t.source instanceof circus.robocalc.robochart.ProbabilisticJunction) {
+		if (t.source instanceof ProbabilisticJunction) {
 			/* PJ1 */
 			if (t.probability === null) {
 				error(
@@ -306,7 +321,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		
 		if (t.probability !== null) {
 			/* PT1 */
-			if (!(t.source instanceof circus.robocalc.robochart.ProbabilisticJunction)) {
+			if (!(t.source instanceof ProbabilisticJunction)) {
 				error(
 					'A transition with a probability value must start from a probabilistic junction',
 					RoboChartPackage.Literals.TRANSITION__PROBABILITY,
@@ -448,6 +463,19 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		else
 			s as StateMachineDef
 	}
+	
+	/**
+	 * Resolves an operation to its definition.
+	 * 
+	 * @param it the operation, which may be a reference
+	 * @return the operation definition (as a general operation; may be ANN)
+	 */
+	def GeneralOperation opDef(Operation it) {
+		switch it {
+			OperationRef : ref
+			GeneralOperation : it
+		}
+	}
 
 //	@Check
 //	def checkRequiredVariables(ControllerDef c) {
@@ -488,11 +516,18 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 //			"unsatisfiedRequiredVariables")
 //		}
 //	}
-	def ctrlDef(Controller c) {
-		if (c instanceof ControllerRef)
-			return c.ref
-		else
-			c as ControllerDef
+
+	/**
+	 * Resolves a controller to its definition.
+	 * 
+	 * @param it the controller, which may be a reference
+	 * @return the controller definition (as a general controller; may be ANN)
+	 */
+	def GeneralController ctrlDef(Controller it) {
+		switch it {
+			ControllerRef : ref
+			GeneralController : it
+		}
 	}
 
 	def rpDef(RoboticPlatform rp) {
@@ -743,11 +778,13 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	@Check
 	def controllerWFC(ControllerDef c) {
 		/* C8 */
-		val opcount = new HashMap<OperationDef,Integer>()
+		val opcount = new HashMap<GeneralOperation,Integer>()
 		for (o: c.LOperations) {
-			val def = if (o instanceof OperationRef) o.ref else o as OperationDef
-			val cnt = opcount.getOrDefault(def,0)
-			opcount.put(def,cnt+1)
+			val def = opDef(o)
+			if (def !== null) {
+				val cnt = opcount.getOrDefault(def, 0)
+				opcount.put(def, cnt+1)
+			}
 		}
 		val mdef = opcount.filter[p1, p2| p2 > 1]
 		if (!mdef.empty) {
@@ -790,11 +827,16 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		machines.addAll(c.machines)
 		//machinesAndOperations.addAll(c.LOperations)
 		
-		var opDefs = new HashSet<OperationDef>()
-		for (o: c.LOperations) {
-			val def = if (o instanceof OperationRef) o.ref else o as OperationDef
-			opDefs.add(def)
-		}
+		// nb: ANN operations can't require other operations, so we exclude them from C4/STM8-10 checks
+		// TODO: is this correct?
+		
+		//var opDefs = new HashSet<OperationDef>()
+		//for (o: c.LOperations) {
+		//	val def = if (o instanceof OperationRef) o.ref else o as OperationDef
+			//opDefs.add(def)
+		//}
+		
+     	 val opDefs = c.LOperations.map[opDef].filter(OperationDef).toSet
 		
 		for (s : machines) {
 			
@@ -1000,13 +1042,15 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	}
 	
 	def Boolean OpEqual(OperationSig sig, Operation op) {
-		val OperationDef def = if (op instanceof OperationRef) op.ref else op as OperationDef;
+		val GeneralOperation def = opDef(op)
+		if (def === null) return false;
+		
 		if (!def.name.equals(sig.name)) return false;
 		if (sig.parameters.size != def.parameters.size) return false;
 		for (var i = 0; i < sig.parameters.size; i++) {
 			val par1 = sig.parameters.get(i);
 			val par2 = def.parameters.get(i);
-			if (!paramEqual(par1,par2)) return false;
+			if (!paramEqual(par1, par2)) return false;
 		}
 		return true;
 	}
@@ -1025,6 +1069,63 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	def paramEqual(Parameter p1, Parameter p2) {
 		return p1.name == p2.name && ((p1.type === null && p2.type === null) || typeCompatible(p1.type,p2.type))
 	}
+	
+	/**
+	 * Gets the events associated with a context.
+	 * 
+	 * @param it the context
+	 * @return the set of events defined in or used by the context
+	 */
+	private def Set<Event> contextEvents(Context c) {
+		new HashSet<Event>()=>[
+			addAll(c.events)
+			c.interfaces.forEach[i | addAll(i.events)]
+		]
+	}
+	
+	/**
+	 * Gets the events associated with an operation.
+	 * 
+	 * <p>
+	 * Not all controllers are contexts (specifically, ANN operation are not
+	 * contexts), so we need to handle those cases specially.
+	 * </p>
+	 * 
+	 * @param it the operation
+	 * @return the list of events defined in or used by the operation
+	 */
+	private def Set<Event> operationEvents(GeneralOperation it) {
+		switch it {
+			ANNOperation : #{}
+			OperationDef : contextEvents
+		}
+	}
+	
+	/**
+	 * Gets the clocks associated with an operation.
+	 * 
+	 * <p>
+	 * Not all controllers are contexts (specifically, ANN operation are not
+	 * contexts), so we need to handle those cases specially.
+	 * </p>
+	 * 
+	 * @param it the operation
+	 * @return the set of clocks defined in or required or used by the operation
+	 */
+	private def Set<Clock> operationClocks(GeneralOperation it) {
+		switch it {
+			ANNOperation : #{}
+			OperationDef : contextClocks
+		}
+	}
+	
+	private def Set<Clock> contextClocks(Context c) {
+		new HashSet<Clock>()=>[
+			addAll(c.clocks)
+			c.RInterfaces.forEach[i | addAll(i.clocks)]
+			c.interfaces.forEach[i | addAll(i.clocks)]
+		]
+	}
 
 	/* STM1, together with I2 implies STM2 and (because OperationDef is a Context) O1:STM2 */
 	@Check
@@ -1038,6 +1139,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 		
 		if (c.eContainer instanceof ControllerDef) {
+
 			val operations = new HashSet<OperationDef>();
 			val parent = c.eContainer as ControllerDef;
 			val pVars = getPVars(c);
@@ -1047,7 +1149,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				val op = parent.LOperations.findFirst[y|OpEqual(sig,y)]
 				if (op !== null) {
 					if (op instanceof OperationRef) 	
-						operations.add(op.ref)
+						operations.add(op.ref as OperationDef)
 					else operations.add(op as OperationDef)
 				} 
 			]
@@ -1082,13 +1184,8 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 //					)
 //				}
 				/* STM9 */
-				val levents = new HashSet<Event>
-				levents.addAll(c.events)
-				c.interfaces.forEach[i | levents.addAll(i.events)]
-				
-				val revents = new HashSet<Event>
-				revents.addAll(s.events)
-				s.interfaces.forEach[i | revents.addAll(i.events)]
+				val levents = c.contextEvents
+				val revents = s.operationEvents
 							
 				if (levents !== null) {
 					for (v : revents) {
@@ -1105,12 +1202,8 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				}
 				
 				/* STM10 */
-				val rclocks = new HashSet<Clock>
-				s.RInterfaces.forEach[i | rclocks.addAll(i.clocks)]
-				
-				val clocks = new HashSet<Clock>
-				clocks.addAll(c.clocks)
-				c.interfaces.forEach[i | clocks.addAll(i.clocks)]
+				val rclocks = s.RInterfaces?.flatMap[clocks]?.toSet
+				val clocks = c.contextClocks
 				
 				if (rclocks !== null) {
 					for (v : rclocks) {
@@ -1153,7 +1246,7 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 				val op = parent.LOperations.findFirst[y|OpEqual(sig,y)]
 				if (op !== null) {
 					if (op instanceof OperationRef) 	
-						operations.add(op.ref)
+						operations.add(op.ref as OperationDef)
 					else operations.add(op as OperationDef)
 				} 
 			]
@@ -2366,16 +2459,17 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 			)
 		}
 	}
-	
+	//Assumes that the context is a ControllerDef
+	//Assumes that the required operations are OperationDef
 	def HashSet<OperationDef> stmRequiredOpDefs(StateMachineBody stm, Controller context) {
 		val stmOps = getROps(stm)
-		val ctrlOps = ctrlDef(context).LOperations
+		val ctrlOps = (ctrlDef(context) as ControllerDef).LOperations
 		
 		var opDefSet = new HashSet()
 		for (stmOp : stmOps) {
 			for (ctrlOp : ctrlOps) {
 				if (OpEqual(stmOp, ctrlOp)) {
-					val opDef = if (ctrlOp instanceof OperationRef) ctrlOp.ref else ctrlOp as OperationDef
+					val opDef = if (ctrlOp instanceof OperationRef) ctrlOp.ref as OperationDef else ctrlOp as OperationDef
 					opDefSet.add(opDef)
 				}
 			}
@@ -2422,7 +2516,7 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 	
 	def HashSet<Event> stmOutputSetInContext(StateMachineBody stm, Controller context) {
 		stmOutputSetInContextRecursive(stm, context, new HashSet<OperationSig>(), stm)
-	}	
+	}
 
 	def HashSet<Event> ncOutputSet(NodeContainer nc) {
 		var outputs = new HashSet<Event>()
@@ -2474,7 +2568,7 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 
 		outputs
 	}
-
+	/*
 	// recursively collects inputs of a node container, avoiding operations already checked
 	// it is required by WFC O2 that operations not be recursive, but we can't know that has been checked beforehand
 	private def HashSet<Event> stmInputSetInContextRecursive(StateMachineBody stm, Controller context, HashSet<OperationSig> alreadyChecked, StateMachineBody outerstm) {
@@ -2505,7 +2599,7 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 	
 	def HashSet<Event> stmInputSetInContext(StateMachineBody stm, Controller context) {
 		stmInputSetInContextRecursive(stm, context, new HashSet<OperationSig>(), stm)
-	}	
+	}	*/
 
 	def HashSet<Event> ncInputSet(NodeContainer nc) {
 		var inputs = new HashSet<Event>()
@@ -2561,18 +2655,17 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 			if(c.isBidirec) return; // if the connection is bidirectional, then there are no restrictions
 			/* Cn9 */
 			if (c.from !== ctrl && c.from instanceof StateMachine) {
-				if (stmInputSetInContext(stmDef(c.from as StateMachine), ctrl).contains(c.efrom)) {
-					// determine the source of the error more exactly
-					if (ncInputSet(stmDef(c.from as StateMachine)).contains(c.efrom)) {
-						error(
-							c.efrom.name + " on " + c.from.name +
-								" is used as the start of a unidirectional connection, but " + c.from.name +
-								" receives input on " + c.efrom.name,
-							c,
-							RoboChartPackage.Literals.CONNECTION__FROM,
-							index
-						)
-					} else {
+				if (ncInputSet(stmDef(c.from as StateMachine)).contains(c.efrom)) {
+					error(
+						c.efrom.name + " on " + c.from.name +
+							" is used as the start of a unidirectional connection, but " + c.from.name +
+							" receives input on " + c.efrom.name,
+						c,
+						RoboChartPackage.Literals.CONNECTION__FROM,
+						index
+					)
+					
+				} else {
 						// event is used in an operation, determine which one
 						for (op : stmRequiredOpDefs(stmDef(c.from as StateMachine), ctrl)) {
 							var opInputs = ncInputSet(op)
@@ -2595,8 +2688,8 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 							}
 						}
 					}
+
 				}
-			}
 
 			/* Cn8 */
 			if (c.to !== ctrl && c.to instanceof StateMachine) {
@@ -2637,14 +2730,25 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 			}
 
 			index++
+			}
 		}
-	}
 
 	def Connection getControllerConnection(ControllerDef ctrl, Event e) {
 		for (conn : ctrl.connections) {
 			if((conn.from === ctrl && conn.efrom === e) || (conn.to === ctrl && conn.eto === e)) return conn
 		}
 
+		return null
+	}
+	
+	/**
+	 * Fallback for non-context controllers such as ANNs.
+	 * 
+	 * @param ctrl the controller
+	 * @param e the event
+	 * @return null
+	 */
+	def dispatch Connection getControllerConnection(GeneralController ctrl, Event e) {
 		return null
 	}
 
@@ -3034,7 +3138,7 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 	}
 
 	@Check
-	def junctionWFC_PJ3(circus.robocalc.robochart.ProbabilisticJunction j) {
+	def junctionWFC_PJ3(ProbabilisticJunction j) {
 		val parent = j.eContainer as NodeContainer
 		val lstExpr = new ArrayList<Expression>()
 
@@ -3053,15 +3157,15 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 
 	def private Boolean sumExprEq1(List<Expression> exprs) {
 		val num = exprs.filter[t|(t instanceof IntegerExp) || 
-			(t instanceof circus.robocalc.robochart.FloatExp)
+			(t instanceof FloatExp)
 		].size
 		if(exprs.size === num) {
 			var sum = 0.0
 			for(e: exprs) {
 				if(e instanceof IntegerExp) {
 					sum = sum + (e as IntegerExp).value
-				} else if(e instanceof circus.robocalc.robochart.FloatExp) {
-					sum = sum + (e as circus.robocalc.robochart.FloatExp).value
+				} else if(e instanceof FloatExp) {
+					sum = sum + (e as FloatExp).value
 				}
 			}
 
@@ -3081,9 +3185,9 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 			if((e as IntegerExp).value > 1 || (e as IntegerExp).value < 0) {
 				return 1;
 			}
-		} else if(e instanceof circus.robocalc.robochart.FloatExp) {
-			if((e as circus.robocalc.robochart.FloatExp).value > 1.0 || 
-				(e as circus.robocalc.robochart.FloatExp).value < 0.0) {
+		} else if(e instanceof FloatExp) {
+			if((e as FloatExp).value > 1.0 || 
+				(e as FloatExp).value < 0.0) {
 				return 1;
 			}
 		} else {
@@ -3091,5 +3195,832 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		}
 
 		return 0;
+	}
+	
+	
+	/******************************************************************
+	 **
+	 ** ANNs
+	 **
+	 ** These correspond more or less directly to the Z specifications
+	 ** given as part of Ziggy's metamodel.
+	 **
+	 *****************************************************************/
+	
+	// weights are a tensor:
+	// - layers of
+	//   - neurons containing
+	//     - weights for each neuron in the preceding layer
+	
+	//
+	// Typing
+	//
+	
+	@Check
+	def checkANNParameterTyping(ANNParameters params) {
+		checkANNWeightsTyping(params)
+		checkANNBiasesTyping(params)
+		checkANNLayerStructureTyping(params)
+	}
+	
+	private def checkANNWeightsTyping(ANNParameters params) {
+		// TODO: tidy this up
+		params.weights.values.forEach[layer, i|
+			switch layer {
+				SeqExp : layer.values.forEach[neuron, j|
+					switch neuron {
+						SeqExp : neuron.values.forEach[input, k|
+							if (! ( (input instanceof FloatExp) || 
+								(input instanceof Neg && (input as Neg).exp instanceof FloatExp)
+							) ) {
+								error('''Weight for input «k+1» on neuron «j+1» at layer «i+1» should be a float''',
+									RoboChartPackage.Literals.ANN_PARAMETERS__WEIGHTS,
+									"ANNTypingWeightsInput"							
+								)
+							}
+						]
+						default : error('''Weights on neuron «j+1» at layer «i+1» should be a vector''',
+							RoboChartPackage.Literals.ANN_PARAMETERS__WEIGHTS,
+							"ANNTypingWeightsNeuron"							
+						)
+					}
+				]
+				default : error('''Weights at layer «i+1» should be a matrix''',
+					RoboChartPackage.Literals.ANN_PARAMETERS__WEIGHTS,
+					"ANNTypingWeightsLayer"
+				)
+			}
+		]
+	}
+	
+	private def checkANNBiasesTyping(ANNParameters params) {
+		// TODO: tidy this up
+		params.biases.values.forEach[layer, i|
+			switch layer {
+				SeqExp : layer.values.forEach[neuron, j|
+					if (! ( (neuron instanceof FloatExp) || 
+								(neuron instanceof Neg && (neuron as Neg).exp instanceof FloatExp)
+							) ) {
+						error('''Bias for neuron «j+1» at layer «i+1» should be a float''',
+							RoboChartPackage.Literals.ANN_PARAMETERS__BIASES,
+							"ANNTypingBiasesNeuron"							
+						)
+					}
+				]
+				default : error('''Biases at layer «i+1» should be a vector''',
+					RoboChartPackage.Literals.ANN_PARAMETERS__BIASES,
+					"ANNTypingBiasesLayer"
+				)
+			}
+		]
+	}
+	
+	private def checkANNLayerStructureTyping(ANNParameters params) {
+		// TODO: tidy this up
+		params.layerstructure.values.forEach[layer, i|
+			if (!(layer instanceof IntegerExp)) {
+				 error('''Layer size at layer «i+1» should be an integer''',
+					RoboChartPackage.Literals.ANN_PARAMETERS__LAYERSTRUCTURE,
+					"ANNTypingLayerStructureLayer"
+				)
+			}
+		]
+	}
+	
+	//
+	// ANN1
+	//
+	
+	/**
+	 * Checks ANN well-formedness condition 1.
+	 * 
+	 * <p>
+	 * The inputContext and outputContext each define at least one event, and layerstructure,
+	 * weights, and biases are non-empty and of the same size, if not null.
+	 * </p>
+	 * 
+	 * @param params the ANN parameters structure to check
+	 */
+	@Check
+	def checkANN1(ANNParameters params) {
+		checkANN1InOutPositive(params)
+		checkANN1StructureSizes(params)
+	}
+	
+	/**
+	 * Checks that the inputContext and outputContext each define at least one event.
+	 * 
+	 * @param params the ANN parameters structure to check
+	 */
+	private def checkANN1InOutPositive(ANNParameters params) {
+		#[INSIZE, OUTSIZE].forEach[
+			val c = getIn(params)
+			var ev = allEvents(c)
+			if (ev.size <= 0) {
+				error('''«name» size is «ev.size», but must be positive''',
+					ref,
+					'''ANN1«name»SizeNonPositive'''
+				)
+			}
+		]
+	}
+	
+	/**
+	 * Checks that layer structure, weights, and biases are non-empty and of
+	 * the same size, if not null.
+	 *
+	 * @param params the ANN parameters structure to check
+	 */
+	def private checkANN1StructureSizes(ANNParameters params) {
+		/* If some, but not all, of the structures are present,
+		 * this is a violation of ANN3 and we needn't check ANN1.
+		 */
+		val allPresent = ALL_STRUCTURES.forall[!isNullIn(params)]
+		if (allPresent) {
+			checkANN1StructuresNotEmpty(params)
+			checkANN1StructuresCompatibleWithLayers(params)
+		}	
+	}
+
+	/**
+	 * Checks that layer structure, weights, and biases are non-empty and of
+	 * the same size, if not null.
+	 *
+	 * @param params the ANN parameters structure to check
+	 */
+	private def checkANN1StructuresNotEmpty(ANNParameters params) {
+		// Already checked that all structures are present, no need to null-check
+		ALL_STRUCTURES.forEach[
+			val structure = getIn(params)
+			if (structure !== null && structure.empty) {
+				error('''«name» cannot be empty''',	ref, '''ANN1«name»Empty''')
+			}
+		]
+	}
+	
+	private def checkANN1StructuresCompatibleWithLayers(ANNParameters params) {
+		// Already checked that all structures are present, no need to null-check
+		val layers = params.layerstructure
+		val numLayers = layers.values.size
+		
+		// No need to check the layer structure against itself
+		#[WEIGHTS, BIASES].forEach[
+			checkSeqSize(getIn(params), numLayers, name, ref, '''ANN1«name»SizeMismatch''')
+		]
+	}
+
+
+	//
+	// ANN2
+	//
+	
+	/**
+	 * Checks ANN well-formedness condition 2.
+	 *
+	 * <p>
+	 *  If filename is null, then weights, biases, and layerstructure are not.
+	 * </p>
+	 * 
+	 * @param params the ANN parameters structure to check
+	 */
+	@Check
+	def checkANN2(ANNParameters params) {
+		if (params.hasFile) {
+			return
+		}
+
+		ALL_STRUCTURES.forEach[
+			if (isNullIn(params)) {
+				error('''«name» must be given if a filename is not given''', ref, '''ANN2NoFilenameNo«name»''')
+			}
+		]
+	}
+
+	
+	//
+	// ANN3
+	//
+	
+	/**
+	 * Checks ANN well-formedness condition 3.
+	 *
+	 * <p>
+	 * Either layerstructure, weights, and biases are all null, in which case
+	 * filename is not, or they are all different from null.
+	 * </p>
+	 * 
+	 * @param params the ANN parameters structure to check
+	 */
+	@Check
+	def checkANN3(ANNParameters params) {
+		// TODO: check to make sure this is the right reading of the Z
+		val allAbsent = ALL_STRUCTURES.forall[isNullIn(params)]
+		if (allAbsent) {
+			checkANN3FilenameExists(params)
+		} else {
+			checkANN3StructuresPresent(params)
+		}
+	}
+	
+	private def checkANN3FilenameExists(ANNParameters params) {
+		if (params.noFile) {
+			error("If parameters are not given, a filename must be given",
+				RoboChartPackage.Literals.ANN_PARAMETERS__FILENAME,
+				"ANN3NoParamsFilenameMustExist"
+			)
+		}
+	}
+
+	private def checkANN3StructuresPresent(ANNParameters params) {
+		ALL_STRUCTURES.forEach[
+			if (isNullIn(params)) {
+				error('''«name» not given, but at least one other structure was''',
+					ref,
+					'''ANN3«name»MissingOthersPresent'''
+				)
+			}
+		]
+	}
+	
+	
+	//
+	// ANN4
+	//
+	
+		
+	/**
+	 * Checks ANN well-formedness condition 4.
+	 *
+	 * <p>
+	 * The activationfunction is not specified if, and only if, filename is not null.
+	 * </p>
+	 * 
+	 * @param params the ANN parameters structure to check
+	 */
+	@Check
+	def checkANN4(ANNParameters params) {
+		// no activation function <=> has filename
+		if (params.hasActivationFunction && params.hasFile) {
+			error("Must not have an activation function if a filename is present",
+				RoboChartPackage.Literals.ANN_PARAMETERS__ACTIVATIONFUNCTION,
+				"ANN4ActivationFunctionAndFilename"
+			)
+		} else if (params.noActivationFunction && params.noFile) {
+			error("Must have a filename if no activation function is present",
+				RoboChartPackage.Literals.ANN_PARAMETERS__FILENAME,
+				"ANN4NoActivationFunctionNoFilename"
+			)			
+		}
+	}
+	
+	
+	//
+	// ANN5
+	//
+	
+	/**
+	 * Checks ANN well-formedness condition 5.
+	 *
+	 * <p>
+	 * For every i, the size of weights[i] and biases[i] is layerstructure[i].
+	 * </p>
+	 *
+	 * @param params the ANN parameters structure to check
+	 */
+	@Check
+	def checkANN5(ANNParameters params) {
+		if (params.hasFile) {
+			return
+		}
+	
+		params.forEachLayer[lsize, i|
+			#[WEIGHTS, BIASES].forEach[
+				val layers = getIn(params)
+				if (layers === null || layers.size() <= i) {
+					// Ill-formed or nonexistent
+					return
+				}
+				
+				layers.get(i).ifSeq[seq|
+					checkSeqSize(seq, lsize, '''«name» at layer «i+1»''', ref, '''ANN5«name»BadSize''')
+				]
+			]
+		]
+	}
+
+
+	//
+	// ANN6
+	//
+	
+	/**
+	 * Checks ANN well-formedness condition 6.
+	 * 
+	 * <p>
+	 * For every i, and for all j, the size of weights[i][j] is
+	 * layerstructure[i-1] when i is greater than 1, or insize otherwise.
+	 * </p>
+	 * 
+	 * @param params the ANN parameters structure to check
+	 */
+	@Check
+	def checkANN6(ANNParameters params) {
+		if (params.hasFile) {
+			return
+		}
+		
+		val weights = params.weights.values
+	
+		params.forEachLayer[lsize, i|
+			// In case the sizes are ill-formed:
+			if (weights.size() <= i) {
+				return
+			}
+
+			val want = expectedLayerWeightsSize(params, i)
+						
+			val neurons = weights.get(i)
+			neurons.forEachIfMatrix[neuron, j|
+				checkSeqSize(neuron,
+					want,
+					'''Weights at neuron «j+1» of layer «i+1»''',
+					RoboChartPackage.Literals.ANN_PARAMETERS__WEIGHTS,
+					"ANN6NeuronWeightsBadSize"
+				)
+			]
+		]
+	}
+	
+	private def Integer expectedLayerWeightsSize(ANNParameters params, int layer) {
+		if (layer < 0) {
+			// This shouldn't happen in practice.
+			return null
+		}
+		
+		if (layer == 0) {
+			// First layer should have weights corresponding to inputs
+			return insize(params)
+		}
+
+		val layers = params.layerstructure.values
+		if (layers.size() <= layer) {
+			// Sizes ill-formed
+			return null
+		}
+		
+		params.layerstructure.values.get(layer-1).assertInt
+	}
+
+
+	//
+	// WF7
+	//
+	
+	/**
+	 * Checks ANN well-formedness condition 7.
+	 * 
+	 * <p>
+	 * The connections to and from an ANN controller match the nature of the
+	 * events (inputs and outputs) in their directions and types.
+	 * </p>
+	 * 
+	 * @param mod the RoboChart module to check
+	 */
+	@Check
+	def checkANN7(ANNController ctrl) {
+		/* The Z specification of ANN8 starts with an outer quantification
+		 * over RCModule.  We could do the same here, but then we wouldn't
+		 * be able to tag the specific parts of the controller that are
+		 * ill-formed; we would only be able to tag the 'nodes' part of the
+		 * controller.
+		 * 
+		 * Instead, we assume that quantifying over controllers and following
+		 * the containment references backwards into the parent module will
+		 * work.
+		 */
+		val mod = EcoreUtil2.getContainerOfType(ctrl, RCModule)
+		if (mod === null) {
+			return
+		}
+		
+		val inputs = mod.connections.filter[to == ctrl].toSet
+		val outputs = mod.connections.filter[from == ctrl].toSet
+			
+		checkANN7SizesCompatible(ctrl, inputs, outputs)
+		//Don't believe we need this. 
+		//checkANN8EventsExist(ctrl, inputs, outputs)
+	}
+	
+	private def checkANN7SizesCompatible(ANNController ctrl, Set<Connection> inputs, Set<Connection> outputs) {
+		checkANN7SizeCompatible(ctrl, inputs, INSIZE)
+		checkANN7SizeCompatible(ctrl, outputs, OUTSIZE)
+	}
+	
+	private def checkANN7SizeCompatible(ANNController ctrl, Set<Connection> conns, ANNParameter<Context> sizeParam) {
+		val params = ctrl.annparameters
+		if (params === null) {
+			// ill-formed, but we won't report that here
+			return
+		}
+
+		checkSeqSize(conns,
+			allEvents(sizeParam.getIn(params)).size,
+			'''«sizeParam.name» connection set''',
+			RoboChartPackage.Literals.ANN__ANNPARAMETERS,
+			'''ANN7«sizeParam.name»SizeIncompatible'''
+		)
+	}
+	
+	/*
+	 * ANN8:
+	 * ANN Controller cannot define variables, clocks, or events. 
+	 */
+	@Check
+	def checkANN8(ANNController ctrl) {
+		if (ctrl.clocks.size > 0 ||  ctrl.variableList.size > 0 || ctrl.operations.size > 0 || ctrl.events.size > 0) {
+			error(
+				getName(ctrl) + ' cannot define this parameter.',
+				RoboChartPackage.Literals.ANN__ANNPARAMETERS,
+				"ANN8"
+			)
+		}
+		
+	}
+	/*
+	 * ANN9:
+	 *
+	 * ANN Controllers cannot define, provide, or require interfaces. 
+	  */
+	@Check
+	def checkANN9(ANNController ctrl) {
+		for (i : ctrl.PInterfaces) {
+			error(
+				ctrl.name + ' is an anncontroller and cannot provide interface ' + i.name,
+				RoboChartPackage.Literals.CONTEXT__PINTERFACES,
+				'ANN9'
+			)
+		}
+		
+		for (i : ctrl.RInterfaces) {
+			error(
+				ctrl.name + ' is an anncontroller and cannot require interface ' + i.name,
+				RoboChartPackage.Literals.CONTEXT__RINTERFACES,
+				'ANN9'
+			)
+		}
+		
+		for (i : ctrl.interfaces) {
+			error(
+				ctrl.name + ' is an anncontroller and cannot define interface ' + i.name,
+				RoboChartPackage.Literals.CONTEXT__RINTERFACES,
+				'ANN9'
+			)
+		}
+	}
+	
+	/*
+	 * ANN10:
+	 * An ANNController's input and output contexts cannot provide or require interfaces.
+	 */
+	@Check
+	def checkANN10(ANNController ctrl) {
+		val inputContext = ctrl.annparameters.inputContext
+		if (inputContext.PInterfaces.size > 0 || inputContext.RInterfaces.size > 0) 
+			error(
+					ctrl.name + ' is an anncontroller and its input context cannot provide or require interfaces',
+					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					'ANN10'
+				)
+		val outputContext = ctrl.annparameters.outputContext
+		if (outputContext.PInterfaces.size > 0 || outputContext.RInterfaces.size > 0) 
+			error(
+					ctrl.name + ' is an anncontroller and its output context cannot provide or require interfaces',
+					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					'ANN10'
+				)
+	}
+	
+	/*
+	 * ANN11:
+	 * An ANNController's input and output contexts cannot define variables or clocks.
+	 */
+	@Check
+	def checkANN11(ANNController ctrl) {
+		for (i : ctrl.annparameters.inputContext.interfaces) {
+			if (i.clocks.size > 0 ||  i.variableList.size > 0 || i.operations.size > 0)
+				error(
+					ctrl.name + ' is an anncontroller and its input context can only define events',
+					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					'ANN11'
+				)
+		}
+		
+		for (i : ctrl.annparameters.outputContext.interfaces) {
+			if (i.clocks.size > 0 ||  i.variableList.size > 0 || i.operations.size > 0)
+				error(
+					ctrl.name + ' is an anncontroller and its output context can only define events',
+					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					'ANN11'
+				)
+		}
+	}
+
+	
+	//
+	// WF12
+	//
+	
+	/**
+	 * Checks ANN well-formedness condition 12.
+	 * 
+	 * <p>
+	 * The connections to an ANNController must be to events in its input context, and connections from an ANNController must be from its output context. 
+	 * </p>
+	 * 
+	 * @param mod the RoboChart module to check
+	 */
+	@Check
+	def checkANN12(ANNController ctrl) {
+		
+		val mod = EcoreUtil2.getContainerOfType(ctrl, RCModule)
+		if (mod === null) {
+			return
+		}
+		val inputs = mod.connections.filter[to == ctrl].toSet.iterator()
+		val outputs = mod.connections.filter[from == ctrl].toSet.iterator()
+		val inevents = 
+		{ 
+			var inevents = new HashSet<Event>()
+			while(inputs.hasNext()) {
+				inevents.add(inputs.next().eto)
+			}
+			inevents
+		}
+		val outevents = 
+		{ 
+			var outevents = new HashSet<Event>()
+			while(outputs.hasNext()) {
+				outevents.add(outputs.next().efrom)
+			}
+			outevents
+		}
+		
+		val inputContext = ctrl.annparameters.inputContext
+		val outputContext = ctrl.annparameters.outputContext
+		
+		val inputContextEvents = allEvents(inputContext)
+		val outputContextEvents = allEvents(outputContext)
+		
+		//Every inevent must be contained in allEvents(
+		for(e : inevents) {
+			if(!inputContextEvents.contains(e)) {
+				error("All incoming connections must connect to events in the input context",
+					RoboChartPackage.Literals.ANN__ANNPARAMETERS,
+					"ANN12ConnectionsContext"
+				)
+			}
+		}
+		
+		for(e : outevents) {
+			if(!outputContextEvents.contains(e)) {
+				error("All outgoing connections must connect to events in the output context",
+					RoboChartPackage.Literals.ANN__ANNPARAMETERS,
+					"ANN12ConnectionsContext"
+				)
+			}
+		}
+	}
+
+	
+	/*
+	 * Special WF condition: we throw an error if there is an ANNOperation, we will add support for this later.  
+	  */
+	 @Check
+	 def noANNOperation(ANNOperation op) {
+	 	error('''ANN operations are not supported in this version.''',
+				RoboChartPackage.Literals.ANN_OPERATION__RINTERFACES,
+				"ANN9VariableCount"
+			)
+	 }
+
+	//
+	// Helper code for handling ANN parameters
+	//
+	
+	/**
+	 * Bundles together the basic information used to perform a WFC
+	 * check on one of the expressions in an ANNParameters bundle.
+	 * 
+	 * @param <T> the type of the parameter
+	 */
+	@Data private static class ANNParameter<T> {
+		String name
+		EReference ref
+		Function<ANNParameters, T> getter
+		
+		/**
+		 * Accesses this parameter in a parameters structure.
+		 * 
+		 * @param params the parameters structure
+		 *
+		 * @return the requisite parameter
+		 */
+		def T getIn(ANNParameters params) {
+			getter.apply(params)
+		}
+		
+		/**
+		 * Checks whether a parameter is null in a parameters structure.
+		 * 
+		 * @param params the parameters structure
+		 * 
+		 * @return true if and only if the parameter is null
+		 */
+		def boolean isNullIn(ANNParameters params) {
+			getIn(params) === null
+		}
+	}
+
+	static val INSIZE = new ANNParameter("Input", RoboChartPackage.Literals.ANN_PARAMETERS__INPUT_CONTEXT, [inputContext])
+	static val OUTSIZE = new ANNParameter("Output", RoboChartPackage.Literals.ANN_PARAMETERS__OUTPUT_CONTEXT, [outputContext])
+
+	static val WEIGHTS = new ANNParameter("Weights", RoboChartPackage.Literals.ANN_PARAMETERS__WEIGHTS, [weights?.values])
+	static val BIASES = new ANNParameter("Biases", RoboChartPackage.Literals.ANN_PARAMETERS__BIASES, [biases?.values])
+	static val LAYERS = new ANNParameter("Layers", RoboChartPackage.Literals.ANN_PARAMETERS__LAYERSTRUCTURE, [layerstructure?.values])
+
+	/**
+	 * Lists all of the n-dimensional structures that occur within the
+	 * ANN parameters.
+	 */
+	static val ALL_STRUCTURES = #[WEIGHTS, BIASES, LAYERS]
+	
+	//Get all events from an Input or Output Context
+	private def allEvents(Context c) {
+		var events = new HashSet<Event>()
+		events.addAll(c.events)
+		for (iface : c.interfaces) {
+			events.addAll(iface.events)
+		}
+		events
+	}
+	
+	//Gets the input size, as an integer, from an ANNController.
+	private def insize(ANNParameters p) {
+		return allEvents(p.inputContext).size
+	}
+	
+	//Gets the input size, as an integer, from an ANNController.
+	private def outsize(ANNParameters p) {
+		return allEvents(p.outputContext).size
+	}
+
+	
+	private def checkSeqSize(Collection<?> coll, int want, CharSequence name, EReference ref, CharSequence code) {
+		if (coll === null) {
+			// Assume that, if this is ill-formed, it is handled elsewhere
+			return
+		}
+		
+		val got = coll.size
+		if (got != want) {
+			error('''«name» must be of size «want», but was «got»''', ref, code.toString())
+		}				
+	}
+	
+	private def static Integer asInt(IntegerExp e) {
+		// Don't use ?., it'll produce an int not an Integer
+		if (e === null) {
+			null
+		} else {
+			e.value
+		}
+	}
+	
+	/**
+	 * Asserts that the given expression is a matrix or tensor; if it is,
+	 * applies the given action to each element of its outermost dimension.
+	 * 
+	 * @param e      the expression in question
+	 * @param action an action to apply to each expression list
+	 */
+	def private forEachIfMatrix(Expression e, BiConsumer<List<Expression>, Integer> action) {
+		e.forEachIfSeq[v, i| v.ifSeq[action.accept(it, i)]]
+	}
+	
+	/**
+	 * Asserts that the given expression is a sequence; if it is,
+	 * applies the given action to each element.
+	 * 
+	 * @param e      the expression in question
+	 * @param action an action to apply to each expression
+	 */
+	def private forEachIfSeq(Expression e, BiConsumer<Expression, Integer> action) {
+		e.ifSeq[forEach(action)]
+	}
+	
+	/**
+	 * Asserts that the given expression is a sequence; if it is,
+	 * applies the given action to its contents list.
+	 * 
+	 * @param e      the expression in question
+	 * @param action an action to apply to the expression
+	 */
+	def private ifSeq(Expression e, Consumer<List<Expression>> action) {
+		switch e {
+			SeqExp : action.accept(e.values)
+			default : {}
+		}	
+	}
+	
+	def Iterable<Integer> assertVector(SeqExp expr) {
+		expr.values.map[assertInt]
+	}
+	
+	/**
+	 * Asserts that an expression is an integer.
+	 * 
+	 * @param expr the expression
+	 * 
+	 * @return the integer value of expr, or null if it is not an integer expression
+	 */
+	def private Integer assertInt(Expression expr) {
+		switch expr {
+			IntegerExp : expr.value
+			default : null
+		}
+	}
+
+	//
+	// Input/output size checks
+	//
+		
+	def private boolean equalsSizeSum(int numEvents, ANNController ctrl) {
+		val params = ctrl.annparameters
+		// params being null isn't well-formed, but we don't check that here
+		params !== null && (numEvents == insize(params) + outsize(params))
+	}
+	
+	def private boolean equalsInsize(int numParams, ANNOperation op) {
+		val params = op.annparameters
+		// params being null isn't well-formed, but we don't check that here
+		params !== null && numParams == insize(params)
+	}
+
+	def private boolean equalsOutsize(int numParams, ANNOperation op) {
+		val params = op.annparameters
+		// params being null isn't well-formed, but we don't check that here
+		params !== null && numParams == outsize(params)
+	}
+
+	//
+	// Extension methods for ANNParameters
+	//
+	
+	/**
+	 * Checks whether the ANN is taking its parameters from a file.
+	 * 
+	 * @param params the ANN parameters
+	 * 
+	 * @return true if and only if the filename is non-null
+	 */ 
+	private def boolean hasFile(ANNParameters params) {
+		params.filename !== null
+	}	
+
+	/**
+	 * Checks whether the ANN is not taking its parameters from a file.
+	 * 
+	 * @param params the ANN parameters
+	 * 
+	 * @return true if and only if the filename is null
+	 */ 
+	private def boolean noFile(ANNParameters params) {
+		params.filename === null
+	}
+	
+	/**
+	 * Checks whether the ANN has an activation function.
+	 * 
+	 * @param params the ANN parameters
+	 * 
+	 * @return true if and only if the activation function is defined
+	 */
+	private def boolean hasActivationFunction(ANNParameters params) {
+		params.activationfunction !== ActivationFunction.NOTSPECIFIED;
+	}
+
+	/**
+	 * Checks whether the ANN does not have an activation function.
+	 * 
+	 * @param params the ANN parameters
+	 * 
+	 * @return true if and only if the activation function is undefined
+	 */	
+	private def boolean noActivationFunction(ANNParameters params) {
+		params.activationfunction === ActivationFunction.NOTSPECIFIED;
+	}
+	
+	private def forEachLayer(ANNParameters params, BiConsumer<Integer, Integer> consumer) {
+		params.layerstructure.assertVector?.forEach(consumer)
 	}
 }

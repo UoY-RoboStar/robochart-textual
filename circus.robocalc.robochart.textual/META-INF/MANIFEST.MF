@@ -30,7 +30,6 @@ Export-Package: circus.robocalc.robochart.textual,
  circus.robocalc.robochart.textual.scoping,
  circus.robocalc.robochart.textual.serializer,
  circus.robocalc.robochart.textual.services,
- circus.robocalc.robochart.textual.validation,
- robochart
+ circus.robocalc.robochart.textual.validation
 Import-Package: org.apache.log4j
 Bundle-ClassPath: .

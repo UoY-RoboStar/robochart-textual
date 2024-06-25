@@ -25,9 +25,9 @@ RCPackage:
 		interfaces+=Interface |
 		robots+=RoboticPlatformDef |
 		types+=TypeDecl |
-		controllers+=ControllerDef |
+		controllers+=GeneralController |
 		machines+=StateMachineDef |
-		operations+=OperationDef |
+		operations+=GeneralOperation |
 		functions+=Function |
 		modules+=RCModule
 	)*
@@ -146,6 +146,18 @@ RoboticPlatformRef:
 //NamedConstructs: RoboticPlatform | Controller | StateMachineDef | StateMachineRef;
 // Definition of statemachines
 
+GeneralController:
+	( {GeneralController}'generalcontroller' name=ID '{'
+	(
+		'uses' interfaces+=[Interface|QualifiedName] |
+		'provides' pInterfaces+=[Interface|QualifiedName] |
+		'requires' rInterfaces+=[Interface|QualifiedName] |
+		variableList+=VariableList |
+		events+=Event
+	)*
+	'}' ) | ControllerDef | ANNController
+;
+
 ControllerDef:
 	{ControllerDef}'controller' name=ID '{'
 	(
@@ -154,7 +166,7 @@ ControllerDef:
 		'requires' rInterfaces+=[Interface|QualifiedName] |
 		variableList+=VariableList |
 		events+=Event |
-		lOperations+=OperationDef |
+		lOperations+=GeneralOperation |
 		lOperations+=OperationRef |
 		machines+=StateMachine |
 		connections+=Connection
@@ -163,10 +175,10 @@ ControllerDef:
 ;
 
 ControllerRef:
-	{ControllerRef} 'cref' name=ID '=' ref=[ControllerDef|QualifiedName]
+	{ControllerRef} 'cref' name=ID '=' ref=[GeneralController|QualifiedName]
 ;
 
-Controller: ControllerDef | ControllerRef;
+Controller: GeneralController | ControllerRef;
 
 StateMachine: StateMachineDef | StateMachineRef;
 
@@ -187,7 +199,7 @@ StateMachineDef:
 ;
 
 OperationRef:
-	{OperationRef} 'opref' name=ID '=' ref=[OperationDef|QualifiedName]
+	{OperationRef} 'opref' name=ID '=' ref=[GeneralOperation|QualifiedName]
 ;
 
 OperationSig:
@@ -212,6 +224,22 @@ Function:
 		'postcondition' postconditions+=Expression
 	)*			
 	'}'
+;
+
+GeneralOperation:
+	('generaloperation' name=ID '('
+		(
+			parameters+=Parameter
+			(',' parameters+=Parameter)*
+		)?
+	')'
+	'{'
+		(
+			terminates?='terminates' |
+			'precondition' preconditions+=Expression |
+			'postcondition' postconditions+=Expression
+		)*
+	'}') | OperationDef | ANNOperation
 ;
 
 OperationDef:
@@ -493,7 +521,7 @@ Atomic returns Expression:
 	{FromExp} 'from' |
 	{IntegerExp} value=INT |
 	{FloatExp} value=FLOAT |
-	{StringExp} value=STRING |
+	StringExp |
 	{BooleanExp} value=BOOLEAN |
 	RefExp |
 	RecordExp |
@@ -513,6 +541,14 @@ Atomic returns Expression:
 	{SetComp}'{' variables+=VariableNoInit (',' variables+=VariableNoInit)* ('|' predicate=Expression)? ('@' expression=Expression)? '}' |
 	{TupleExp} '(|' (values+=Expression (',' values+=Expression)*)? '|)'
 ;
+
+StringExp: value=STRING;
+
+SeqExp:
+	{SeqExp}
+	'<' (
+		values+=PlusMinus (',' values+=PlusMinus)*
+	)? '>'; // need this to avoid conflict between greater than and closing sequences
 
 Row returns VectorExp:
 	{VectorExp} values += Expression (',' values += Expression)*
@@ -629,3 +665,76 @@ Connection:
 Else returns Expression:
 	{ElseExp} 'else'
 ;
+
+//Similar definition to RoboSim but no InputContext and OutputContext class.
+InputContext returns Context:
+	{InputContext}
+	'inputcontext' '{'
+		(
+			'uses' interfaces+=[Interface|QualifiedName] |
+			events+=Event 
+		)*
+	'}'
+;
+
+OutputContext returns Context: 
+	{OutputContext}
+	'outputcontext' '{'
+		(
+			'uses' interfaces+=[Interface|QualifiedName] |
+			events+=Event 
+		)*
+	'}' 
+;  
+
+ANNController:
+	{ANNController} 'anncontroller' name=ID '{'
+	  annparameters=ANNParameters
+	'}'
+	;
+
+
+ANNParameters:
+	{ANNParameters} (
+
+			
+			'params' '{'
+			(
+				(
+					(inputContext=InputContext) &
+					(outputContext=OutputContext)
+				)
+				(
+					'file' filename=StringExp |
+					('layerstructure' layerstructure=SeqExp) &
+					('weights' weights=SeqExp) &
+					('biases' biases=SeqExp) &
+					('activationfunction' activationfunction=ActivationFunction)
+					
+				)
+			)
+			'}'
+	)
+;
+
+ANNOperation:
+	{ANNOperation} 'annoperation' name=ID
+	'('
+		(
+			parameters+=Parameter
+			(',' parameters+=Parameter)*
+		)?
+	')'
+	'{'
+		// TODO: make it so we can place this anywhere in the params list somehow?
+		('requires' rInterfaces+=[Interface|QualifiedName])*
+		annparameters=ANNParameters
+	'}'
+	;
+	
+	
+enum ActivationFunction:
+	RELU = 'relu' |
+	LINEAR = 'linear'
+;
+

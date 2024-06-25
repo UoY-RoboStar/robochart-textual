@@ -24,6 +24,7 @@ import circus.robocalc.robochart.Connection
 import circus.robocalc.robochart.ConnectionNode
 import circus.robocalc.robochart.Context
 import circus.robocalc.robochart.ControllerDef
+import circus.robocalc.robochart.GeneralController
 import circus.robocalc.robochart.ControllerRef
 import circus.robocalc.robochart.DefiniteDescription
 import circus.robocalc.robochart.EnumExp
@@ -87,6 +88,9 @@ import org.eclipse.xtext.scoping.impl.SimpleScope
 import static circus.robocalc.robochart.RoboChartPackage.Literals.*
 import circus.robocalc.robochart.FieldDefinition
 import circus.robocalc.robochart.StateMachineBody
+import circus.robocalc.robochart.ANNController
+import circus.robocalc.robochart.GeneralOperation
+import circus.robocalc.robochart.ANNOperation
 
 /**
  * This class contains custom scoping description.
@@ -360,14 +364,14 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 			return Scopes.scopeFor(o.controllers, p)
 		return p
 	}
-
+	
 	def dispatch IScope ctrlsDeclared(RCModule o, IScope p) {
 		if (o !== null && o.nodes !== null) {
 			var pscope = p
 			if (o.eContainer !== null) {
 				pscope = ctrlsDeclared(o.eContainer, p)
 			}
-			var ctrls = o.nodes.filter(ControllerDef)
+			var ctrls = o.nodes.filter(GeneralController)
 			return Scopes.scopeFor(ctrls, pscope)
 		}
 		return p
@@ -437,10 +441,10 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	def getScopeForConnection(Connection context, EReference reference) {
 		if (reference === CONNECTION__EFROM) {
 			val result = IScope::NULLSCOPE //delegateGetScope(context, reference)
-			return context.from.eventsDeclared(result)
+			return context.from?.eventsDeclared(result) ?: result
 		} else if (reference === CONNECTION__ETO) {
 			val result = IScope::NULLSCOPE //delegateGetScope(context, reference)
-			return context.to.eventsDeclared(result)
+			return context.to?.eventsDeclared(result) ?: result
 		} else if (reference === CONNECTION__FROM) {
 			val result = delegateGetScope(context, reference)
 			if (context === null) return result
@@ -532,8 +536,25 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 			n.ref.eventsDeclared(p)
 		else p
 	}
+	
+	//Adds the events from both the input and output contexts to scope.
+	def dispatch IScope eventsDeclared(ANNController n, IScope p) {
+		//n.events should be empty, just scope for the inputContext and outputContext's events.
+		var s = Scopes::scopeFor(n.annparameters.inputContext.events, p)
+		s = Scopes::scopeFor(n.annparameters.outputContext.events, s)
+		
+		//Add all input and output events from the defined interfaces to the scope. 
+		for (Interface i : n.annparameters.inputContext.interfaces) {
+			s = Scopes::scopeFor(i.events, s)
+		}
+		for (Interface i : n.annparameters.outputContext.interfaces) {
+			s = Scopes::scopeFor(i.events, s)
+		}
+		return s
+		
+	}
 
-	def dispatch IScope eventsDeclared(ControllerDef n, IScope p) {
+	def dispatch IScope eventsDeclared(GeneralController n, IScope p) {
 		var s = Scopes::scopeFor(n.events, p)
 		for (Interface i : n.PInterfaces) {
 			s = Scopes::scopeFor(i.events, s)
@@ -676,9 +697,17 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 			parent
 	}
 
-	def dispatch IScope operationsDeclared(ControllerDef cont, IScope parent) {
+	def dispatch IScope operationsDeclared(ANNOperation cont, IScope parent) {
+		// TODO: is this necessary?  The ANN operation can't use these operations
 		Scopes::scopeFor(
-			cont.operations.filter[o|!(o instanceof OperationDef)],
+			cont.RInterfaces.operationsInInterfaces,
+			parent
+		)
+	}
+	
+	def dispatch IScope operationsDeclared(GeneralController cont, IScope parent) {
+		Scopes::scopeFor(
+			cont.operations.declsOnly,
 			Scopes::scopeFor(
 				cont.RInterfaces.operationsInInterfaces,
 				Scopes::scopeFor(cont.PInterfaces.operationsInInterfaces, parent)
@@ -693,7 +722,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 
 	def dispatch IScope operationsDeclared(StateMachineDef cont, IScope parent) {
 		Scopes::scopeFor(
-			cont.operations.filter[o|!(o instanceof OperationDef)],
+			cont.operations.declsOnly,
 			Scopes::scopeFor(
 				cont.RInterfaces.operationsInInterfaces,
 				Scopes::scopeFor(
@@ -707,7 +736,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 
 	def dispatch IScope operationsDeclared(OperationDef cont, IScope parent) {
 		Scopes::scopeFor(
-			cont.operations.filter[o|!(o instanceof OperationDef)],
+			cont.operations.declsOnly,
 			Scopes::scopeFor(
 				cont.RInterfaces.operationsInInterfaces,
 				Scopes::scopeFor(
@@ -720,7 +749,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 
 	def dispatch IScope operationsDeclared(RoboticPlatformDef cont, IScope parent) {
 		Scopes::scopeFor(
-			cont.operations.filter[o|!(o instanceof OperationDef)],
+			cont.operations.declsOnly,
 			Scopes::scopeFor(
 				cont.RInterfaces.operationsInInterfaces,
 				Scopes::scopeFor(cont.PInterfaces.operationsInInterfaces, parent)
@@ -734,8 +763,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	}
 
 	def dispatch IScope operationsDeclared(RCPackage cont, IScope parent) {
-		val s = Scopes::scopeFor(cont.operations.filter[o|!(o instanceof OperationDef)], parent)
-		return s
+		Scopes::scopeFor(cont.operations.declsOnly, parent)
 	}
 
 	def private operationsInInterfaces(List<Interface> list) {
@@ -747,10 +775,11 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 	}
 
 	def dispatch IScope operationsDeclared(Interface cont, IScope parent) {
-		Scopes::scopeFor(
-			cont.operations.filter[o|!(o instanceof OperationDef)],
-			parent
-		)
+		Scopes::scopeFor(cont.operations.declsOnly, parent)
+	}
+	
+	private def Iterable<? extends OperationSig> declsOnly(List<? extends OperationSig> ops) {
+		ops.filter[!(it instanceof GeneralOperation)]
 	}
 
 // functions declared
@@ -1002,7 +1031,7 @@ class RoboChartScopeProvider extends AbstractRoboChartScopeProvider {
 				return s	
 	}
 	
-	def dispatch IScope constantsDeclared(ControllerDef m, IScope parent) {
+	def dispatch IScope constantsDeclared(GeneralController m, IScope parent) {
 				var s = parent
 				for (l: m.variableList) {
 					if (l.modifier == VariableModifier.CONST) {
