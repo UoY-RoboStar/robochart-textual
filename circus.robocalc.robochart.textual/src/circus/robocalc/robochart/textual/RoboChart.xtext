@@ -521,7 +521,7 @@ Atomic returns Expression:
 	{FromExp} 'from' |
 	{IntegerExp} value=INT |
 	{FloatExp} value=FLOAT |
-	{StringExp} value=STRING |
+	StringExp |
 	{BooleanExp} value=BOOLEAN |
 	RefExp |
 	RecordExp |
