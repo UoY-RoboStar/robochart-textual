@@ -327,6 +327,26 @@ class IntegrationTest {
 	}
 	
 	@Test
+	def void testRPVarVisible() {
+		val dir = top_dir+"robochart/rp-var-visible"
+		TestRoboChartModel(dir)
+	}
+	
+	@Test
+	def void testRPVarVisibleUses() {
+		val dir = top_dir+"robochart/rp-var-visible-uses"
+		TestRoboChartModel(dir)
+	}
+	
+	@Test
+	def void testCallScopeFail() {
+		val dir = top_dir+"robochart-fail/opcall-scope-fail"
+		val file = "main.rct"
+		val errorMessage = "Couldn't resolve reference to OperationSig 'op'"
+		TestRoboChartModelError(dir, file, Literals.CALL, "org.eclipse.xtext.diagnostics.Diagnostic.Linking", errorMessage)
+	}
+	
+	@Test
 	def void operationInputTest() {
 		val dir = top_dir+"robochart-fail/operationInput"
 		val file = "operationInput.rct"
