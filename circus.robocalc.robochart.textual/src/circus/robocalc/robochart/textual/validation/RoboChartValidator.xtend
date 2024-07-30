@@ -127,6 +127,7 @@ import java.util.ArrayList
 import circus.robocalc.robochart.Clock
 import circus.robocalc.robochart.Communication
 import circus.robocalc.robochart.CommunicationStmt
+import circus.robocalc.robochart.TimedStatement
 
 /**
  * This class contains custom validation rules. 
@@ -2505,6 +2506,8 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		} else if (s instanceof IfStmt) {
 			outputs.addAll(statementOutputSet(s.getThen))
 			outputs.addAll(statementOutputSet(s.getElse))
+		} else if (s instanceof TimedStatement) {
+			outputs.addAll(statementOutputSet(s.stmt))
 		}
 
 		outputs
@@ -2584,6 +2587,8 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		} else if (s instanceof IfStmt) {
 			inputs.addAll(statementInputSet(s.getThen))
 			inputs.addAll(statementInputSet(s.getElse))
+		} else if (s instanceof TimedStatement) {
+			inputs.addAll(statementInputSet(s.stmt))
 		}
 
 		inputs
