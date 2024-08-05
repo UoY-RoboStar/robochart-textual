@@ -127,6 +127,7 @@ import java.util.ArrayList
 import circus.robocalc.robochart.Clock
 import circus.robocalc.robochart.Communication
 import circus.robocalc.robochart.CommunicationStmt
+import circus.robocalc.robochart.TimedStatement
 
 /**
  * This class contains custom validation rules. 
@@ -651,26 +652,25 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	@Check
 	def roboticPlatformWFC(RoboticPlatformDef rp) {
 		/* RP1 */
-		for (i : rp.RInterfaces) {
+		for (var it = rp.RInterfaces.listIterator; it.hasNext; ) {
+			var index = it.nextIndex
+			var i = it.next
+			
 			error(
 				rp.name + ' is a robotic platform and cannot require interface ' + i.name,
-				RoboChartPackage.Literals.CONTEXT__RINTERFACES,
+				RoboChartPackage.Literals.CONTEXT__RINTERFACES, index,
 				'RPNoRequiredInterfaces'
 			)
 		}
 		/* RP2 */
-		for (Interface i : rp.interfaces) {
-			if (i.variableList.size > 0)
-				error(
-					getName(rp) + ' cannot define interface ' + i.name + ' because it contains variables',
-					RoboChartPackage.Literals.CONTEXT__INTERFACES,
-					'UsedInterfaceWithOnlyEvents'
-				)
+		for (var it = rp.interfaces.listIterator; it.hasNext; ) {
+			var index = it.nextIndex
+			var i = it.next
 				
 			if (i.clocks.size > 0)
 				error(
 					getName(rp) + ' cannot define interface ' + i.name + ' because it contains clocks',
-					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					RoboChartPackage.Literals.CONTEXT__INTERFACES, index,
 					'UsedInterfaceWithOnlyEvents'
 				)
 		}
@@ -688,10 +688,14 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	@Check
 	/* O1:STM1 */
 	def operationDefWFC(OperationDef o) {
-		for (i : o.PInterfaces) {
+		
+		for (var it = o.PInterfaces.listIterator; it.hasNext; ) {
+			var index = it.nextIndex
+			var i = it.next
+		
 			error(
 				o.name + ' is an operation definition and cannot provide interface ' + i.name,
-				RoboChartPackage.Literals.CONTEXT__PINTERFACES,
+				RoboChartPackage.Literals.CONTEXT__PINTERFACES, index,
 				'OperationNoProvidedInterfaces'
 			)
 		}
@@ -700,22 +704,28 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	@Check
 	def requiredWFC(Context c) {
 		/* I1 */
-		for (i : c.RInterfaces) {
+		for (var it = c.RInterfaces.listIterator; it.hasNext; ) {
+			var index = it.nextIndex
+			var i = it.next
+						
 			if (i.events.size > 0) {
 				error(
 					getName(c) + ' cannot require interface ' + i.name + ' because it contains events',
-					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					RoboChartPackage.Literals.CONTEXT__RINTERFACES, index,
 					'RequiredInterfaceWithEvents'
 				)
 			}
 		}
 
 		/* I1 */
-		for (i : c.PInterfaces) {
+		for (var it = c.PInterfaces.listIterator; it.hasNext; ) {
+			var index = it.nextIndex
+			var i = it.next
+			
 			if (i.events.size > 0) {
 				error(
 					getName(c) + ' cannot provide interface ' + i.name + ' because it contains events',
-					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					RoboChartPackage.Literals.CONTEXT__PINTERFACES, index,
 					'ProvidedInterfaceWithEvents'
 				)
 			}
@@ -723,18 +733,21 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 			if (i.clocks.size > 0) {
 				error(
 					getName(c) + ' cannot provide interface ' + i.name + ' because it contains clocks',
-					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					RoboChartPackage.Literals.CONTEXT__PINTERFACES, index,
 					'ProvidedInterfaceWithClocks'
 				)
 			}
 		}
 
 		/* I2, together with I2 implies STM2 and (because OperationDef is a Context) O1:STM2 */
-		for (Interface i : c.interfaces) {
+		for (var it = c.interfaces.listIterator; it.hasNext; ) {
+			var index = it.nextIndex
+			var i = it.next
+			
 			if (i.operations.size > 0)
 				error(
 					getName(c) + ' cannot define interface ' + i.name + ' because it contains operations',
-					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					RoboChartPackage.Literals.CONTEXT__INTERFACES, index,
 					'UsedInterfaceWithOnlyEvents'
 				)
 		}
@@ -760,10 +773,13 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		
 		
 		/* C2 */
-		for (i : c.PInterfaces) {
+		for (var it = c.PInterfaces.listIterator; it.hasNext; ) {
+			var index = it.nextIndex
+			var i = it.next
+			
 			error(
 				c.name + ' is a controller and cannot provide interface ' + i.name,
-				RoboChartPackage.Literals.CONTEXT__PINTERFACES,
+				RoboChartPackage.Literals.CONTEXT__PINTERFACES, index,
 				'ControllerNoRequiredInterfaces'
 			)
 		}
@@ -905,21 +921,27 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 		
 		/* C10 */
-		for (i : c.interfaces) {
+		for (var it = c.interfaces.listIterator; it.hasNext; ) {
+			var index = it.nextIndex
+			var i = it.next
+			
 			if (i.clocks.size > 0)
 				error(
 					c.name + ' is a controller and cannot define interface ' + i.name + ' because it contains clocks',
-					RoboChartPackage.Literals.CONTEXT__INTERFACES,
+					RoboChartPackage.Literals.CONTEXT__INTERFACES, index,
 					'ControllerNoDefinedInterfacesWithClocks'
 				)
 		}
 		
 		/* C11 */
-		for (i : c.RInterfaces) {
+		for (var it = c.RInterfaces.listIterator; it.hasNext; ) {
+			var index = it.nextIndex
+			var i = it.next
+
 			if (i.clocks.size > 0)
 				error(
 					c.name + ' is a controller and cannot require interface ' + i.name + ' because it contains clocks',
-					RoboChartPackage.Literals.CONTEXT__RINTERFACES,
+					RoboChartPackage.Literals.CONTEXT__RINTERFACES, index,
 					'ControllerNoRequiredInterfacesWithClocks'
 				)
 		}
@@ -1029,10 +1051,14 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	/* STM1, together with I2 implies STM2 and (because OperationDef is a Context) O1:STM2 */
 	@Check
 	def stmWFC(StateMachineDef c) {
-		for (i : c.PInterfaces) {
+		
+		for (var it = c.PInterfaces.listIterator; it.hasNext; ) {		
+			var index = it.nextIndex
+			var i = it.next
+
 			error(
 				c.name + ' is a state machine and cannot provide interface ' + i.name,
-				RoboChartPackage.Literals.CONTEXT__PINTERFACES,
+				RoboChartPackage.Literals.CONTEXT__PINTERFACES, index,
 				'StateMachineNoProvidedInterfaces'
 			)
 		}
@@ -1130,11 +1156,14 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 		}
 		
 		/* STM7 */
-		for (i : c.RInterfaces) {
+		for (var it = c.RInterfaces.listIterator; it.hasNext; ) {
+			var index = it.nextIndex
+			var i = it.next
+		
 			if (i.clocks.size > 0)
 				error(
 					c.name + ' is a state machine and cannot require interface ' + i.name + ' because it contains clocks',
-					RoboChartPackage.Literals.CONTEXT__RINTERFACES,
+					RoboChartPackage.Literals.CONTEXT__RINTERFACES, index,
 					'StateMachineNoRequiredInterfacesWithClocks'
 				)
 		}
@@ -1423,19 +1452,26 @@ class RoboChartValidator extends AbstractRoboChartValidator {
 	/* I1 */
 	@Check
 	def interfaceEitherEventsOrOthers(Context d) {
-		for (Interface i : d.RInterfaces) {
+		
+		for (var it = d.RInterfaces.listIterator; it.hasNext; ) {
+			var index = it.nextIndex
+			var i = it.next
+		
 			if (i.events.size > 0)
 				error(
 					getName(d) + ' cannot require interface ' + i.name + ' because it contains events',
-					RoboChartPackage.Literals.CONTEXT__RINTERFACES,
+					RoboChartPackage.Literals.CONTEXT__RINTERFACES, index,
 					'RequiredInterfaceWithoutEvents'
 				)
 		}
-		for (Interface i : d.PInterfaces) {
+		for (var it = d.PInterfaces.listIterator; it.hasNext; ) {
+			var index = it.nextIndex
+			var i = it.next
+		
 			if (i.events.size > 0)
 				error(
 					getName(d) + ' cannot provide interface ' + i.name + ' because it contains events',
-					RoboChartPackage.Literals.CONTEXT__PINTERFACES,
+					RoboChartPackage.Literals.CONTEXT__PINTERFACES, index,
 					'ProvidedInterfaceWithoutEvents'
 				)
 		}
@@ -2470,6 +2506,8 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		} else if (s instanceof IfStmt) {
 			outputs.addAll(statementOutputSet(s.getThen))
 			outputs.addAll(statementOutputSet(s.getElse))
+		} else if (s instanceof TimedStatement) {
+			outputs.addAll(statementOutputSet(s.stmt))
 		}
 
 		outputs
@@ -2549,6 +2587,8 @@ https://github.com/UoY-RoboStar/robochart-csp-gen/issues/39',
 		} else if (s instanceof IfStmt) {
 			inputs.addAll(statementInputSet(s.getThen))
 			inputs.addAll(statementInputSet(s.getElse))
+		} else if (s instanceof TimedStatement) {
+			inputs.addAll(statementInputSet(s.stmt))
 		}
 
 		inputs
